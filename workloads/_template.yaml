@@ -1,0 +1,24 @@
+workload:
+    nsga: # Setup the parameters for your nsga algorithm
+        pop_size: 20
+        offsprings: 20
+        generations: 30
+        mutation_eta: 20
+        mutation_prob: null
+        crossover_eta: 15
+        crossover_prob: 0.9
+    minimum_accuracy: 0.7 # accuracy contraint
+    sample_limit: 1024 # number of validation dataset samples to test for each individual
+    dataset: # settings of the dataset. Parameters are passed a script in ./datasets based on the type parameter
+        path: '/data/oq4116/val'
+        type: imagenet
+        groundtruth: null
+        batch_size: 32
+    model: # settings of the model. Parameters are passed a script in ./models based on the type parameter
+        type: resnet18
+        transforms: resnet50_transforms
+        accuracy_function: classification_accuracy
+        weights: null
+    parallelization: # set the parallelization method.
+        method: null
+        threads: 4
