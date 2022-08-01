@@ -29,7 +29,7 @@ class QuantizedActivationsModel(nn.Module):
     """
 
     def __init__(
-        self, model: nn.Module, predicate: callable, init_n_bits=4, unsigned=False
+        self, model: nn.Module, predicate: callable, init_n_bits=8, unsigned=False
     ) -> None:
         super().__init__()
 
@@ -60,7 +60,14 @@ class QuantizedActivationsModel(nn.Module):
         ), "Number of new quantization bit sizes has to equal number of quaantization layers."
 
         for i, fake_quantizer in enumerate(self.activation_fake_quantizers.values()):
-            fake_quantizer.num_bits = new_n_bits[i]
+
+            if not new_n_bits[i]:
+                # n_bit is zero meaning we dont want to quantize this layer
+                fake_quantizer.disable_quant()
+
+            else:
+                fake_quantizer.enable_quant()
+                fake_quantizer.num_bits = new_n_bits[i]
 
     def calibrate(self, calibration_data_loader) -> None:
         """Calibrates the quantizers by running inference on the model
@@ -101,8 +108,8 @@ class QuantizedActivationsModel(nn.Module):
 
         quant_desc = QuantDescriptor(
             num_bits=self._init_n_bits,
-            fake_quant=False,
-            axis=(0),
+            fake_quant=True,
+            axis=None,  # (0), TODO: figure out what we need here
             unsigned=self._unsigned,
         )
 
