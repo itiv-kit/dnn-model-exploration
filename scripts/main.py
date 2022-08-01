@@ -13,6 +13,8 @@ import sys
 import shutil
 import argparse
 import numpy as np
+from datetime import datetime
+import pickle
 from src.utils.logger import logger
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
@@ -23,13 +25,63 @@ from src.utils.setup import setup
 from src.utils.workload import Workload
 from src.utils.predicates import conv2d_predicate
 from src.utils.data_loader_generator import DataLoaderGenerator
+from src.utils.exploration_metrics import ExplorationVisualizer
 
 from src.exploration.problems import LayerwiseQuantizationProblem
 from src.quantization.quantization import QuantizedActivationsModel
 
-LOG_DIR = "../logs"
-RESULTS_DIR = "../results"
-WORKLOADS_DIR = "../workloads"
+LOG_DIR = "./logs"
+RESULTS_DIR = "./results"
+WORKLOADS_DIR = "./workloads"
+
+
+def save_result(res, model_name):
+    """Save the result object from the exploration as a pickle file.
+
+    Args:
+        res (obj):
+            The result object to save.
+        model_name (str):
+            The name of the model this result object belongs to.
+            This is used as a prefix for the saved file.
+    """
+    if not os.path.exists(RESULTS_DIR):
+        os.makedirs(RESULTS_DIR)
+
+    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    filename = os.path.join(RESULTS_DIR, model_name + "_res_" + date_str + ".pkl")
+
+    with open(filename, "wb") as res_file:
+
+        pickle.dump(res, res_file)
+
+    logger.info(f"Saved result object to: {filename}")
+
+
+def render_results(pickle_file=None, res_obj=None):
+    # WARNING: this is not backwards compatible
+    res = res_obj
+
+    if res == None:
+        # try to load it from file
+        f = open(pickle_file, "rb")
+        res = pickle.load(f)
+
+    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    exp_vis = ExplorationVisualizer(
+        RESULTS_DIR + f"/visuals/{date_str}/",
+        str(res.problem.quantization_model._model.__class__.__name__),
+        res,
+        res.problem.quantization_model.activation_fake_quantizers.keys(),
+    )
+
+    exp_vis.print_first_feasable_solution()
+    exp_vis.plot_constraint_violation_over_n_gen()
+    exp_vis.plot_2d_pareto()
+    exp_vis.plot_layer_bit_resolution()
+    exp_vis.plot_objective_space()
 
 
 def baseline_collection(
@@ -87,15 +139,15 @@ def run(workload: Workload, collect_baseline: bool) -> None:
     # TODO put into own module and pass args from workload
     # TODO set through workload
     algorithm = NSGA2(
-        pop_size=5,
-        n_offsprings=2,
+        pop_size=2,
+        n_offsprings=1,
         sampling=get_sampling("int_random"),
         crossover=get_crossover("int_sbx", prob=1.0, eta=3.0),
         mutation=get_mutation("int_pm", eta=3.0),
         eliminate_duplicates=True,
     )
 
-    termination = get_termination("n_gen", 10)
+    termination = get_termination("n_gen", 2)
 
     logger.info("Starting problem minimization.")
 
@@ -117,7 +169,8 @@ def run(workload: Workload, collect_baseline: bool) -> None:
     # since we inverted our objective functions we have to invert the result back
     res.F = np.abs(res.F)
 
-    print(res)
+    # save_result(res, workload.get_model_settings()["type"])
+    render_results(res_obj=res)
 
 
 def clean() -> None:
