@@ -20,8 +20,8 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
         accuracy_func,
         sample_limit=None,
         num_bits_upper_limit=8,
-        num_bits_lower_limit=1,
-        min_accuracy=0,
+        num_bits_lower_limit=2,
+        min_accuracy=0.3,
         **kwargs,
     ):
         """Inits a quantization exploration problem.
@@ -46,6 +46,10 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
             kwargs=kwargs,
             type_var=int,
         )
+
+        assert (
+            num_bits_lower_limit > 1
+        ), "The lower bound for the bit resolution has to be > 1. 1 bit resolution is not supported and produces NaN."
 
         self.quantization_model = quantization_model
         self.data_loader_generator = data_loader_generator
@@ -75,5 +79,5 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
 
         # NOTE: In pymoo, each objective function is supposed to be minimized,
         # and each constraint needs to be provided in the form of <= 0
-        out["F"] = [-f1_accuracy_objective, -f2_quant_objective]
+        out["F"] = [-f1_accuracy_objective, f2_quant_objective]
         out["G"] = [g1_accuracy_constraint]
