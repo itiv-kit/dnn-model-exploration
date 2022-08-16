@@ -8,11 +8,17 @@ from torchvision import models
 from torchvision import transforms
 from torchvision import datasets
 
+from torchinfo import summary
+
 from pytorch_quantization.tensor_quant import QuantDescriptor
 import pytorch_quantization.nn as quant_nn
+from pytorch_quantization.nn.modules.tensor_quantizer import TensorQuantizer
 
 from tqdm import tqdm
 import pandas as pd 
+
+
+BITS = 6 
 
 
 dev_string = "cuda" if torch.cuda.is_available() else "cpu"
@@ -35,8 +41,13 @@ def get_amax_hook(module, inp, outp, module_name):
     metrics[module_name]['max'] = torch.amax(compare_max)
     metrics[module_name]['min'] = torch.amin(compare_min)
 
+def fake_quantizer_hook(module, inp, quant):
+    # print("Chaning {}".format(module))
+    return quant(inp[0])
+
 
 m = models.resnet50(pretrained=True)
+# summary(m, (32, 3, 224, 224))
 m.to(device)
 
 # prepare dataset
@@ -53,9 +64,12 @@ dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', tran
 indices = random.sample(range(len(dataset)), 100)
 dataset = Subset(dataset, indices=indices)
 
-dataloader = DataLoader(dataset, batch_size=128, shuffle=True, pin_memory=True)
+dataloader = DataLoader(dataset, batch_size=32, shuffle=True, pin_memory=True)
+
+print("Starting calibration...")
 
 # modify model
+hook_handles = []
 for name, module in m.named_modules():
     if conv2d_predicate(module):
         init_tensor_min = torch.tensor(float('inf'))
@@ -65,25 +79,67 @@ for name, module in m.named_modules():
         metrics[name]['max'] = init_tensor_max
         metrics[name]['min'] = init_tensor_min
 
-        module.register_forward_hook(
+        handle = module.register_forward_hook(
             lambda module, inp, out, module_name=name: get_amax_hook(module, inp, out, module_name)
         )
+        hook_handles.append(handle)
 
+# calibration phase
 m.eval()
 with torch.no_grad():
     for X, y_true in tqdm(dataloader):
         X = X.to(device)
         y_prob = m(X)
 
+# clean out hooks 
+for handle in hook_handles:
+    handle.remove()
 
-pp = pprint.PrettyPrinter(indent=4)
-pp.pprint(metrics)
-
+# store results and postprocess
 for k, v in metrics.items():
     for k2, v2 in v.items():
         metrics[k][k2] = v2.item()
 
+# pp = pprint.PrettyPrinter(indent=4)
+# pp.pprint(metrics)
+
 df = pd.DataFrame(data=metrics, index=[0])
 df = (df.T)
 df.to_excel('data.xlsx')
+
+print("Calibration done ...")
+
+print("Running Inference at {} bits".format(BITS))
+
+# add new hooks now for quantization
+for name, module in m.named_modules():
+    if conv2d_predicate(module):
+        quant_desc = QuantDescriptor(
+            num_bits=BITS,
+            fake_quant=True,
+            axis=None,
+            unsigned=False,
+            amax=metrics[name]['max']
+        )
+        fake_quantizer = TensorQuantizer(quant_desc)
+        
+        module.register_forward_pre_hook(
+            lambda module, inp, quant=fake_quantizer: \
+                fake_quantizer_hook(module, inp, quant)
+        )
+
+correct_pred = 0
+m.eval()
+with torch.no_grad():
+    for X, y_true in tqdm(dataloader):
+        X = X.to(device)
+        y_prob = m(X)
+        _, predicted_labels = torch.max(y_prob, 1)
+        # print("Result: {}, GT: {}".format(predicted_labels, y_true))
+        correct_pred += (predicted_labels == y_true).sum()
+
+accuracy = correct_pred.float() / len(dataloader.dataset)
+
+print("Done with {:.4f} % accuracy".format(accuracy * 100))
+
 
