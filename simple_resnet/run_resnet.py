@@ -15,10 +15,10 @@ import pytorch_quantization.nn as quant_nn
 from pytorch_quantization.nn.modules.tensor_quantizer import TensorQuantizer
 
 from tqdm import tqdm
-import pandas as pd 
+import pandas as pd
 
 
-BITS = 6 
+BITS = 8
 
 
 dev_string = "cuda" if torch.cuda.is_available() else "cpu"
@@ -46,7 +46,7 @@ def fake_quantizer_hook(module, inp, quant):
     return quant(inp[0])
 
 
-m = models.resnet50(pretrained=True)
+m = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
 # summary(m, (32, 3, 224, 224))
 m.to(device)
 
@@ -59,12 +59,12 @@ transforms = transforms.Compose([transforms.Resize(256),
                                transforms.ToTensor(),
                                normalize])
 
-# dataset = datasets.ImageFolder('/data/oq4116/imagenet/val', transforms)
-dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
-indices = random.sample(range(len(dataset)), 100)
-dataset = Subset(dataset, indices=indices)
+dataset = datasets.ImageFolder('/data/oq4116/imagenet/val', transforms)
+# dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
+# indices = random.sample(range(len(dataset)), 100)
+# dataset = Subset(dataset, indices=indices)
 
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True, pin_memory=True)
+dataloader = DataLoader(dataset, batch_size=64, shuffle=True, pin_memory=True)
 
 print("Starting calibration...")
 
@@ -109,37 +109,49 @@ df.to_excel('data.xlsx')
 
 print("Calibration done ...")
 
-print("Running Inference at {} bits".format(BITS))
+for bit_width in range(2, 12):
+    print("Running Inference at {} bits".format(bit_width))
 
-# add new hooks now for quantization
-for name, module in m.named_modules():
-    if conv2d_predicate(module):
-        quant_desc = QuantDescriptor(
-            num_bits=BITS,
-            fake_quant=True,
-            axis=None,
-            unsigned=False,
-            amax=metrics[name]['max']
-        )
-        fake_quantizer = TensorQuantizer(quant_desc)
-        
-        module.register_forward_pre_hook(
-            lambda module, inp, quant=fake_quantizer: \
-                fake_quantizer_hook(module, inp, quant)
-        )
+    all_hooks = []
 
-correct_pred = 0
-m.eval()
-with torch.no_grad():
-    for X, y_true in tqdm(dataloader):
-        X = X.to(device)
-        y_prob = m(X)
-        _, predicted_labels = torch.max(y_prob, 1)
-        # print("Result: {}, GT: {}".format(predicted_labels, y_true))
-        correct_pred += (predicted_labels == y_true).sum()
+    # add new hooks now for quantization
+    for name, module in m.named_modules():
+        if conv2d_predicate(module):
+            quant_desc = QuantDescriptor(
+                num_bits=bit_width,
+                fake_quant=True,
+                axis=None,
+                unsigned=False,
+                amax=metrics[name]['max']
+            )
+            fake_quantizer = TensorQuantizer(quant_desc)
+            fake_quantizer = fake_quantizer.to(device)
 
-accuracy = correct_pred.float() / len(dataloader.dataset)
+            hook = module.register_forward_pre_hook(
+                lambda module, inp, quant=fake_quantizer: \
+                    fake_quantizer_hook(module, inp, quant)
+            )
+            all_hooks.append(hook)
 
-print("Done with {:.4f} % accuracy".format(accuracy * 100))
+
+    correct_pred = 0
+    m.eval()
+    m = m.to(device)
+    with torch.no_grad():
+        for X, y_true in tqdm(dataloader):
+            X = X.to(device)
+            y_true = y_true.to(device)
+
+            y_prob = m(X)
+            _, predicted_labels = torch.max(y_prob, 1)
+
+            correct_pred += (predicted_labels == y_true).sum()
+
+    accuracy = correct_pred.float() / len(dataloader.dataset)
+
+    for hook in all_hooks:
+        hook.remove()
+
+    print("Accuracy at {} bits is {:.4f}%".format(bit_width, accuracy * 100))
 
 
