@@ -1,5 +1,7 @@
 import pprint
 import random
+import pickle 
+import os
 
 import torch
 from torch import nn
@@ -18,8 +20,15 @@ from pytorch_quantization.nn.modules.tensor_quantizer import TensorQuantizer
 from tqdm import tqdm
 import pandas as pd
 
-
-BITS = 8
+import numpy as np 
+from pymoo.core.problem import ElementwiseProblem
+from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.optimize import minimize
+from pymoo.operators.sampling.rnd import IntegerRandomSampling
+from pymoo.operators.repair.rounding import RoundingRepair
+from pymoo.operators.crossover.sbx import SBX
+from pymoo.operators.mutation.pm import PolynomialMutation
+from pymoo.termination import get_termination
 
 
 def conv2d_predicate(module):
@@ -33,6 +42,7 @@ class CalibrationModel(nn.Module):
         self.metrics = {}
         self.device = device
         self.hook_handles = []
+        self.matching_layer_count = 0
 
         self._prepare_model()
 
@@ -50,6 +60,7 @@ class CalibrationModel(nn.Module):
                     lambda module, inp, out, module_name=name: self.get_amax_hook(module, inp, out, module_name)
                 )
                 self.hook_handles.append(handle)
+                self.matching_layer_count += 1
 
     def get_amax_hook(self, module, inp, outp, module_name):
         cpu_dev = torch.device("cpu")
@@ -76,6 +87,8 @@ class CalibrationModel(nn.Module):
                 self.metrics[k][k2] = v2.item()
 
     def get_metrics(self):
+        if not self.metrics:
+            print("Empty Metrics, run generate_metrics first...")
         return self.metrics
             
     def store_metrics(self, xls_file='data.xlsx'):
@@ -97,12 +110,12 @@ class QuantizationModel(nn.Module):
         super().__init__()
 
         self.model = model
-        self.bit_width = None
+        self.bit_widths = {}
         self.hook_handles = []
         self.metrics = {}
 
-    def set_bit_width(self, bit_width):
-        self.bit_width = bit_width
+    def set_bit_widths(self, bit_widths):
+        self.bit_widths = bit_widths
 
     def set_metrics(self, metrics):
         self.metrics = metrics
@@ -113,8 +126,9 @@ class QuantizationModel(nn.Module):
     def prepare_model(self):
         for name, module in m.named_modules():
             if conv2d_predicate(module):
+                assert name in self.bit_widths, "Layer {} not found in bit_widths dict".format(name)
                 quant_desc = QuantDescriptor(
-                    num_bits=self.bit_width,
+                    num_bits=self.bit_widths[name],
                     fake_quant=True,
                     axis=None,
                     unsigned=False,
@@ -150,6 +164,35 @@ class QuantizationModel(nn.Module):
         for hook in self.hook_handles:
             hook.remove()
 
+class LayerwiseQuantizationProblem(ElementwiseProblem):
+    def __init__(self, q_model, dataloader, n_var, layernames, **kwargs):
+        super().__init__(
+            n_var=n_var,
+            n_obj=2,
+            n_constr=1,
+            xl=2,
+            xu=14,
+            vtype=int,
+            **kwargs)
+        
+        self.q_model = q_model
+        self.dataloader = dataloader
+        self.layernames = layernames
+
+    def _evaluate(self, x, out, *args, **kwargs):
+        bit_widths = {}
+        for i, name in enumerate(self.layernames):
+            bit_widths[name] = int(x[i])
+        self.q_model.set_bit_widths(bit_widths)
+
+        self.q_model.prepare_model()
+        f1_acc = self.q_model.evaluate(self.dataloader)
+        f2_bits = np.sum(x)
+        print("acc of pass {}%".format(f1_acc * 100))
+        g1_acc_constraint = 0.60 - f1_acc
+        out["F"] = [-f1_acc, f2_bits]
+        out["G"] = [g1_acc_constraint]
+        self.q_model.restore_model()
 
 
 dev_string = "cuda" if torch.cuda.is_available() else "cpu"
@@ -158,46 +201,76 @@ device = torch.device(dev_string)
 m = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
 m.to(device)
 
-# prepare dataset
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                 std=[0.229, 0.224, 0.225])
 
 transforms = transforms.Compose([transforms.Resize(256),
-                               transforms.CenterCrop(224),
-                               transforms.ToTensor(),
-                               normalize])
+                            transforms.CenterCrop(224),
+                            transforms.ToTensor(),
+                            normalize])
 
 # dataset = datasets.ImageFolder('/data/oq4116/imagenet/val', transforms)
 dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
+indices = random.sample(range(len(dataset)), 10000)
+dataset_10000 = Subset(dataset, indices=indices)
 indices = random.sample(range(len(dataset)), 1000)
 dataset_1000 = Subset(dataset, indices=indices)
 indices = random.sample(range(len(dataset)), 100)
 dataset_100 = Subset(dataset, indices=indices)
 
 
-print("Starting calibration...")
+# prepare dataset and check if calibration is already present
+metrics = {}
+if os.path.exists('calibration_resnet50.pkl'):
+    with open('calibration_resnet50.pkl', 'rb') as f:
+        metrics = pickle.load(f)
+    print("Calibration read ...")
+    
+else:
+    print("Starting calibration...")
 
-dataloader = DataLoader(dataset_1000, batch_size=64, shuffle=True, pin_memory=True)
-cm = CalibrationModel(m, device)
-cm.generate_metrics(dataloader)
-metrics = cm.get_metrics()
-cm.restore_model()
+    dataloader = DataLoader(dataset_1000, batch_size=64, shuffle=True, pin_memory=True)
+    cm = CalibrationModel(m, device)
+    cm.generate_metrics(dataloader)
+    metrics = cm.get_metrics()
+    cm.restore_model()
 
-print("Calibration done ...")
+    with open('calibration_resnet50.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
 
-print("Running Inference at 7 bits")
+    print("Calibration done ...")
 
+layernames = [name for name, _ in metrics.items()]
+layercount = len(metrics)
+
+print("Running Inference at sth bits")
 dataloader = DataLoader(dataset_100, batch_size=64, shuffle=True, pin_memory=True)
 qm = QuantizationModel(m)
-qm.set_bit_width(bit_width=7)
 qm.set_metrics(metrics)
-qm.prepare_model()
-acc = qm.evaluate(dataloader)
-qm.restore_model()
-print("Accuracy at 7 bits is {:.4f}%".format(acc * 100))
-qm.set_bit_width(bit_width=4)
-qm.prepare_model()
-acc = qm.evaluate(dataloader)
-print("Accuracy at 4 bits is {:.4f}%".format(acc * 100))
 
+
+problem = LayerwiseQuantizationProblem(
+    qm, dataloader, layercount, layernames
+)
+
+sampling = IntegerRandomSampling()
+crossover = SBX(prob_var=1.0, repair=RoundingRepair(), vtype=float)
+mutation = PolynomialMutation(prob=1.0)
+
+algorithm = NSGA2(
+    pop_size=10,
+    n_offsprings=10,
+    sampling=sampling,
+    crossover=crossover,
+    mutation=mutation,
+    eliminate_duplicates=True)
+
+termination = get_termination("n_gen", 3)
+
+res = minimize(
+    problem,
+    algorithm,
+    termination,
+    verbose=True
+)
 
