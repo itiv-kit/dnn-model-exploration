@@ -51,7 +51,7 @@ class CalibrationModel(nn.Module):
             if conv2d_predicate(module):
                 init_tensor_min = torch.tensor(float('inf'))
                 init_tensor_max = torch.tensor(float('-inf'))
-                
+
                 self.metrics[name] = {}
                 self.metrics[name]['max'] = init_tensor_max
                 self.metrics[name]['min'] = init_tensor_min
@@ -90,7 +90,7 @@ class CalibrationModel(nn.Module):
         if not self.metrics:
             print("Empty Metrics, run generate_metrics first...")
         return self.metrics
-            
+
     def store_metrics(self, xls_file='data.xlsx'):
         df = pd.DataFrame(data=self.metrics, index=[0])
         df = (df.T)
@@ -106,10 +106,11 @@ class CalibrationModel(nn.Module):
 
 
 class QuantizationModel(nn.Module):
-    def __init__(self, model) -> None:
+    def __init__(self, model, device) -> None:
         super().__init__()
 
         self.model = model
+        self.device = device
         self.bit_widths = {}
         self.hook_handles = []
         self.metrics = {}
@@ -135,7 +136,7 @@ class QuantizationModel(nn.Module):
                     amax=self.metrics[name]['max']
                 )
                 fake_quantizer = TensorQuantizer(quant_desc)
-                fake_quantizer = fake_quantizer.to(device)
+                fake_quantizer = fake_quantizer.to(self.device)
 
                 hook = module.register_forward_pre_hook(
                     lambda module, inp, quant=fake_quantizer: \
@@ -146,11 +147,11 @@ class QuantizationModel(nn.Module):
     def evaluate(self, dataloader):
         correct_pred = 0
         self.model.eval()
-        self.model = self.model.to(device)
+        self.model = self.model.to(self.device)
         with torch.no_grad():
             for X, y_true in tqdm(dataloader):
-                X = X.to(device)
-                y_true = y_true.to(device)
+                X = X.to(self.device)
+                y_true = y_true.to(self.device)
 
                 y_prob = self.model(X)
                 _, predicted_labels = torch.max(y_prob, 1)
@@ -174,10 +175,12 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
             xu=14,
             vtype=int,
             **kwargs)
-        
+
         self.q_model = q_model
         self.dataloader = dataloader
         self.layernames = layernames
+
+        self.cpu_device = torch.device("cpu")
 
     def _evaluate(self, x, out, *args, **kwargs):
         bit_widths = {}
@@ -186,8 +189,10 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
         self.q_model.set_bit_widths(bit_widths)
 
         self.q_model.prepare_model()
-        f1_acc = self.q_model.evaluate(self.dataloader)
+        f1_acc = self.q_model.evaluate(self.dataloader).to(self.cpu_device)
         f2_bits = np.sum(x)
+
+        print(f1_acc.device)
         print("acc of pass {}%".format(f1_acc * 100))
         g1_acc_constraint = 0.60 - f1_acc
         out["F"] = [-f1_acc, f2_bits]
@@ -209,10 +214,12 @@ transforms = transforms.Compose([transforms.Resize(256),
                             transforms.ToTensor(),
                             normalize])
 
-# dataset = datasets.ImageFolder('/data/oq4116/imagenet/val', transforms)
-dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
+dataset = datasets.ImageFolder('/data/oq4116/imagenet/val', transforms)
+# dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
 indices = random.sample(range(len(dataset)), 10000)
 dataset_10000 = Subset(dataset, indices=indices)
+indices = random.sample(range(len(dataset)), 5000)
+dataset_5000 = Subset(dataset, indices=indices)
 indices = random.sample(range(len(dataset)), 1000)
 dataset_1000 = Subset(dataset, indices=indices)
 indices = random.sample(range(len(dataset)), 100)
@@ -225,11 +232,11 @@ if os.path.exists('calibration_resnet50.pkl'):
     with open('calibration_resnet50.pkl', 'rb') as f:
         metrics = pickle.load(f)
     print("Calibration read ...")
-    
+
 else:
     print("Starting calibration...")
 
-    dataloader = DataLoader(dataset_1000, batch_size=64, shuffle=True, pin_memory=True)
+    dataloader = DataLoader(dataset, batch_size=64, shuffle=True, pin_memory=True)
     cm = CalibrationModel(m, device)
     cm.generate_metrics(dataloader)
     metrics = cm.get_metrics()
@@ -243,9 +250,8 @@ else:
 layernames = [name for name, _ in metrics.items()]
 layercount = len(metrics)
 
-print("Running Inference at sth bits")
-dataloader = DataLoader(dataset_100, batch_size=64, shuffle=True, pin_memory=True)
-qm = QuantizationModel(m)
+dataloader = DataLoader(dataset_5000, batch_size=64, shuffle=True, pin_memory=True)
+qm = QuantizationModel(m, device=device)
 qm.set_metrics(metrics)
 
 
@@ -255,17 +261,17 @@ problem = LayerwiseQuantizationProblem(
 
 sampling = IntegerRandomSampling()
 crossover = SBX(prob_var=1.0, repair=RoundingRepair(), vtype=float)
-mutation = PolynomialMutation(prob=1.0)
+mutation = PolynomialMutation(prob=1.0, repair=RoundingRepair())
 
 algorithm = NSGA2(
-    pop_size=10,
-    n_offsprings=10,
+    pop_size=30,
+    n_offsprings=30,
     sampling=sampling,
     crossover=crossover,
     mutation=mutation,
     eliminate_duplicates=True)
 
-termination = get_termination("n_gen", 3)
+termination = get_termination("n_gen", 20)
 
 res = minimize(
     problem,
@@ -273,4 +279,9 @@ res = minimize(
     termination,
     verbose=True
 )
+
+with open('exploration.pkl', 'wb') as f:
+    pickle.dump(res, f)
+
+
 
