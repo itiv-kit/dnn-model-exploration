@@ -36,10 +36,11 @@ transforms = transforms.Compose([transforms.Resize(256),
                             transforms.ToTensor(),
                             normalize])
 
-dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
+#dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
+dataset = datasets.ImageFolder('/data/oq4116/imagenet/val', transforms)
 
 
-def collect_stats(model, data_loader):
+def collect_stats(model, data_loader, n_max=None):
     """Feed data to the network and collect statistic"""
 
     # Enable calibrators
@@ -51,8 +52,14 @@ def collect_stats(model, data_loader):
             else:
                 module.disable()
 
-    for image, _ in tqdm(data_loader):
-        model(image.to(device))
+    if n_max is None:
+        for image, _ in tqdm(data_loader):
+            model(image.to(device))
+    else:
+        for i, (image, _) in tqdm(enumerate(data_loader), total=n_max):
+            model(image.to(device))
+            if i >= n_max:
+                break
 
     # Disable calibrators
     for name, module in model.named_modules():
@@ -78,12 +85,12 @@ def compute_amax(model, **kwargs):
 dataloader = DataLoader(dataset, batch_size=64, shuffle=True, pin_memory=True)
 # It is a bit slow since we collect histograms on CPU
 with torch.no_grad():
-    collect_stats(model, dataloader)
+    collect_stats(model, dataloader, n_max=20)
     compute_amax(model, method="percentile", percentile=99.99)
 
 torch.save(model.state_dict(), "resnet50-calib.pth")
 
 
-print(summary(model, (32, 3, 224, 224)))
+summary(model, (32, 3, 224, 224))
 
 
