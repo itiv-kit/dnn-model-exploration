@@ -18,7 +18,11 @@ quant_desc_input = QuantDescriptor(calib_method='histogram')
 quant_nn.QuantConv2d.set_default_quant_desc_input(quant_desc_input)
 quant_nn.QuantLinear.set_default_quant_desc_input(quant_desc_input)
 
-model = models.resnet50(pretrained=True)
+dev_string = "cuda" if torch.cuda.is_available() else "cpu"
+device = torch.device(dev_string)
+
+model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
+model = model.to(device)
 
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -29,11 +33,14 @@ transforms = transforms.Compose([transforms.Resize(256),
                             transforms.ToTensor(),
                             normalize])
 
-dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
+#dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
+dataset = datasets.ImageFolder('/data/oq4116/imagenet/val', transforms)
 indices = random.sample(range(len(dataset)), 100)
 dataset_100 = Subset(dataset, indices=indices)
 indices = random.sample(range(len(dataset)), 1000)
 dataset_1000 = Subset(dataset, indices=indices)
+indices = random.sample(range(len(dataset)), 10000)
+dataset_10000 = Subset(dataset, indices=indices)
 
 
 def collect_stats(model, data_loader, num_batches):
@@ -49,7 +56,7 @@ def collect_stats(model, data_loader, num_batches):
                 module.disable()
 
     for i, (image, _) in tqdm(enumerate(data_loader), total=num_batches):
-        model(image)
+        model(image.to(device))
         if i >= num_batches:
             break
 
@@ -72,21 +79,24 @@ def compute_amax(model, **kwargs):
                 else:
                     module.load_calib_amax(**kwargs)
             print(F"{name:40}: {module}")
+    model.cuda()
 
-dataloader = DataLoader(dataset_1000, batch_size=64, shuffle=True, pin_memory=True)
+dataloader = DataLoader(dataset, batch_size=64, shuffle=True, pin_memory=True)
 # It is a bit slow since we collect histograms on CPU
 with torch.no_grad():
-    collect_stats(model, dataloader, num_batches=4)
+    collect_stats(model, dataloader, num_batches=20)
     compute_amax(model, method="percentile", percentile=99.99)
 
 
-dataloader = DataLoader(dataset_100, batch_size=64, shuffle=True, pin_memory=True)
+dataloader = DataLoader(dataset_10000, batch_size=64, shuffle=True, pin_memory=True)
 correct_pred = 0
+model = model.to(device)
 with torch.no_grad():
     for X, y_true in tqdm(dataloader):
+        X = X.to(device)
+        y_true = y_true.to(device)
         y_prob = model(X)
         _, predicted_labels = torch.max(y_prob, 1)
-        print(y_true)
 
         correct_pred += (predicted_labels == y_true).sum()
 
@@ -95,11 +105,13 @@ print(accuracy)
 
 quant_modules.deactivate()
 correct_pred = 0
+model = model.to(device)
 with torch.no_grad():
     for X, y_true in tqdm(dataloader):
+        X = X.to(device)
+        y_true = y_true.to(device)
         y_prob = model(X)
         _, predicted_labels = torch.max(y_prob, 1)
-        print(y_true)
 
         correct_pred += (predicted_labels == y_true).sum()
 
