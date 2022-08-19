@@ -96,8 +96,8 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
         self.q_model.prepare_model()
         f1_acc = self.q_model.evaluate(self.dataloader).to(self.cpu_device)
         f2_bits = np.sum(x)
-        print("acc of pass {}%".format(f1_acc * 100))
-        g1_acc_constraint = 0.70 - f1_acc
+        print("acc of pass {:.4f}% with {} bits".format(f1_acc * 100, f2_bits))
+        g1_acc_constraint = 0.74 - f1_acc
         out["F"] = [-f1_acc, f2_bits]
         out["G"] = [g1_acc_constraint]
 
@@ -132,7 +132,7 @@ algorithm = NSGA2(
     mutation=mutation,
     eliminate_duplicates=True)
 
-termination = get_termination("n_gen", 30)
+termination = get_termination("n_gen", 20)
 
 res = minimize(
     problem,
