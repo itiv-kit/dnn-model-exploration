@@ -85,6 +85,7 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
         self.q_model = q_model
         self.dataloader = dataloader
         self.layernames = layernames
+        self.cpu_device = torch.device("cpu")
 
     def _evaluate(self, x, out, *args, **kwargs):
         bit_widths = {}
@@ -93,7 +94,7 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
         self.q_model.set_bit_widths(bit_widths)
 
         self.q_model.prepare_model()
-        f1_acc = self.q_model.evaluate(self.dataloader)
+        f1_acc = self.q_model.evaluate(self.dataloader).to(self.cpu_device)
         f2_bits = np.sum(x)
         print("acc of pass {}%".format(f1_acc * 100))
         g1_acc_constraint = 0.70 - f1_acc
