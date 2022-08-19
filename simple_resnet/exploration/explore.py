@@ -90,7 +90,6 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
         bit_widths = {}
         for i, name in enumerate(self.layernames):
             bit_widths[name] = int(x[i])
-        print(x)
         self.q_model.set_bit_widths(bit_widths)
 
         self.q_model.prepare_model()
@@ -108,7 +107,6 @@ for name, module in model.named_modules():
     if isinstance(module, quant_nn.TensorQuantizer):
         layernames.append(name)
 
-print(layernames)
 # explore
 qmodel = QuantizationModel(model, device)
 
