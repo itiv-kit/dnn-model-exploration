@@ -1,3 +1,4 @@
+from hashlib import new
 import sys
 import pickle
 import torch
@@ -11,7 +12,7 @@ from pytorch_quantization import calib
 from pytorch_quantization.tensor_quant import QuantDescriptor
 
 from torchvision import models, transforms, datasets
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader
 
 import numpy as np 
 from pymoo.core.problem import ElementwiseProblem
@@ -28,7 +29,7 @@ from torchinfo import summary
 from pytorch_quantization import quant_modules
 quant_modules.initialize()
 
-from commons import device, dataset, dataset_100, dataset_5000
+from commons import device, data_sampler, dataset
 
 #load model:
 model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
@@ -37,28 +38,37 @@ model.load_state_dict(torch.load('resnet50-calib.pth', map_location=device))
 
 
 class QuantizationModel(nn.Module):
-    def __init__(self, model, device) -> None:
+    def __init__(self, model, device, evaluation_samples=None, verbose=False) -> None:
         super().__init__()
 
         self.model = model
-        self.bit_widths = {}
+        self._bit_widths = {}
         self.device = device
+        self.evaluation_samples = evaluation_samples
+        self.verbose = verbose
 
-    def set_bit_widths(self, bit_widths):
-        self.bit_widths = bit_widths
+    @property
+    def bit_widths(self):
+        return self._bit_widths
 
-    def prepare_model(self):
+    @bit_widths.setter
+    def bit_widths(self, new_bit_widths):
+        assert isinstance(new_bit_widths, dict), "bit_width have to be a dict"
+
+        # Update Model ...
         for name, module in self.model.named_modules():
             if isinstance(module, quant_nn.TensorQuantizer):
-                assert name in self.bit_widths, "Layer {} not found in bit_widths dict".format(name)
-                module.num_bits = self.bit_widths[name]
+                assert name in new_bit_widths, "Layer {} not found in bit_widths dict".format(name)
+                module.num_bits = new_bit_widths[name]
 
-    def evaluate(self, dataloader):
-        correct_pred = 0
+        self._bit_widths = new_bit_widths
+
+    def evaluate(self, dataloader: DataLoader):
+        correct_pred = torch.tensor(0)
         self.model.eval()
         self.model = self.model.to(self.device)
         with torch.no_grad():
-            for X, y_true in dataloader:
+            for i, (X, y_true) in tqdm(enumerate(dataloader), disable=not self.verbose):
                 X = X.to(self.device)
                 y_true = y_true.to(self.device)
 
@@ -67,12 +77,23 @@ class QuantizationModel(nn.Module):
 
                 correct_pred += (predicted_labels == y_true).sum()
 
+                print(y_true)
+
+                if self.evaluation_samples is not None:
+                    if i * dataloader.batch_size > self.evaluation_samples:
+                        break
+
         accuracy = correct_pred.float() / len(dataloader.dataset)
         return accuracy
 
 
 class LayerwiseQuantizationProblem(ElementwiseProblem):
-    def __init__(self, q_model, dataloader, n_var, layernames, **kwargs):
+    def __init__(self, 
+            q_model:QuantizationModel, 
+            dataloader:DataLoader, 
+            n_var:int, 
+            layernames,
+            **kwargs):
         super().__init__(
             n_var=n_var,
             n_obj=2,
@@ -91,13 +112,12 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
         bit_widths = {}
         for i, name in enumerate(self.layernames):
             bit_widths[name] = int(x[i])
-        self.q_model.set_bit_widths(bit_widths)
+        self.q_model.bit_widths = bit_widths
 
-        self.q_model.prepare_model()
         f1_acc = self.q_model.evaluate(self.dataloader).to(self.cpu_device)
         f2_bits = np.sum(x)
         print("acc of pass {:.4f}% with {} bits".format(f1_acc * 100, f2_bits))
-        g1_acc_constraint = 0.72 - f1_acc
+        g1_acc_constraint = 0.74 - f1_acc
         out["F"] = [-f1_acc, f2_bits]
         out["G"] = [g1_acc_constraint]
 
@@ -110,9 +130,10 @@ if __name__ == "__main__":
             layernames.append(name)
 
     # explore
-    qmodel = QuantizationModel(model, device)
+    qmodel = QuantizationModel(model, device, evaluation_samples=2000)
 
-    dataloader = DataLoader(dataset_5000, batch_size=64, shuffle=True, pin_memory=True)
+    dataloader = DataLoader(dataset, batch_size=64, 
+                            pin_memory=True, sampler=data_sampler)
     problem = LayerwiseQuantizationProblem(
         q_model=qmodel,
         dataloader=dataloader,
@@ -126,14 +147,14 @@ if __name__ == "__main__":
     mutation = PolynomialMutation(prob=1.0, repair=RoundingRepair())
 
     algorithm = NSGA2(
-        pop_size=20,
-        n_offsprings=20,
+        pop_size=8,
+        n_offsprings=8,
         sampling=sampling,
         crossover=crossover,
         mutation=mutation,
         eliminate_duplicates=True)
 
-    termination = get_termination("n_gen", 20)
+    termination = get_termination("n_gen", 8)
 
     res = minimize(
         problem,

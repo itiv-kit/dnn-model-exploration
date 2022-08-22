@@ -1,7 +1,7 @@
 import torch
 from torchvision import transforms, datasets
 import random
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader, Subset, RandomSampler
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
 
@@ -14,10 +14,7 @@ transforms = transforms.Compose([transforms.Resize(256),
 
 dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
 # dataset = datasets.ImageFolder('/data/oq4116/imagenet/val', transforms)
-indices = random.sample(range(len(dataset)), 100)
-dataset_100 = Subset(dataset, indices=indices)
-indices = random.sample(range(len(dataset)), 5000)
-dataset_5000 = Subset(dataset, indices=indices)
+data_sampler = RandomSampler(dataset)
 
 
 dev_string = "cuda" if torch.cuda.is_available() else "cpu"
