@@ -139,7 +139,8 @@ if __name__ == "__main__":
         problem,
         algorithm,
         termination,
-        verbose=True
+        verbose=True,
+        save_history=True
     )
 
     with open('exploration.pkl', 'wb') as f:
