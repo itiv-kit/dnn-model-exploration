@@ -102,47 +102,48 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
         out["G"] = [g1_acc_constraint]
 
 
-# get layernames
-layernames = []
-for name, module in model.named_modules():
-    if isinstance(module, quant_nn.TensorQuantizer):
-        layernames.append(name)
+if __name__ == "__main__":
+    # get layernames
+    layernames = []
+    for name, module in model.named_modules():
+        if isinstance(module, quant_nn.TensorQuantizer):
+            layernames.append(name)
 
-# explore
-qmodel = QuantizationModel(model, device)
+    # explore
+    qmodel = QuantizationModel(model, device)
 
-dataloader = DataLoader(dataset_5000, batch_size=64, shuffle=True, pin_memory=True)
-problem = LayerwiseQuantizationProblem(
-    q_model=qmodel,
-    dataloader=dataloader,
-    n_var=len(layernames),
-    layernames=layernames
-)
+    dataloader = DataLoader(dataset_5000, batch_size=64, shuffle=True, pin_memory=True)
+    problem = LayerwiseQuantizationProblem(
+        q_model=qmodel,
+        dataloader=dataloader,
+        n_var=len(layernames),
+        layernames=layernames
+    )
 
 
-sampling = IntegerRandomSampling()
-crossover = SBX(prob_var=1.0, repair=RoundingRepair(), vtype=float)
-mutation = PolynomialMutation(prob=1.0, repair=RoundingRepair())
+    sampling = IntegerRandomSampling()
+    crossover = SBX(prob_var=1.0, repair=RoundingRepair(), vtype=float)
+    mutation = PolynomialMutation(prob=1.0, repair=RoundingRepair())
 
-algorithm = NSGA2(
-    pop_size=20,
-    n_offsprings=20,
-    sampling=sampling,
-    crossover=crossover,
-    mutation=mutation,
-    eliminate_duplicates=True)
+    algorithm = NSGA2(
+        pop_size=20,
+        n_offsprings=20,
+        sampling=sampling,
+        crossover=crossover,
+        mutation=mutation,
+        eliminate_duplicates=True)
 
-termination = get_termination("n_gen", 20)
+    termination = get_termination("n_gen", 20)
 
-res = minimize(
-    problem,
-    algorithm,
-    termination,
-    verbose=True
-)
+    res = minimize(
+        problem,
+        algorithm,
+        termination,
+        verbose=True
+    )
 
-with open('exploration.pkl', 'wb') as f:
-    pickle.dump(res, f)
+    with open('exploration.pkl', 'wb') as f:
+        pickle.dump(res, f)
 
 
 
