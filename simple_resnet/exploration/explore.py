@@ -58,7 +58,7 @@ class QuantizationModel(nn.Module):
         self.model.eval()
         self.model = self.model.to(self.device)
         with torch.no_grad():
-            for X, y_true in tqdm(dataloader):
+            for X, y_true in dataloader:
                 X = X.to(self.device)
                 y_true = y_true.to(self.device)
 
@@ -97,7 +97,7 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
         f1_acc = self.q_model.evaluate(self.dataloader).to(self.cpu_device)
         f2_bits = np.sum(x)
         print("acc of pass {:.4f}% with {} bits".format(f1_acc * 100, f2_bits))
-        g1_acc_constraint = 0.74 - f1_acc
+        g1_acc_constraint = 0.72 - f1_acc
         out["F"] = [-f1_acc, f2_bits]
         out["G"] = [g1_acc_constraint]
 
@@ -125,20 +125,21 @@ crossover = SBX(prob_var=1.0, repair=RoundingRepair(), vtype=float)
 mutation = PolynomialMutation(prob=1.0, repair=RoundingRepair())
 
 algorithm = NSGA2(
-    pop_size=20,
-    n_offsprings=20,
+    pop_size=30,
+    n_offsprings=30,
     sampling=sampling,
     crossover=crossover,
     mutation=mutation,
     eliminate_duplicates=True)
 
-termination = get_termination("n_gen", 20)
+termination = get_termination("n_gen", 30)
 
 res = minimize(
     problem,
     algorithm,
     termination,
-    verbose=True
+    verbose=True,
+    save_history=True
 )
 
 with open('exploration.pkl', 'wb') as f:
