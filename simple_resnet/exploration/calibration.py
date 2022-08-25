@@ -58,8 +58,9 @@ def collect_stats(model, data_loader, n_max=None):
     else:
         for i, (image, _) in tqdm(enumerate(data_loader), total=n_max):
             model(image.to(device))
-            if i >= n_max:
-                break
+            if n_max is not None:
+                if i >= n_max:
+                    break
 
     # Disable calibrators
     for name, module in model.named_modules():
@@ -85,7 +86,7 @@ def compute_amax(model, **kwargs):
 dataloader = DataLoader(dataset, batch_size=64, shuffle=True, pin_memory=True)
 # It is a bit slow since we collect histograms on CPU
 with torch.no_grad():
-    collect_stats(model, dataloader, n_max=20)
+    collect_stats(model, dataloader, n_max=None)
     compute_amax(model, method="percentile", percentile=99.99)
 
 torch.save(model.state_dict(), "resnet50-calib.pth")
