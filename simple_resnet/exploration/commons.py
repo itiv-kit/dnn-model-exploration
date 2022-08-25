@@ -12,8 +12,8 @@ transforms = transforms.Compose([transforms.Resize(256),
                             transforms.ToTensor(),
                             normalize])
 
-dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
-# dataset = datasets.ImageFolder('/data/oq4116/imagenet/val', transforms)
+#dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
+dataset = datasets.ImageFolder('/data/oq4116/imagenet/val', transforms)
 data_sampler = RandomSampler(dataset)
 
 

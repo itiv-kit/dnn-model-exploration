@@ -1,5 +1,6 @@
 from hashlib import new
 import sys
+import math
 import pickle
 import torch
 import torch.utils.data
@@ -14,7 +15,7 @@ from pytorch_quantization.tensor_quant import QuantDescriptor
 from torchvision import models, transforms, datasets
 from torch.utils.data import DataLoader
 
-import numpy as np 
+import numpy as np
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.optimize import minimize
@@ -64,7 +65,7 @@ class QuantizationModel(nn.Module):
         self._bit_widths = new_bit_widths
 
     def evaluate(self, dataloader: DataLoader):
-        correct_pred = torch.tensor(0)
+        correct_pred = torch.tensor(0).to(self.device)
         self.model.eval()
         self.model = self.model.to(self.device)
         with torch.no_grad():
@@ -77,13 +78,12 @@ class QuantizationModel(nn.Module):
 
                 correct_pred += (predicted_labels == y_true).sum()
 
-                print(y_true)
-
                 if self.evaluation_samples is not None:
                     if i * dataloader.batch_size > self.evaluation_samples:
                         break
 
-        accuracy = correct_pred.float() / len(dataloader.dataset)
+        total_samples = math.ceil(self.evaluation_samples / dataloader.batch_size) * dataloader.batch_size
+        accuracy = correct_pred.float() / total_samples
         return accuracy
 
 
@@ -102,7 +102,7 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
             xu=16,
             vtype=int,
             **kwargs)
-        
+
         self.q_model = q_model
         self.dataloader = dataloader
         self.layernames = layernames
