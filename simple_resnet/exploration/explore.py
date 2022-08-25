@@ -110,13 +110,20 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
 
     def _evaluate(self, x, out, *args, **kwargs):
         bit_widths = {}
+        factors = np.zeros(x.shape)
         for i, name in enumerate(self.layernames):
             bit_widths[name] = int(x[i])
+            if 'weight' in name:
+                factors[i] = 0.5
+            elif 'input' in name:
+                factors[i] = 5.0
+            else:
+                factors[i] = 1.0  
         self.q_model.bit_widths = bit_widths
 
         f1_acc = self.q_model.evaluate(self.dataloader).to(self.cpu_device)
-        f2_bits = np.sum(x)
-        print("acc of pass {:.4f}% with {} bits".format(f1_acc * 100, f2_bits))
+        f2_bits = np.sum(x * factors)
+        print("acc of pass {:.4f}% with {} weighted bits".format(f1_acc * 100, f2_bits))
         g1_acc_constraint = 0.74 - f1_acc
         out["F"] = [-f1_acc, f2_bits]
         out["G"] = [g1_acc_constraint]
