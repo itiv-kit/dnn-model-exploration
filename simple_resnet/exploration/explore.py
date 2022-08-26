@@ -72,7 +72,6 @@ class QuantizationModel(nn.Module):
             for i, (X, y_true) in tqdm(enumerate(dataloader), disable=not self.verbose):
                 X = X.to(self.device)
                 y_true = y_true.to(self.device)
-                print(y_true)
 
                 y_prob = self.model(X)
                 _, predicted_labels = torch.max(y_prob, 1)
@@ -151,7 +150,7 @@ if __name__ == "__main__":
     # explore
     qmodel = QuantizationModel(model, device, evaluation_samples=2000)
 
-    dataloader = get_dataloader(method='fixed_random_selection', batch_size=64)
+    dataloader = get_dataloader(method='fixed_random_selection', batch_size=64, samples=2000)
 
     problem = LayerwiseQuantizationProblem(
         q_model=qmodel,
