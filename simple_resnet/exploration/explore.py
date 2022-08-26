@@ -72,6 +72,7 @@ class QuantizationModel(nn.Module):
             for i, (X, y_true) in tqdm(enumerate(dataloader), disable=not self.verbose):
                 X = X.to(self.device)
                 y_true = y_true.to(self.device)
+                print(y_true)
 
                 y_prob = self.model(X)
                 _, predicted_labels = torch.max(y_prob, 1)
@@ -99,7 +100,7 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
             n_obj=1,
             n_constr=1,
             xl=2,
-            xu=16,
+            xu=12,
             vtype=int,
             **kwargs)
 
@@ -137,7 +138,7 @@ if __name__ == "__main__":
             layernames.append(name)
 
     total_bits = 0
-    max_bits = 8.0
+    max_bits = 12.0
     for i, name in enumerate(layernames):
         if 'weight' in name:
             total_bits += 0.5 * max_bits
@@ -150,8 +151,8 @@ if __name__ == "__main__":
     # explore
     qmodel = QuantizationModel(model, device, evaluation_samples=2000)
 
-    dataloader = get_dataloader(methid='fixed_random_selection', batch_size=64)
-    
+    dataloader = get_dataloader(method='fixed_random_selection', batch_size=64)
+
     problem = LayerwiseQuantizationProblem(
         q_model=qmodel,
         dataloader=dataloader,

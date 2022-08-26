@@ -11,25 +11,25 @@ def get_transforms():
 
                                     std=[0.229, 0.224, 0.225])
 
-    transforms = transforms.Compose([transforms.Resize(256),
-                                transforms.CenterCrop(224),
-                                transforms.ToTensor(),
-                                normalize])
+    tfs = transforms.Compose([transforms.Resize(256),
+                              transforms.CenterCrop(224),
+                              transforms.ToTensor(),
+                              normalize])
 
-    return transforms
+    return tfs
 
 def get_dataloader(method='true_random', batch_size=64):
     assert method in ['true_random', 'fixed_random_selection']
 
     transforms = get_transforms()
-    
+
     if socket.gethostname() == 'itiv-work5.itiv.kit.edu' or socket.gethostname().startswith('itiv-pool'):
         dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
     elif socket.gethostname() == 'titanv':
         dataset = datasets.ImageFolder('/data/oq4116/imagenet/val', transforms)
     else:
         raise ValueError("Invalid host ...")
-        
+
     if method == 'true_random':
         # with a random sampler dataset gets shuffeld each time
         data_sampler = RandomSampler(dataset)
