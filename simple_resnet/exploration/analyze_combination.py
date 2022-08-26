@@ -1,6 +1,6 @@
 import torch
 from torchvision import models
-from commons import dataset, data_sampler, device
+from commons import get_dataloader
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -13,20 +13,21 @@ from pytorch_quantization import nn as quant_nn
 from pytorch_quantization import quant_modules
 quant_modules.initialize()
 
+device = torch.device("cpu")
 
 model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
 model.load_state_dict(torch.load('resnet50-calib.pth', map_location=device))
 
 histogram_data = {}
-BATCHES = 1
+BATCHES = 10
 
-dataloader = DataLoader(dataset, batch_size=32, sampler=data_sampler)
+dataloader = get_dataloader(method='all', batch_size=32)
 
 # clean up
 dir = 'images'
 for f in os.listdir(dir):
     os.remove(os.path.join(dir, f))
- 
+
 # get bit combination...
 from explore import LayerwiseQuantizationProblem, QuantizationModel
 
@@ -37,7 +38,7 @@ class CPU_Unpickler(pickle.Unpickler):
         else:
             return super().find_class(module, name)
 
-with open('exploration_20_25.pkl', 'rb') as f:
+with open('exploration_15_15_10bit_weighted.pkl', 'rb') as f:
     d = CPU_Unpickler(f).load()
 
 bits = d.opt[0].get("X")
@@ -53,6 +54,8 @@ def collection_hook(module, inp, outp, module_name):
 handles = []
 layernames = []
 
+model = model.to(device)
+
 for name, module in model.named_modules():
     if isinstance(module, quant_nn.TensorQuantizer):
         module.disable()
@@ -62,14 +65,17 @@ for name, module in model.named_modules():
             collection_hook(module, inp, out, module_name)
         )
         handles.append(handle)
-    
+
+model = model.to(device)
+
 # 1. run model without quantization
 with torch.no_grad():
     for i, (X, _) in tqdm(enumerate(dataloader), desc="Collecting Non-Quant"):
         model(X)
-        if i >= BATCHES:
-            break
-    
+        if BATCHES is not None:
+            if i >= BATCHES:
+                break
+
 # 2. run model with quantization
 histogram_data_no_quant = histogram_data.copy()
 histogram_data.clear()
@@ -84,18 +90,20 @@ for name, module in model.named_modules():
         module.enable_quant()
         module.num_bits = bit_widths[name]
 
+model = model.to(device)
 
 with torch.no_grad():
     for i, (X, _) in tqdm(enumerate(dataloader), desc="Collecting Quant"):
         model(X)
-        if i >= BATCHES:
-            break
+        if BATCHES is not None:
+            if i >= BATCHES:
+                break
 
 
 for handle in handles:
     handle.remove()
 
-# 3. plot diagrams ... 
+# 3. plot diagrams ...
 for i, k in tqdm(enumerate(histogram_data.keys()), desc="Rendering"):
     data_no_quant = histogram_data_no_quant[k].numpy()
     data_quant = histogram_data[k].numpy()

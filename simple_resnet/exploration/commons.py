@@ -19,7 +19,7 @@ def get_transforms():
     return tfs
 
 def get_dataloader(method='true_random', batch_size=64, samples=None):
-    assert method in ['true_random', 'fixed_random_selection']
+    assert method in ['true_random', 'fixed_random_selection', 'all']
 
     transforms = get_transforms()
 
@@ -40,6 +40,8 @@ def get_dataloader(method='true_random', batch_size=64, samples=None):
         subset_ds = Subset(dataset, indices=indices)
         return DataLoader(subset_ds, batch_size=batch_size,
                           pin_memory=True)
+    elif method == 'all':
+        return DataLoader(dataset, batch_size=batch_size, pin_memory=True)
 
 
 dev_string = "cuda" if torch.cuda.is_available() else "cpu"
