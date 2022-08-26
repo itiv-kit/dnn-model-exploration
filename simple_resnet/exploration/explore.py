@@ -12,7 +12,7 @@ from pytorch_quantization import nn as quant_nn
 from pytorch_quantization import calib
 from pytorch_quantization.tensor_quant import QuantDescriptor
 
-from torchvision import models, transforms, datasets
+from torchvision import models
 from torch.utils.data import DataLoader
 
 import numpy as np
@@ -30,7 +30,7 @@ from torchinfo import summary
 from pytorch_quantization import quant_modules
 quant_modules.initialize()
 
-from commons import device, data_sampler, dataset
+from commons import device, get_dataloader
 
 #load model:
 model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
@@ -150,8 +150,8 @@ if __name__ == "__main__":
     # explore
     qmodel = QuantizationModel(model, device, evaluation_samples=2000)
 
-    dataloader = DataLoader(dataset, batch_size=64, 
-                            pin_memory=True, sampler=data_sampler)
+    dataloader = get_dataloader(methid='fixed_random_selection', batch_size=64)
+    
     problem = LayerwiseQuantizationProblem(
         q_model=qmodel,
         dataloader=dataloader,

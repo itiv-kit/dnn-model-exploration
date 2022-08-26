@@ -20,6 +20,8 @@ def get_transforms():
 
 def get_dataloader(method='true_random', batch_size=64):
     assert method in ['true_random', 'fixed_random_selection']
+
+    transforms = get_transforms()
     
     if socket.gethostname() == 'itiv-work5.itiv.kit.edu' or socket.gethostname().startswith('itiv-pool'):
         dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
