@@ -96,7 +96,7 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
             **kwargs):
         super().__init__(
             n_var=n_var,
-            n_obj=2,
+            n_obj=1,
             n_constr=1,
             xl=2,
             xu=16,
@@ -118,14 +118,14 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
             elif 'input' in name:
                 factors[i] = 5.0
             else:
-                factors[i] = 1.0  
+                factors[i] = 1.0
         self.q_model.bit_widths = bit_widths
 
         f1_acc = self.q_model.evaluate(self.dataloader).to(self.cpu_device)
         f2_bits = np.sum(x * factors)
         print("acc of pass {:.4f}% with {} weighted bits".format(f1_acc * 100, f2_bits))
-        g1_acc_constraint = 0.74 - f1_acc
-        out["F"] = [-f1_acc, f2_bits]
+        g1_acc_constraint = 0.75 - f1_acc
+        out["F"] = [f2_bits]
         out["G"] = [g1_acc_constraint]
 
 
@@ -135,6 +135,17 @@ if __name__ == "__main__":
     for name, module in model.named_modules():
         if isinstance(module, quant_nn.TensorQuantizer):
             layernames.append(name)
+
+    total_bits = 0
+    max_bits = 8.0
+    for i, name in enumerate(layernames):
+        if 'weight' in name:
+            total_bits += 0.5 * max_bits
+        elif 'input' in name:
+            total_bits += 5.0 * max_bits
+        else:
+            total_bits += 1.0 * max_bits
+    print("Max weighted bits at {} bit per layer: {:.1f}".format(int(max_bits), total_bits))
 
     # explore
     qmodel = QuantizationModel(model, device, evaluation_samples=2000)
@@ -154,14 +165,14 @@ if __name__ == "__main__":
     mutation = PolynomialMutation(prob=1.0, repair=RoundingRepair())
 
     algorithm = NSGA2(
-        pop_size=8,
-        n_offsprings=8,
+        pop_size=15,
+        n_offsprings=15,
         sampling=sampling,
         crossover=crossover,
         mutation=mutation,
         eliminate_duplicates=True)
 
-    termination = get_termination("n_gen", 8)
+    termination = get_termination("n_gen", 15)
 
     res = minimize(
         problem,

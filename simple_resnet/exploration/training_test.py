@@ -33,7 +33,7 @@ def evaluate(model):
     model.eval()
     model = model.to(device)
     with torch.no_grad():
-        for i, (X, y_true) in tqdm(enumerate(dataloader)):
+        for X, y_true in tqdm(dataloader, desc="Evaluating"):
             X = X.to(device)
             y_true = y_true.to(device)
 
@@ -54,14 +54,15 @@ lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.1
 
 # train one epoch
 model.train()
-for image, target in tqdm(dataloader):
-    image, target = image.to(device), target.to(device)
-    output = model(image)
-    loss = criterion(output, target)
+for epoch in range(20):
+    for image, target in tqdm(dataloader, desc='Epoch: {}'.format(epoch)):
+        image, target = image.to(device), target.to(device)
+        output = model(image)
+        loss = criterion(output, target)
 
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
 
 evaluate(model)
