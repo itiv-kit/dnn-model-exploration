@@ -82,7 +82,8 @@ class QuantizationModel(nn.Module):
                     if i * dataloader.batch_size > self.evaluation_samples:
                         break
 
-        total_samples = math.ceil(self.evaluation_samples / dataloader.batch_size) * dataloader.batch_size
+        # total_samples = math.ceil(self.evaluation_samples / dataloader.batch_size) * dataloader.batch_size
+        total_samples = i
         accuracy = correct_pred.float() / total_samples
         return accuracy
 
