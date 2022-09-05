@@ -2,8 +2,9 @@ import sys
 import torch
 import torch.utils.data
 from torch import nn
-import random
+import math
 from tqdm import tqdm
+from commons import get_dataloader, device
 
 from pytorch_quantization import nn as quant_nn
 from pytorch_quantization import calib
@@ -21,26 +22,13 @@ quant_desc_input = QuantDescriptor(calib_method='histogram')
 quant_nn.QuantConv2d.set_default_quant_desc_input(quant_desc_input)
 quant_nn.QuantLinear.set_default_quant_desc_input(quant_desc_input)
 
-dev_string = "cuda" if torch.cuda.is_available() else "cpu"
-device = torch.device(dev_string)
-
-model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
+model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
 model = model.to(device)
 
-
-normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                std=[0.229, 0.224, 0.225])
-
-transforms = transforms.Compose([transforms.Resize(256),
-                            transforms.CenterCrop(224),
-                            transforms.ToTensor(),
-                            normalize])
-
-#dataset = datasets.ImageFolder('/home/oq4116/temp/ILSVRC/Data/CLS-LOC/val', transforms)
-dataset = datasets.ImageFolder('/data/oq4116/imagenet/val', transforms)
+summary(model, input_size=(64, 3, 224, 224))
 
 
-def collect_stats(model, data_loader, n_max=None):
+def collect_stats(model, data_loader, n_max=None, n_len=None):
     """Feed data to the network and collect statistic"""
 
     # Enable calibrators
@@ -53,7 +41,7 @@ def collect_stats(model, data_loader, n_max=None):
                 module.disable()
 
     if n_max is None:
-        for image, _ in tqdm(data_loader):
+        for image, _ in tqdm(data_loader, total=n_len):
             model(image.to(device))
     else:
         for i, (image, _) in tqdm(enumerate(data_loader), total=n_max):
@@ -83,15 +71,16 @@ def compute_amax(model, **kwargs):
             print(F"{name:40}: {module}")
     model = model.to(device)
 
-dataloader = DataLoader(dataset, batch_size=64, shuffle=True, pin_memory=True)
 # It is a bit slow since we collect histograms on CPU
+dataloader = get_dataloader(method='all', webdataset=True, batch_size=64, dataset='val')
+
 with torch.no_grad():
-    collect_stats(model, dataloader, n_max=None)
+    collect_stats(model, dataloader, n_max=None, n_len=math.ceil(50000/dataloader.batch_size))
     compute_amax(model, method="percentile", percentile=99.99)
 
-torch.save(model.state_dict(), "resnet50-calib.pth")
+torch.save(model.state_dict(), "resnet18-calib.pth")
 
 
-summary(model, (32, 3, 224, 224))
+# summary(model, (32, 3, 224, 224))
 
 

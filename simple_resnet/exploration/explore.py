@@ -1,5 +1,4 @@
 from hashlib import new
-import sys
 import math
 import pickle
 import torch
@@ -30,21 +29,22 @@ from torchinfo import summary
 from pytorch_quantization import quant_modules
 quant_modules.initialize()
 
-from commons import device, get_dataloader
+from commons import device, get_dataloader, get_val_dataset_raw
 
 #load model:
-model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
+model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
 model.to(device)
-model.load_state_dict(torch.load('resnet50-calib.pth', map_location=device))
+model.load_state_dict(torch.load('resnet18-calib.pth', map_location=device))
 
 
 class QuantizationModel(nn.Module):
-    def __init__(self, model, device, evaluation_samples=None, verbose=False) -> None:
+    def __init__(self, model, device, dataset_len, evaluation_samples=None, verbose=False) -> None:
         super().__init__()
 
         self.model = model
         self._bit_widths = {}
         self.device = device
+        self.dataset_len = dataset_len
         self.evaluation_samples = evaluation_samples
         self.verbose = verbose
 
@@ -65,11 +65,15 @@ class QuantizationModel(nn.Module):
         self._bit_widths = new_bit_widths
 
     def evaluate(self, dataloader: DataLoader):
+        count = self.evaluation_samples if self.evaluation_samples is not None else self.dataset_len
+
         correct_pred = torch.tensor(0).to(self.device)
         self.model.eval()
         self.model = self.model.to(self.device)
         with torch.no_grad():
-            for i, (X, y_true) in tqdm(enumerate(dataloader), disable=not self.verbose):
+            for i, (X, y_true) in tqdm(enumerate(dataloader), 
+                    disable=not self.verbose, 
+                    total=math.ceil(count/dataloader.batch_size)):
                 X = X.to(self.device)
                 y_true = y_true.to(self.device)
 
@@ -83,7 +87,7 @@ class QuantizationModel(nn.Module):
                         break
 
         # total_samples = math.ceil(self.evaluation_samples / dataloader.batch_size) * dataloader.batch_size
-        total_samples = i
+        total_samples = i * dataloader.batch_size
         accuracy = correct_pred.float() / total_samples
         return accuracy
 
@@ -125,7 +129,7 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
         f1_acc = self.q_model.evaluate(self.dataloader).to(self.cpu_device)
         f2_bits = np.sum(x * factors)
         print("acc of pass {:.4f}% with {} weighted bits".format(f1_acc * 100, f2_bits))
-        g1_acc_constraint = 0.75 - f1_acc
+        g1_acc_constraint = 0.65 - f1_acc
         out["F"] = [f2_bits]
         out["G"] = [g1_acc_constraint]
 
@@ -149,9 +153,10 @@ if __name__ == "__main__":
     print("Max weighted bits at {} bit per layer: {:.1f}".format(int(max_bits), total_bits))
 
     # explore
-    qmodel = QuantizationModel(model, device, evaluation_samples=2000)
+    qmodel = QuantizationModel(model, device, dataset_len=50000, evaluation_samples=5000, verbose=True)
 
-    dataloader = get_dataloader(method='fixed_random_selection', batch_size=64, samples=2000)
+    # dataloader = get_dataloader(batch_size=64, dataset='val')
+    dataloader = get_val_dataset_raw(method='true_random', batch_size=64, samples=5000)
 
     problem = LayerwiseQuantizationProblem(
         q_model=qmodel,
