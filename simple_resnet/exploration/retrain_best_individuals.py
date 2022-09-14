@@ -96,7 +96,7 @@ class TrainableQuantizationModel(QuantizationModel):
 
                 for image, target in tqdm(loaders[phase], 
                         desc='Epoch: {} {}'.format(epoch, phase), 
-                        total=lens[phase]/loaders[phase].batch_size):
+                        total=math.ceil(lens[phase]/loaders[phase].batch_size)):
                     image, target = image.to(device), target.to(device)
 
                     self.optimizer.zero_grad()
@@ -167,5 +167,5 @@ for index, row in best.iterrows():
     acc2 = m.evaluate(val_dataloader)
     print("Acc after retraining: {}".format(acc2))
         
-    model.save_model('model_{}.m'.format(index))
+    m.save_model('model_{}.m'.format(index))
         
