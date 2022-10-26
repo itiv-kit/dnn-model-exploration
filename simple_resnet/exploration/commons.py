@@ -28,14 +28,14 @@ def get_dataloader(batch_size=64, dataset='val'):
     assert dataset in ['val', 'test', 'train'] 
 
     webdatasets = {'val'   : '/tools/datasets/imagenet/val/imagenet-val-{0000..0006}.tar', 
-                   'train' : '/tools/datasets/imagenet/train/imagenet-train-{0000..0136}.tar'}
+                   'train' : '/data/oq4116/imagenet/train/train/imagenet-train-{0000..0136}.tar'}
     dataset_lens = {'val' : 50000,
                     'train' : 1281167}
 
     transforms = get_transforms()
     
     dataset_load = (
-        wds.WebDataset(webdatasets[dataset])
+        wds.WebDataset(webdatasets[dataset], shardshuffle=True)
         .decode("pil")
         .to_tuple("input.jpeg", "target.cls")
         .shuffle(10000)
@@ -54,6 +54,8 @@ def get_val_dataset_raw(method='true_random', batch_size=64, samples=None):
     # path = '/scratch2/oq4116/val_images'
     #path = '/home/oq4116/temp/ILSVRC/val_images'
     dataset_load = datasets.ImageFolder(path, transforms)
+
+    print("Loaded raw dataset with {} sample(s)".format(len(dataset_load)))
 
     if method == 'true_random':
         # with a random sampler dataset gets shuffeld each time

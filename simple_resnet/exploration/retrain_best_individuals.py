@@ -18,15 +18,22 @@ from torch.utils.data import DataLoader
 from pytorch_quantization import quant_modules
 quant_modules.initialize()
 
-from commons import get_dataloader, device
+from commons import get_dataloader, device, get_val_dataset_raw
 
 from explore import LayerwiseQuantizationProblem, QuantizationModel
 
-#load model
-model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
-model = model.to(device)
-model.load_state_dict(torch.load('resnet18-calib.pth', map_location=device))
 
+MODEL = 50
+
+#load model
+if MODEL == 18:
+    model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+    model = model.to(device)
+    model.load_state_dict(torch.load('resnet18-calib.pth', map_location=device))
+elif MODEL == 50:
+    model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
+    model = model.to(device)
+    model.load_state_dict(torch.load('resnet50-calib.pth', map_location=device))
 
 
 class CPU_Unpickler(pickle.Unpickler):
@@ -40,17 +47,23 @@ def get_best_configurations(pkl_file):
     with open(pkl_file, 'rb') as f:
         d = CPU_Unpickler(f).load()
         
-    # df_data = np.empty( (0, 111) ) #FIXME: only for resnet50
-    df_data = np.empty( (0, 45) ) #FIXME: only for resnet18
+    accuracy_bound = 0
+    if MODEL == 18:
+        df_data = np.empty( (0, 45) ) #FIXME: only for resnet18
+        accuracy_bound = 0.65
+    elif MODEL == 50:
+        df_data = np.empty( (0, 111) ) #FIXME: only for resnet50
+        accuracy_bound = 0.75
+
     for h in d.history:
         for ind in h.opt:
-            l = np.concatenate( (ind.get("G") - 0.65, ind.get("F"), ind.get("X")) )
+            l = np.concatenate( (ind.get("G") - accuracy_bound, ind.get("F"), ind.get("X")) )
             l = np.expand_dims(l, axis=0)
             df_data = np.concatenate( (df_data, l), axis=0)
             
     df = pd.DataFrame(df_data)
     df[0] = -df[0] # invert Accuracy
-    df_best = df.where(df[0] > 0.65) 
+    df_best = df.where(df[0] > accuracy_bound) 
     return df_best
 
 
@@ -69,8 +82,8 @@ class TrainableQuantizationModel(QuantizationModel):
 
             loaders = {'train' : train_loader,
                        'val' : val_loader}
-            lens = {'train' : math.ceil(train_len / train_loader.batch_size), 
-                    'val' : math.ceil(val_len / val_loader.batch_size)}
+            lens = {'train' : math.ceil(train_len),
+                    'val' : math.ceil(val_len)}
 
             for phase in ['val', 'train']:
                 if phase == 'train':
@@ -82,8 +95,8 @@ class TrainableQuantizationModel(QuantizationModel):
                 running_corrects = 0
 
                 for image, target in tqdm(loaders[phase], 
-                        desc='Epoch: {}'.format(epoch), 
-                        total=lens[phase]):
+                        desc='Epoch: {} {}'.format(epoch, phase), 
+                        total=math.ceil(lens[phase]/loaders[phase].batch_size)):
                     image, target = image.to(device), target.to(device)
 
                     self.optimizer.zero_grad()
@@ -113,9 +126,13 @@ class TrainableQuantizationModel(QuantizationModel):
         torch.save(self.model.state_dict(), filename)
 
 
-best = get_best_configurations('exploration_resnet18.pkl')
+if MODEL == 18:
+    best = get_best_configurations('exploration_resnet18.pkl')
+elif MODEL == 50:
+    best = get_best_configurations('exploration_15_15_12bit_weighted.pkl')
 
-val_dataloader = get_dataloader(batch_size=64, dataset='val')
+
+val_dataloader = get_val_dataset_raw(method='all', batch_size=64)
 train_dataloader = get_dataloader(batch_size=64, dataset='train')
 
 layernames = []
@@ -148,7 +165,7 @@ for index, row in best.iterrows():
     )
 
     acc2 = m.evaluate(val_dataloader)
-    # print("Acc after retraining: {}".format(acc2))
+    print("Acc after retraining: {}".format(acc2))
         
-    torch.save(model.state_dict(), 'model_{}.m'.format(index))
+    m.save_model('model_{}.m'.format(index))
         
