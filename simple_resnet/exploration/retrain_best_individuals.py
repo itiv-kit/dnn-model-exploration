@@ -135,7 +135,7 @@ for index, row in best.iterrows():
         bitw[name] = int(row[2+i])
     m.bit_widths = bitw
     print("#"*100)
-    print("{} / {}: Running: " + ", ".join(index, len(best), map(str, row)))
+    print("{} / {}: Running: {}".format(index, len(best), ", ".join(map(str, row))))
     print("#"*100)
     
     # train one epoch

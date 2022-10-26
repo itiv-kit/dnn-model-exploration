@@ -42,7 +42,7 @@ def get_dataloader(batch_size=64, dataset='val'):
         .map_tuple(transforms, identity)
     )
     
-    return DataLoader(dataset_load, batch_size=batch_size, pin_memory=True)
+    return DataLoader(dataset_load, num_workers=1, batch_size=batch_size, pin_memory=True)
 
 
 def get_val_dataset_raw(method='true_random', batch_size=64, samples=None):
@@ -51,21 +51,22 @@ def get_val_dataset_raw(method='true_random', batch_size=64, samples=None):
     transforms = get_transforms()
     
     path = '/tools/datasets/imagenet/val_images'
-    path = '/data/oq4116/imagenet/val'
+    # path = '/scratch2/oq4116/val_images'
+    #path = '/home/oq4116/temp/ILSVRC/val_images'
     dataset_load = datasets.ImageFolder(path, transforms)
 
     if method == 'true_random':
         # with a random sampler dataset gets shuffeld each time
         data_sampler = RandomSampler(dataset_load)
-        return DataLoader(dataset_load, batch_size=batch_size, 
+        return DataLoader(dataset_load, num_workers=1, batch_size=batch_size, 
                           pin_memory=True, sampler=data_sampler)
     elif method == 'fixed_random_selection':
         indices = random.sample(range(len(dataset_load)), samples)
         subset_ds = Subset(dataset_load, indices=indices)
-        return DataLoader(subset_ds, batch_size=batch_size,
+        return DataLoader(subset_ds, num_workers=1, batch_size=batch_size,
                           pin_memory=True)
     elif method == 'all':
-        return DataLoader(dataset_load, batch_size=batch_size, pin_memory=True)
+        return DataLoader(dataset_load, num_workers=1, batch_size=batch_size, pin_memory=True)
 
 
 

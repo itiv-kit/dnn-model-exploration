@@ -1,4 +1,4 @@
-from hashlib import new
+
 import math
 import pickle
 import torch
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     qmodel = QuantizationModel(model, device, dataset_len=50000, evaluation_samples=5000, verbose=True)
 
     # dataloader = get_dataloader(batch_size=64, dataset='val')
-    dataloader = get_val_dataset_raw(method='true_random', batch_size=64, samples=5000)
+    dataloader = get_val_dataset_raw(method='true_random', batch_size=512, samples=5000)
 
     problem = LayerwiseQuantizationProblem(
         q_model=qmodel,
@@ -188,7 +188,7 @@ if __name__ == "__main__":
         save_history=True
     )
 
-    with open('exploration.pkl', 'wb') as f:
+    with open('exploration_resnet18.pkl', 'wb') as f:
         pickle.dump(res, f)
 
 
