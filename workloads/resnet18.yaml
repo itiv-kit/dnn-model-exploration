@@ -1,0 +1,26 @@
+workload:
+  dataset:
+    path: '/tools/datasets/imagenet/val_images'
+    type: imagenet
+    transforms: imagenet_transforms
+  model:
+    type: resnet18
+    accuracy_function: classification_accuracy
+    weights: null
+
+  calibration:
+    samples: null # null sets samples to all
+  exploration:
+    nsga: # Setup the parameters for your nsga algorithm
+        pop_size: 20
+        offsprings: 20
+        generations: 30
+        mutation_eta: 20
+        mutation_prob: null
+        crossover_eta: 15
+        crossover_prob: 0.9
+    minimum_accuracy: 0.5 # accuracy contraint
+    sample_limit: 1024 # number of validation dataset samples to test for each individual
+  retraining:
+    samples: null
+

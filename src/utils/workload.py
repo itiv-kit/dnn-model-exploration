@@ -32,6 +32,14 @@ class Workload:
 
         with open(filename, "r") as stream:
             self.yaml_data = yaml.safe_load(stream)["workload"]
+        
+        #check file
+        assert "dataset" in self.yaml_data, "No dataset entry in yaml file given"
+        assert "model" in self.yaml_data, "No model entry in yaml file given"
+        assert "calibration" in self.yaml_data, "No calibration entry in yaml file given"
+        assert "exploration" in self.yaml_data, "No exploration entry in yaml file given"
+        assert "retraining" in self.yaml_data, "No retraining entry in yaml file given"
+        assert "nsga" in self.yaml_data["exploration"], "No nsga entry under exploration in yaml file given"
 
     def __getitem__(self, item):
         if item in self.yaml_data:
@@ -48,10 +56,6 @@ class Workload:
         Returns:
             dict: The dict containing the dataset settings.
         """
-
-        if "dataset" not in self.yaml_data:
-            raise ValueError("Dataset settings not found in workload yaml")
-
         return self.yaml_data["dataset"]
 
     def get_model_settings(self):
@@ -64,10 +68,6 @@ class Workload:
         Returns:
             dict: The dict containing the model settings.
         """
-
-        if "model" not in self.yaml_data:
-            raise ValueError("Model settings not found in workload yaml")
-
         return self.yaml_data["model"]
 
     def get_nsga_settings(self):
@@ -80,11 +80,7 @@ class Workload:
         Returns:
             dict: The dict containing the nsga exploration settings.
         """
-
-        if "nsga" not in self.yaml_data:
-            raise ValueError("No setting found for exploration")
-
-        return self.yaml_data["nsga"]
+        return self.yaml_data["exploration"]["nsga"]
 
     def get_model_name(self):
         """Provides the module name/type.
@@ -96,12 +92,6 @@ class Workload:
         Returns:
             dict: The name/type of the module.
         """
-
-        model_settings = self.get_model_settings()
-
-        if "type" not in model_settings:
-            raise ValueError("Type not found in model settings")
-
         return self.yaml_data["model.type"]
 
     def get(self, item, default=None):
@@ -116,5 +106,4 @@ class Workload:
         Returns:
             The item if it was found in the yaml data, the default otherwise.
         """
-
         return self.yaml_data.get(item, default)
