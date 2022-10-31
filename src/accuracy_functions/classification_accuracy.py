@@ -22,8 +22,8 @@ def compute_classification_accuracy(base_model, dataloader, progress=True) -> fl
     if progress:
         progress_bar = tqdm.tqdm(total=dataset_size, ncols=80)
 
-    model = base_model.get_sparse_model()
-    model.to(device)
+    model = base_model
+    model = model.to(device)
 
     correct_pred = 0
 

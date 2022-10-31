@@ -2,6 +2,7 @@
 Contains the setup logic to dynamicly load the required model, dataset and utils modules.
 """
 import importlib
+import torch
 from src.utils.logger import logger
 from .workload import Workload
 
@@ -33,14 +34,10 @@ def setup_model(model_settings: dict) -> list:
         package=__package__,
     ).accuracy_function
 
-    transforms = importlib.import_module(
-        f"{TRANSFORMS_FOLDER}.{model_settings['transforms']}", package=__package__
-    ).transforms
-
-    return model, accuracy_function, transforms
+    return model, accuracy_function
 
 
-def setup_dataset(dataset_settings: dict, transforms) -> list:
+def setup_dataset(dataset_settings: dict) -> list:
     """This function sets up the dataset and returns the dataset.
 
     Args:
@@ -56,6 +53,11 @@ def setup_dataset(dataset_settings: dict, transforms) -> list:
     dataset_module = importlib.import_module(
         f"{DATASETS_FOLDER}.{dataset_settings['type']}", package=__package__
     )
+
+    transforms_name = dataset_settings.pop('transforms')
+    transforms = importlib.import_module(
+        f"{TRANSFORMS_FOLDER}.{transforms_name}", package=__package__
+    ).transforms
 
     get_dataset = dataset_module.get_dataset
     collate_fn = dataset_module.collate_fn
@@ -79,9 +81,11 @@ def setup(workload: Workload) -> list:
     model_settings = workload.get_model_settings()
     dataset_settings = workload.get_dataset_settings()
 
-    model, accuracy_function, transforms = setup_model(model_settings)
-    dataset, collate_fn = setup_dataset(dataset_settings, transforms)
+    model, accuracy_function = setup_model(model_settings)
+    dataset, collate_fn = setup_dataset(dataset_settings)
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     logger.info("Setup finished.")
 
-    return model, accuracy_function, dataset, collate_fn
+    return model, accuracy_function, dataset, collate_fn, device

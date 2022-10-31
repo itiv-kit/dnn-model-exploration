@@ -3,7 +3,6 @@ import json
 from torchvision import datasets
 
 
-BATCH_SIZE = 256
 
 
 def get_imagenet_label_map(json_file):
