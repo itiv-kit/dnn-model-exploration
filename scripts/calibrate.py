@@ -1,5 +1,5 @@
 import os
-import torch
+import sys
 import argparse
 from src.utils.logger import logger
 
@@ -20,7 +20,7 @@ def generate_calibration(workload: Workload, verbose: bool, progress: bool, file
     qmodel.run_calibration(dataset_gen.get_dataloader(), calib_method='histogram', 
                            mehtod='percentile', percentile=99.99)
     
-    torch.save(qmodel.model.state_dict(), filename)
+    qmodel.save_calibration(filename)
 
 
 if __name__ == "__main__":
@@ -43,6 +43,12 @@ if __name__ == "__main__":
         "--filename",
         help="override default filename for calibration pickle file"
     )
+    parser.add_argument(
+        "-f",
+        "--force",
+        help="Force overwrite file, if exists",
+        action="store_true"
+    )
 
     opt = parser.parse_args()
     
@@ -59,6 +65,9 @@ if __name__ == "__main__":
         filename = 'calib_{}_{}.pkl'.format(workload['model']['type'], workload['dataset']['type'])
         if opt.filename:
             filename = opt.filename
+        if os.path.exists(filename) and opt.force is False:
+            logger.warning("Calibration file already exists, stopping")
+            sys.exit(0)
         
         generate_calibration(workload, opt.verbose, opt.progress, filename)
     else:
