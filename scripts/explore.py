@@ -13,8 +13,6 @@ import argparse
 import numpy as np
 from datetime import datetime
 import pickle
-import torchinfo
-import sys
 
 # import troch quantization and activate the replacement of modules
 from pytorch_quantization import quant_modules
@@ -91,11 +89,11 @@ def run(workload: Workload, calibration_file: str, progress: bool, verbose: bool
 
     # collect model basline information
     baseline_data_loader = dataloader_generator.get_dataloader()
-    # logger.info("Collecting baseline...")
-    # qmodel.disable_quantization()
-    # baseline = accuracy_function(qmodel.model, baseline_data_loader, len(dataloader_generator), title="Baseline Generation")
-    # qmodel.enable_quantization()
-    # logger.info(f"Done. Baseline accuracy: {baseline}")
+    logger.info("Collecting baseline...")
+    qmodel.disable_quantization()
+    baseline = accuracy_function(qmodel.model, baseline_data_loader, len(dataloader_generator), title="Baseline Generation")
+    qmodel.enable_quantization()
+    logger.info(f"Done. Baseline accuracy: {baseline}")
 
     # Load the previously generated calibration file
     logger.info(f"Loading calibration file: {calibration_file}")

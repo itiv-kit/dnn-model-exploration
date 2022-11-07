@@ -89,18 +89,20 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
 
     def _evaluate(self, index, layer_bit_nums, out, *args, **kwargs):
 
-        logger.info("Trying new layer bit resolutions.")
+        algorithm: NSGA2 = kwargs.get('algorithm')
+
+        logger.info("Evaluating individual #{} of {} in Generation {}".format(
+            index + 1, algorithm.pop_size, algorithm.n_iter
+        ))
 
         self.qmodel.bit_widths = layer_bit_nums
         data_loader = self.dataloader_generator.get_dataloader()
-
-        algorithm: NSGA2 = kwargs.get('algorithm')
         
         f1_accuracy_objective = self.accuracy_func(self.qmodel.model, data_loader, progress=self.progress, 
                                                    title="Evaluating {}/{}".format(index + 1, algorithm.pop_size))
         f2_quant_objective = self.qmodel.get_bit_weighted()
 
-        logger.info(f"Achieved accuracy: {f1_accuracy_objective}")
+        logger.info(f"Evaluated individual, accuracy: {f1_accuracy_objective}")
 
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
 
