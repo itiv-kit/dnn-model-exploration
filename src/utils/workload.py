@@ -41,6 +41,7 @@ class Workload:
         assert "retraining" in self.yaml_data, "No retraining entry in yaml file given"
         assert "nsga" in self.yaml_data["exploration"], "No nsga entry under exploration in yaml file given"
 
+
     def __getitem__(self, item):
         if item in self.yaml_data:
             return self.yaml_data[item]

@@ -54,15 +54,10 @@ def setup_dataset(dataset_settings: dict) -> list:
         f"{DATASETS_FOLDER}.{dataset_settings['type']}", package=__package__
     )
 
-    transforms_name = dataset_settings.pop('transforms')
-    transforms = importlib.import_module(
-        f"{TRANSFORMS_FOLDER}.{transforms_name}", package=__package__
-    ).transforms
-
     get_dataset = dataset_module.get_dataset
     collate_fn = dataset_module.collate_fn
 
-    dataset = get_dataset(**dataset_settings, transforms=transforms)
+    dataset = get_dataset(**dataset_settings)
 
     return dataset, collate_fn
 

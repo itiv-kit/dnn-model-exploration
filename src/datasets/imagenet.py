@@ -1,7 +1,6 @@
 import json
 
-from torchvision import datasets
-
+from torchvision import datasets, transforms
 
 
 
@@ -25,18 +24,26 @@ def get_imagenet_label_map(json_file):
     return ret_dict
 
 
-def prepare_imagenet_dataset(path, transforms, **kwargs):
+
+def prepare_imagenet_dataset(path, **kwargs):
     """Load an imagenet dataset.
 
     Args:
         path (str): Root directory for the images.
-        transforms (callable): A function/transform that takes input sample and its target as entry
         and returns a transformed version.
 
     Returns:
         datasets: The loaded dataset.
     """
-    return datasets.ImageFolder(path, transforms)
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                    std=[0.229, 0.224, 0.225])
+
+    transf = transforms.Compose([transforms.Resize(256),
+                                transforms.CenterCrop(224),
+                                transforms.ToTensor(),
+                                normalize])
+    
+    return datasets.ImageFolder(path, transf)
 
 collate_fn = None
 get_dataset = prepare_imagenet_dataset

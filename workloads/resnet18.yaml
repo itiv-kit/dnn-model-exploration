@@ -2,7 +2,6 @@ workload:
   dataset:
     path: '/tools/datasets/imagenet/val_images'
     type: imagenet
-    transforms: imagenet_transforms
   model:
     type: resnet18
     accuracy_function: classification_accuracy

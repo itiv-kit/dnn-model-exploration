@@ -5,7 +5,6 @@ workload:
     groundtruth: './data/coco/annotations/instances_val2017.json'  
   model:
     type: yolov5s
-    transforms: yolov5s_transforms
     accuracy_function: detection_accuracy
     weights: null
 
