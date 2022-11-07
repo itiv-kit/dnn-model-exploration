@@ -1,0 +1,214 @@
+"""
+Run a quantization exploration from a workload .yaml file
+Usage:
+    $ python path/to/main.py --workloads resnet50.yaml
+Usage:
+    $ python path/to/main.py --workloads fcn-resnet50.yaml      # TorchVision: fully connected ResNet50
+                                         resnet50.yaml          # TorchVision: ResNet50
+                                         yolov5.yaml            # TorchVision: YoloV5
+                                         lenet5.yaml            # Custom: LeNet5
+"""
+import os
+import argparse
+import numpy as np
+from datetime import datetime
+import pickle
+import torchinfo
+import sys
+
+# import troch quantization and activate the replacement of modules
+from pytorch_quantization import quant_modules
+quant_modules.initialize()
+
+from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.operators.sampling.rnd import IntegerRandomSampling
+from pymoo.operators.repair.rounding import RoundingRepair
+from pymoo.operators.crossover.sbx import SBX
+from pymoo.operators.mutation.pm import PolynomialMutation
+from pymoo.optimize import minimize
+from pymoo.termination import get_termination
+
+from src.utils.logger import logger
+from src.utils.setup import setup
+from src.utils.workload import Workload
+from src.exploration.weighting_functions import bits_weighted_linear
+from src.utils.data_loader_generator import DataLoaderGenerator
+
+from src.exploration.problems import LayerwiseQuantizationProblem
+from src.quantization.quantized_model import QuantizedModel
+
+LOG_DIR = "./logs"
+RESULTS_DIR = "./results"
+WORKLOADS_DIR = "./workloads"
+
+
+def save_result(res, model_name):
+    """Save the result object from the exploration as a pickle file.
+
+    Args:
+        res (obj):
+            The result object to save.
+        model_name (str):
+            The name of the model this result object belongs to.
+            This is used as a prefix for the saved file.
+    """
+    if not os.path.exists(RESULTS_DIR):
+        os.makedirs(RESULTS_DIR)
+
+    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    filename = os.path.join(RESULTS_DIR, model_name + "_res_" + date_str + ".pkl")
+
+    with open(filename, "wb") as res_file:
+
+        pickle.dump(res, res_file)
+
+    logger.info(f"Saved result object to: {filename}")
+
+
+def baseline_collection(
+    model, accuracy_function: callable, baseline_data_loader
+) -> None:
+    """Collect the baseline metrics for a given model-
+
+    Args:
+        model (Model): The model to collect the baseline on.
+        accuracy_function (callable): The accuracy function to evaluate the model.
+        baseline_data_loader (object): The data loader that provides the evaluation samples.
+    """
+
+
+def run(workload: Workload, calibration_file: str, progress: bool, verbose: bool) -> None:
+    """Runs the given workload.
+
+    Args:
+        workload (Workload):
+            The workload loaded from a workload yaml file.
+        collect_baseline (bool):
+            Whether to collect basline metrics of the model without quantization.
+    """
+    model, accuracy_function, dataset, collate_fn, device = setup(workload)
+    dataloader_generator = DataLoaderGenerator(dataset, 
+                                               collate_fn, 
+                                               batch_size=workload['exploration']['batch_size'],
+                                               limit=workload['exploration']['sample_limit'])
+
+    # now switch to quantized model
+    qmodel = QuantizedModel(model, device, 
+                            weighting_function=bits_weighted_linear,
+                            verbose=verbose)
+    logger.info("Added {} Quantizer modules to the model".format(len(qmodel.quantizer_modules)))
+
+    # collect model basline information
+    baseline_data_loader = dataloader_generator.get_dataloader()
+    logger.info("Collecting baseline...")
+    qmodel.disable_quantization()
+    baseline = accuracy_function(qmodel.model, baseline_data_loader, len(dataloader_generator), title="Baseline Generation")
+    qmodel.enable_quantization()
+    logger.info(f"Done. Baseline accuracy: {baseline}")
+
+    # Load the previously generated calibration file
+    logger.info(f"Loading calibration file: {calibration_file}")
+    qmodel.load_calibration(calibration_file)
+
+    # configure exploration
+    # FIXME: add to workload file
+    problem = LayerwiseQuantizationProblem(
+        qmodel,
+        dataloader_generator,
+        accuracy_function,
+        num_bits_upper_limit=16,
+        num_bits_lower_limit=3,
+        min_accuracy=0.70
+    )
+
+    # TODO put into own module and pass args from workload
+    # TODO set through workload
+    sampling = IntegerRandomSampling()
+    crossover = SBX(prob_var=1.0, repair=RoundingRepair(), vtype=float)
+    mutation = PolynomialMutation(prob=1.0, repair=RoundingRepair())
+
+    algorithm = NSGA2(
+        pop_size=5,
+        n_offsprings=5,
+        sampling=sampling,
+        crossover=crossover,
+        mutation=mutation,
+        eliminate_duplicates=True,
+    )
+
+    termination = get_termination("n_gen", 2)
+
+    logger.info("Starting problem minimization.")
+
+    res = minimize(
+        problem,
+        algorithm,
+        termination,
+        seed=1,
+        save_history=True,
+        verbose=True,
+    )
+
+    logger.info("Finished problem minimization.")
+
+    if res.F is None:
+        logger.warning("No solutions found for the given constraints.")
+        return
+
+    # since we inverted our objective functions we have to invert the result back
+    res.F = np.abs(res.F)
+
+    # save_result(res, workload.get_model_settings()["type"])
+    # render_results(res_obj=res)
+
+
+
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("calibration_file")
+    parser.add_argument(
+        '-w', 
+        "--workload", 
+        help="The path to the workload yaml file.")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Show verbose information.")
+    parser.add_argument(
+        "-p",
+        "--progress",
+        action="store_true",
+        help="Show the current inference progress.")
+    parser.add_argument(
+        "-fn",
+        "--filename",
+        help="override default filename for calibration pickle file")
+    opt = parser.parse_args()
+
+    logger.info("Quantization Exploration Started")
+
+    workload_file = opt.workload
+
+    if workload_file is None:
+        logger.warning("No workload file declared.")
+        raise Exception("Please specifiy a workload file.")
+
+    if os.path.isfile(workload_file):
+        workload = Workload(workload_file)
+
+        results_filename = 'exploration_{}_{}.pkl'.format(
+            workload['model']['type'], workload['dataset']['type'])
+        
+        run(workload, opt.calibration_file, opt.progress, opt.verbose)
+
+    else:
+        logger.warning("Declared workload file could not be found.")
+        raise Exception(f"No file {opt.workload} found.")
+
+    logger.info("Quantization Exploration Finished")
+

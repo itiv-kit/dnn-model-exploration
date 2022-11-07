@@ -21,6 +21,7 @@ workload:
         crossover_prob: 0.9
     minimum_accuracy: 0.5 # accuracy contraint
     sample_limit: 1024 # number of validation dataset samples to test for each individual
+    batch_size: 256
   retraining:
     samples: null
 
