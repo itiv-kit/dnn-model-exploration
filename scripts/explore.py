@@ -109,7 +109,8 @@ def run(workload: Workload, calibration_file: str, progress: bool, verbose: bool
         accuracy_function,
         num_bits_upper_limit=16,
         num_bits_lower_limit=3,
-        min_accuracy=0.70
+        min_accuracy=0.70,
+        progress=progress
     )
 
     # TODO put into own module and pass args from workload

@@ -42,6 +42,7 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
         qmodel:QuantizedModel,
         dataloader_generator,
         accuracy_func,
+        progress=True,
         num_bits_upper_limit=8,
         num_bits_lower_limit=2,
         min_accuracy=0.3,
@@ -79,6 +80,8 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
         self.qmodel = qmodel
         self.dataloader_generator = dataloader_generator
         self.accuracy_func = accuracy_func
+        
+        self.progress = progress
 
         self.min_accuracy = min_accuracy
         self.num_bits_upper_limit = num_bits_upper_limit
@@ -93,7 +96,7 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
 
         algorithm: NSGA2 = kwargs.get('algorithm')
         
-        f1_accuracy_objective = self.accuracy_func(self.qmodel.model, data_loader, progress=True, 
+        f1_accuracy_objective = self.accuracy_func(self.qmodel.model, data_loader, progress=self.progress, 
                                                    title="Evaluating {}/{}".format(index + 1, algorithm.pop_size))
         f2_quant_objective = self.qmodel.get_bit_weighted()
 
