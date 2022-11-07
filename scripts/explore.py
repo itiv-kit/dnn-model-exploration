@@ -160,8 +160,7 @@ if __name__ == "__main__":
 
     parser.add_argument("calibration_file")
     parser.add_argument(
-        '-w', 
-        "--workload", 
+        "workload", 
         help="The path to the workload yaml file.")
     parser.add_argument(
         "-v",
@@ -182,11 +181,6 @@ if __name__ == "__main__":
     logger.info("Quantization Exploration Started")
 
     workload_file = opt.workload
-
-    if workload_file is None:
-        logger.warning("No workload file declared.")
-        raise Exception("Please specifiy a workload file.")
-
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
 
