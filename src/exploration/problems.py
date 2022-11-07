@@ -2,11 +2,35 @@
 This module contains the problem definitions for the quantization exploration using pymoo.
 """
 import numpy as np
+from tqdm import tqdm
 from src.utils.logger import logger
 
-from pymoo.core.problem import ElementwiseProblem
+from pymoo.core.problem import ElementwiseProblem, ElementwiseEvaluationFunction, LoopedElementwiseEvaluation
+from pymoo.algorithms.moo.nsga2 import NSGA2
 from src.quantization.quantized_model import QuantizedModel
 
+
+class ElementwiseEvaluationFunctionWithIndex(ElementwiseEvaluationFunction):
+    def __init__(self, problem, args, kwargs) -> None:
+        super().__init__(problem, args, kwargs)
+        
+    def __call__(self, i, x):
+        out = dict()
+        self.problem._evaluate(i, x, out, *self.args, **self.kwargs)
+        return out
+        
+
+class LoopedElementwiseEvaluationWithIndex(LoopedElementwiseEvaluation):
+    def __call__(self, f, X):
+        algorithm:NSGA2 = f.kwargs.get('algorithm')
+        pbar = tqdm(total=len(X), position=1, desc="Generation {}".format(algorithm.n_iter))
+        results = []
+        for i, x in enumerate(X):
+            results.append(f(i, x))
+            pbar.update(1)
+        pbar.close()
+        return results
+        
 
 class LayerwiseQuantizationProblem(ElementwiseProblem):
     """
@@ -42,8 +66,10 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
             n_obj=2,  # accuracy and low bit num
             xl=num_bits_lower_limit,
             xu=num_bits_upper_limit,
+            vtype=int,
+            elementwise_func=ElementwiseEvaluationFunctionWithIndex,
+            elementwise_runner=LoopedElementwiseEvaluationWithIndex(),
             kwargs=kwargs,
-            type_var=int,
         )
 
         assert (
@@ -58,16 +84,17 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
         self.num_bits_upper_limit = num_bits_upper_limit
         self.num_bits_lower_limit = num_bits_lower_limit
 
-    def _evaluate(self, layer_bit_nums, out, *args, **kwargs):
+    def _evaluate(self, index, layer_bit_nums, out, *args, **kwargs):
 
         logger.info("Trying new layer bit resolutions.")
 
         self.qmodel.bit_widths = layer_bit_nums
-        print(args)
-        print(kwargs)
         data_loader = self.dataloader_generator.get_dataloader()
 
-        f1_accuracy_objective = self.accuracy_func(self.qmodel.model, data_loader, progress=True, title="Evaluating .")
+        algorithm: NSGA2 = kwargs.get('algorithm')
+        
+        f1_accuracy_objective = self.accuracy_func(self.qmodel.model, data_loader, progress=True, 
+                                                   title="Evaluating {}/{}".format(index + 1, algorithm.pop_size))
         f2_quant_objective = self.qmodel.get_bit_weighted()
 
         logger.info(f"Achieved accuracy: {f1_accuracy_objective}")

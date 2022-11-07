@@ -21,7 +21,7 @@ def compute_classification_accuracy(base_model, dataloader, progress=True, title
     dataset_size = len(dataloader.dataset)
 
     if progress:
-        progress_bar = tqdm.tqdm(total=dataset_size, ncols=80, desc=title)
+        progress_bar = tqdm.tqdm(total=dataset_size, desc=title, position=0)
 
     model = base_model
     model = model.to(device)

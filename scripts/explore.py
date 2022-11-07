@@ -27,6 +27,7 @@ from pymoo.operators.crossover.sbx import SBX
 from pymoo.operators.mutation.pm import PolynomialMutation
 from pymoo.optimize import minimize
 from pymoo.termination import get_termination
+from pymoo.core.evaluator import Evaluator
 
 from src.utils.logger import logger
 from src.utils.setup import setup
@@ -66,17 +67,6 @@ def save_result(res, model_name):
     logger.info(f"Saved result object to: {filename}")
 
 
-def baseline_collection(
-    model, accuracy_function: callable, baseline_data_loader
-) -> None:
-    """Collect the baseline metrics for a given model-
-
-    Args:
-        model (Model): The model to collect the baseline on.
-        accuracy_function (callable): The accuracy function to evaluate the model.
-        baseline_data_loader (object): The data loader that provides the evaluation samples.
-    """
-
 
 def run(workload: Workload, calibration_file: str, progress: bool, verbose: bool) -> None:
     """Runs the given workload.
@@ -101,11 +91,11 @@ def run(workload: Workload, calibration_file: str, progress: bool, verbose: bool
 
     # collect model basline information
     baseline_data_loader = dataloader_generator.get_dataloader()
-    logger.info("Collecting baseline...")
-    qmodel.disable_quantization()
-    baseline = accuracy_function(qmodel.model, baseline_data_loader, len(dataloader_generator), title="Baseline Generation")
-    qmodel.enable_quantization()
-    logger.info(f"Done. Baseline accuracy: {baseline}")
+    # logger.info("Collecting baseline...")
+    # qmodel.disable_quantization()
+    # baseline = accuracy_function(qmodel.model, baseline_data_loader, len(dataloader_generator), title="Baseline Generation")
+    # qmodel.enable_quantization()
+    # logger.info(f"Done. Baseline accuracy: {baseline}")
 
     # Load the previously generated calibration file
     logger.info(f"Loading calibration file: {calibration_file}")
@@ -147,7 +137,7 @@ def run(workload: Workload, calibration_file: str, progress: bool, verbose: bool
         termination,
         seed=1,
         save_history=True,
-        verbose=True,
+        verbose=True
     )
 
     logger.info("Finished problem minimization.")
