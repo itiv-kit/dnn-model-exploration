@@ -69,7 +69,7 @@ class QuantizedModel():
     def save_calibration(self, filename: str):
         torch.save(self.model.state_dict(), filename)
         
-    def run_calibration(self, dataloader: DataLoader, calib_method='histogram', **kwargs):
+    def run_calibration(self, dataloader: DataLoader, progress=True, calib_method='histogram', **kwargs):
         assert calib_method in ['max', 'histogram'], "method has to be either max or histogram"
 
         quant_desc_input = QuantDescriptor(calib_method=calib_method)
@@ -77,9 +77,9 @@ class QuantizedModel():
         quant_nn.QuantLinear.set_default_quant_desc_input(quant_desc_input)
         quant_nn.QuantLSTMCell.set_default_quant_desc_input(quant_desc_input)
         
-        self._collect_stats(dataloader=dataloader, kwargs=kwargs)
+        self._collect_stats(dataloader=dataloader, progress=progress, kwargs=kwargs)
 
-    def _collect_stats(self, dataloader, kwargs):
+    def _collect_stats(self, dataloader, progress, kwargs):
         self.model.to(self.device)
         
         # Enable Calibrators
@@ -91,7 +91,7 @@ class QuantizedModel():
                 module.disable()
 
         # Run the dataset ...
-        for data, *_ in tqdm(dataloader, desc="Calibrating"):
+        for data, *_ in tqdm(dataloader, desc="Calibrating", disable=progress):
             # no need for actual accuracy function ...
             self.model(data.to(self.device))
 

@@ -17,7 +17,7 @@ def generate_calibration(workload: Workload, verbose: bool, progress: bool, file
     
     qmodel = QuantizedModel(model, device, conv2d_predicate, verbose=verbose)
 
-    qmodel.run_calibration(dataset_gen.get_dataloader(), calib_method='histogram', 
+    qmodel.run_calibration(dataset_gen.get_dataloader(), progress, calib_method='histogram', 
                            mehtod='percentile', percentile=99.99)
     
     qmodel.save_calibration(filename)
