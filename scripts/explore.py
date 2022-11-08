@@ -36,12 +36,11 @@ from src.utils.data_loader_generator import DataLoaderGenerator
 from src.exploration.problems import LayerwiseQuantizationProblem
 from src.quantization.quantized_model import QuantizedModel
 
-LOG_DIR = "./logs"
+
 RESULTS_DIR = "./results"
-WORKLOADS_DIR = "./workloads"
 
 
-def save_result(res, model_name):
+def save_result(res, model_name, dataset_name):
     """Save the result object from the exploration as a pickle file.
 
     Args:
@@ -55,18 +54,18 @@ def save_result(res, model_name):
         os.makedirs(RESULTS_DIR)
 
     date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    
+    filename = 'exploration_{}_{}_{}.pkl'.format(
+        model_name, dataset_name, date_str)
 
-    filename = os.path.join(RESULTS_DIR, model_name + "_res_" + date_str + ".pkl")
-
-    with open(filename, "wb") as res_file:
-
+    with open(os.path.join(RESULTS_DIR, filename), "wb") as res_file:
         pickle.dump(res, res_file)
 
     logger.info(f"Saved result object to: {filename}")
 
 
 
-def run(workload: Workload, calibration_file: str, progress: bool, verbose: bool) -> None:
+def explore_quantization(workload: Workload, calibration_file: str, progress: bool, verbose: bool) -> None:
     """Runs the given workload.
 
     Args:
@@ -114,19 +113,24 @@ def run(workload: Workload, calibration_file: str, progress: bool, verbose: bool
     # TODO put into own module and pass args from workload
     # TODO set through workload
     sampling = IntegerRandomSampling()
-    crossover = SBX(prob_var=1.0, repair=RoundingRepair(), vtype=float)
-    mutation = PolynomialMutation(prob=1.0, repair=RoundingRepair())
+    crossover = SBX(prob_var=workload['exploration']['nsga']['crossover_prob'],
+                    eta=workload['exploration']['nsga']['crossover_eta'],
+                    repair=RoundingRepair(), 
+                    vtype=float)
+    mutation = PolynomialMutation(prob=workload['exploration']['nsga']['mutation_prob'],
+                                  eta=workload['exploration']['nsga']['mutation_eta'],
+                                  repair=RoundingRepair())
 
     algorithm = NSGA2(
-        pop_size=5,
-        n_offsprings=5,
+        pop_size=workload['exploration']['nsga']['pop_size'],
+        n_offsprings=workload['exploration']['nsga']['offsprings'],
         sampling=sampling,
         crossover=crossover,
         mutation=mutation,
         eliminate_duplicates=True,
     )
 
-    termination = get_termination("n_gen", 2)
+    termination = get_termination("n_gen", workload['exploration']['nsga']['generations'])
 
     logger.info("Starting problem minimization.")
 
@@ -148,10 +152,7 @@ def run(workload: Workload, calibration_file: str, progress: bool, verbose: bool
     # since we inverted our objective functions we have to invert the result back
     res.F = np.abs(res.F)
 
-    # save_result(res, workload.get_model_settings()["type"])
-    # render_results(res_obj=res)
-
-
+    return res
 
 
 
@@ -183,11 +184,8 @@ if __name__ == "__main__":
     workload_file = opt.workload
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
-
-        results_filename = 'exploration_{}_{}.pkl'.format(
-            workload['model']['type'], workload['dataset']['type'])
-        
-        run(workload, opt.calibration_file, opt.progress, opt.verbose)
+        results = explore_quantization(workload, opt.calibration_file, opt.progress, opt.verbose)
+        save_result(results, workload['model']['type'], workload['dataset']['type'])
 
     else:
         logger.warning("Declared workload file could not be found.")
