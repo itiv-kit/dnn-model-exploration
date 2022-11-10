@@ -46,4 +46,5 @@ def prepare_imagenet_dataset(path, **kwargs):
     return datasets.ImageFolder(path, transf)
 
 collate_fn = None
-get_dataset = prepare_imagenet_dataset
+get_validation_dataset = prepare_imagenet_dataset
+get_train_dataset = None

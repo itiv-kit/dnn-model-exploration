@@ -276,4 +276,5 @@ def prepare_yolo_dataset(path, groundtruth, **kwargs):
 
 
 collate_fn = LoadImagesAndLabels.collate_fn
-get_dataset = prepare_yolo_dataset
+get_validation_dataset = prepare_yolo_dataset
+get_train_dataset = None

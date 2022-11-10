@@ -54,12 +54,14 @@ def setup_dataset(dataset_settings: dict) -> list:
         f"{DATASETS_FOLDER}.{dataset_settings['type']}", package=__package__
     )
 
-    get_dataset = dataset_module.get_dataset
+    get_validation_dataset = dataset_module.get_validation_dataset
+    get_train_dataset = dataset_module.get_train_dataset
     collate_fn = dataset_module.collate_fn
 
-    dataset = get_dataset(**dataset_settings)
+    validation_dataset = get_validation_dataset(**dataset_settings)
+    train_dataset = get_train_dataset(**dataset_settings)
 
-    return dataset, collate_fn
+    return validation_dataset, train_dataset, collate_fn
 
 
 def setup(workload: Workload) -> list:

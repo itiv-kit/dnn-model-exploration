@@ -64,4 +64,5 @@ def prepare_mnist_dataset(path, download=False, **kwargs):
 
 
 collate_fn = None
-get_dataset = prepare_mnist_dataset
+get_validation_dataset = prepare_mnist_dataset
+get_train_dataset = None
