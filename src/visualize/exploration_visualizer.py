@@ -7,19 +7,18 @@ from pymoo.visualization.scatter import Scatter
 from pymoo.util import plotting
 from pymoo.util.running_metric import RunningMetric
 
+from pytorch_quantization import nn as quant_nn
+
 # mainly taken from: https://pymoo.org/getting_started/part_4.html
 
-
 class ExplorationVisualizer:
-    def __init__(self, output_dir, file_prefix, res, layer_list):
+    def __init__(self, output_dir, res):
 
         self.output_dir = output_dir
-        print(output_dir)
-        print(file_prefix)
-        self.file_prefix = file_prefix
-
         self.res = res
-        self.layer_list = layer_list
+
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
 
         self.n_evals = []  # corresponding number of function evaluations\
 
@@ -74,10 +73,15 @@ class ExplorationVisualizer:
 
         plt.figure(figsize=(10, 5))
 
+        layernames = []
+        for name, module in self.res.problem.qmodel.model.named_modules():
+            if isinstance(module, quant_nn.TensorQuantizer):
+                layernames.append(name)
+
         for i, num_bits in enumerate(self.global_opt_X):
 
             plt.plot(
-                self.layer_list,
+                layernames,
                 num_bits,
                 color="#808080",
                 lw=0.5,
@@ -85,7 +89,7 @@ class ExplorationVisualizer:
             )
 
         plt.plot(
-            self.layer_list,
+            layernames,
             np.mean(self.global_opt_X, axis=0),
             color="r",
             lw=0.7,
@@ -149,7 +153,7 @@ class ExplorationVisualizer:
         plt.legend()
         self._save("cv_n_gen", plt)
 
-    def plot_2d_pareto(self):
+    def plot_2d_pareto(self, acc_bound=0):
 
         fig, ax = plt.subplots(figsize=(10, 4))
 
@@ -181,11 +185,16 @@ class ExplorationVisualizer:
         )
         ax.set_xlabel("Mean accuracy")
         ax.set_ylabel("Sum num_bits")
+        if acc_bound > 0:
+            ax.set_xlim(left=acc_bound)
         ax.xaxis.set_tick_params(length=7)
         ax.yaxis.set_tick_params(length=7)
         plt.legend(loc="upper right")
         plt.subplots_adjust(bottom=0.20)
-        self._save("2d_pareto", plt)
+        if acc_bound > 0:
+            self._save("2d_pareto_limit_{}".format(acc_bound), plt)
+        else:
+            self._save("2d_pareto", plt)
         plt.clf()
 
     def _save(self, name, figure, extensions=["svg", "png"]):
@@ -195,6 +204,6 @@ class ExplorationVisualizer:
 
         for extension in extensions:
             figure.savefig(
-                os.path.join(self.output_dir, f"{self.file_prefix}_{name}.{extension}"),
+                os.path.join(self.output_dir, f"{name}.{extension}"),
                 bbox_inches="tight",
             )

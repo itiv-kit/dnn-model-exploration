@@ -25,7 +25,7 @@ from src.utils.setup import setup
 from src.utils.workload import Workload
 from src.utils.predicates import conv2d_predicate
 from src.utils.data_loader_generator import DataLoaderGenerator
-from src.utils.exploration_metrics import ExplorationVisualizer
+from src.visualize.exploration_visualizer import ExplorationVisualizer
 
 from src.exploration.problems import LayerwiseQuantizationProblem
 from src.quantization.quantization import QuantizedActivationsModel
