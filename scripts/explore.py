@@ -105,8 +105,8 @@ def explore_quantization(workload: Workload, calibration_file: str, progress: bo
         dataloader_generator,
         accuracy_function,
         num_bits_upper_limit=16,
-        num_bits_lower_limit=3,
-        min_accuracy=0.70,
+        num_bits_lower_limit=2,
+        min_accuracy=workload['exploration']['minimum_accuracy'],
         progress=progress
     )
 
