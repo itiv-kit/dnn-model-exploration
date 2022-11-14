@@ -9,7 +9,7 @@ logger.setLevel(logging.DEBUG)
 
 # log to console
 ch = logging.StreamHandler()
-ch.setLevel(logging.WARNING)
+ch.setLevel(logging.INFO)
 ch.propagate = False
 
 # log to file

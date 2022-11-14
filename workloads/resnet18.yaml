@@ -1,6 +1,7 @@
 workload:
   dataset:
-    path: '/tools/datasets/imagenet/val_images'
+    validation_path: '/tools/datasets/imagenet/val_images'
+    train_path: '/tools/datasets/imagenet/train/imagenet-train-{0000..0136}.tar'
     type: imagenet
   model:
     type: resnet18
@@ -18,9 +19,12 @@ workload:
         mutation_prob: 0.9
         crossover_eta: 15
         crossover_prob: 0.9
-    minimum_accuracy: 0.7 # accuracy contraint
+    minimum_accuracy: 0.7 # accuracy constraint
     sample_limit: 8192 # number of validation dataset samples to test for each individual
     batch_size: 512
   retraining:
-    samples: null
+    sample_limit: 16384
+    batch_size: 512
+    epochs: 2
+    n_best: 1
 

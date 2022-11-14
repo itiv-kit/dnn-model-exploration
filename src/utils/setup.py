@@ -56,12 +56,15 @@ def setup_dataset(dataset_settings: dict) -> list:
 
     get_validation_dataset = dataset_module.get_validation_dataset
     get_train_dataset = dataset_module.get_train_dataset
+    training_items = None
+    if hasattr(dataset_module, 'get_train_dataset_items'):
+        training_items = dataset_module.get_train_dataset_items
     collate_fn = dataset_module.collate_fn
 
     validation_dataset = get_validation_dataset(**dataset_settings)
     train_dataset = get_train_dataset(**dataset_settings)
 
-    return validation_dataset, train_dataset, collate_fn
+    return validation_dataset, train_dataset, training_items, collate_fn
 
 
 def setup(workload: Workload) -> list:
@@ -79,10 +82,11 @@ def setup(workload: Workload) -> list:
     dataset_settings = workload.get_dataset_settings()
 
     model, accuracy_function = setup_model(model_settings)
-    dataset, collate_fn = setup_dataset(dataset_settings)
+    validation_dataset, train_dataset, training_items, collate_fn = setup_dataset(dataset_settings)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     logger.info("Setup finished.")
 
-    return model, accuracy_function, dataset, collate_fn, device
+    return model, accuracy_function, validation_dataset, train_dataset, \
+        training_items, collate_fn, device

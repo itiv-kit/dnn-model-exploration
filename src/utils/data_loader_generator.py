@@ -6,8 +6,8 @@ class DataLoaderGenerator:
     """Generator for different dataloaders depending on the sample limit."""
 
     def __init__(
-        self, dataset, collate_fn: callable, batch_size: int = 32,
-        limit: int = None, fixed_random: bool = False
+        self, dataset, collate_fn: callable, batch_size: int = 32, 
+        items: int = None, limit: int = None, fixed_random: bool = False
     ) -> None:
         """Inits a dataloader generator with the given parameters and configures
         the batch size for all generated data loaders.
@@ -34,19 +34,26 @@ class DataLoaderGenerator:
         self.batch_size = batch_size
         self.limit = limit
         self.dataloader = None
+        if hasattr(self.dataset, '__len__'):
+            self.length = len(self.dataset)
+        else:
+            assert items is not None, "dataset has no length attribute, hence, we need the items options with the total amount of elements in the dataset"
+            self.length = items
+        if self.limit:
+            self.length = self.limit
+        
         self.fixed_random = fixed_random
         
         self._create_data_loader()
+
+        if hasattr(self.dataset, '__len__'):
+            self.n_batches = len(self.dataloader)
+        else:
+            self.n_batches = (self.length // batch_size) + 1
         
     
     def __len__(self) -> int:
-        if self.limit:
-            return self.limit
-        else:
-            return len(self.dataset)
-
-    def get_batches(self) -> int:
-        return len(self.dataloader)
+        return self.length
 
     def get_dataloader(self):
         return self.dataloader

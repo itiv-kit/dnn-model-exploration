@@ -96,7 +96,7 @@ def explore_quantization(workload: Workload, calibration_file: str, progress: bo
 
     # Load the previously generated calibration file
     logger.info(f"Loading calibration file: {calibration_file}")
-    qmodel.load_calibration(calibration_file)
+    qmodel.load_parameters(calibration_file)
 
     # configure exploration
     # FIXME: add to workload file
