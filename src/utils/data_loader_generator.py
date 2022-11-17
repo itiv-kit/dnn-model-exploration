@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import DataLoader, Subset, RandomSampler
+import webdataset as wds
 
 
 class DataLoaderGenerator:
@@ -34,13 +35,14 @@ class DataLoaderGenerator:
         self.batch_size = batch_size
         self.limit = limit
         self.dataloader = None
-        if hasattr(self.dataset, '__len__'):
-            self.length = len(self.dataset)
-        else:
+        if isinstance(self.dataset, wds.WebDataset):
             assert items is not None, "dataset has no length attribute, hence, we need the items options with the total amount of elements in the dataset"
+            assert limit is None, "webdataset types do not support limits, as shuffling is not working across shards"
             self.length = items
-        if self.limit:
-            self.length = self.limit
+        else:
+            self.length = len(self.dataset)
+            if self.limit:
+                self.length = self.limit
         
         self.fixed_random = fixed_random
         
@@ -50,8 +52,8 @@ class DataLoaderGenerator:
             self.n_batches = len(self.dataloader)
         else:
             self.n_batches = (self.length // batch_size) + 1
-        
-    
+
+
     def __len__(self) -> int:
         return self.length
 
@@ -73,6 +75,7 @@ class DataLoaderGenerator:
 
         self.dataloader = DataLoader(
             dataset=dataset,
+            num_workers=4,
             batch_size=self.batch_size,
             collate_fn=self.collate_fn,
             pin_memory=torch.cuda.is_available(),

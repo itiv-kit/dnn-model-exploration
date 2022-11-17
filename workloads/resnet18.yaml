@@ -1,8 +1,12 @@
 workload:
   dataset:
-    validation_path: '/tools/datasets/imagenet/val_images'
-    train_path: '/tools/datasets/imagenet/train/imagenet-train-{0000..0136}.tar'
     type: imagenet
+    validation:
+      kind: 'imagefolder'
+      path: '/tools/datasets/imagenet/val_images'
+    train:
+      kind: 'webdataset'
+      path: '/tools/datasets/imagenet/train/imagenet-train-{0000..0136}.tar'
   model:
     type: resnet18
     accuracy_function: classification_accuracy
@@ -23,8 +27,8 @@ workload:
     sample_limit: 8192 # number of validation dataset samples to test for each individual
     batch_size: 512
   retraining:
-    sample_limit: 16384
     batch_size: 512
+    sample_limit: null
     epochs: 2
     n_best: 1
 

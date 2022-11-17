@@ -57,7 +57,7 @@ def retrain_best_individuals(workload, calibration_file, results_file, progress=
     model, accuracy_function, validation_dataset, train_dataset, \
         training_items, collate_fn, device = setup(workload)
 
-    train_dataloader_generator = DataLoaderGenerator(validation_dataset, 
+    train_dataloader_generator = DataLoaderGenerator(train_dataset, 
                                                      collate_fn, 
                                                      items=training_items,
                                                      batch_size=workload['retraining']['batch_size'],
