@@ -25,6 +25,7 @@ workload:
       crossover_prob: 0.9
     minimum_accuracy: 0.7 # accuracy constraint
     bit_widths: [2, 16]
+    bit_weighting_function: 'bits_weighted_per_layer'
     datasets:
       exploration:
         type: imagenet

@@ -13,6 +13,7 @@ import argparse
 import numpy as np
 from datetime import datetime
 import pickle
+import importlib
 
 # import troch quantization and activate the replacement of modules
 from pytorch_quantization import quant_modules
@@ -27,10 +28,10 @@ from pymoo.optimize import minimize
 from pymoo.termination import get_termination
 from pymoo.core.evaluator import Evaluator
 
+import src.exploration.weighting_functions
 from src.utils.logger import logger
 from src.utils.setup import build_dataloader_generators, setup_torch_device, setup_model
 from src.utils.workload import Workload
-from src.exploration.weighting_functions import bits_weighted_linear
 from src.utils.data_loader_generator import DataLoaderGenerator
 
 from src.exploration.problems import LayerwiseQuantizationProblem
@@ -79,10 +80,13 @@ def explore_quantization(workload: Workload, calibration_file: str,
     dataloaders = build_dataloader_generators(workload['exploration']['datasets'])
     model, accuracy_function = setup_model(workload['model'])
     device = setup_torch_device()
+    weighting_function = getattr(importlib.import_module('src.exploration.weighting_functions'), 
+                                 workload['exploration']['bit_weighting_function'], None)
+    assert weighting_function is not None and callable(weighting_function), "error loading weighting function"
 
     # now switch to quantized model
     qmodel = QuantizedModel(model, device, 
-                            weighting_function=bits_weighted_linear,
+                            weighting_function=weighting_function,
                             verbose=verbose)
     logger.info("Added {} Quantizer modules to the model".format(len(qmodel.quantizer_modules)))
 

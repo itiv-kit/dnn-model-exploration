@@ -34,9 +34,11 @@ class QuantizedModel():
 
         # supposingly this is not going to change
         self.quantizer_modules = []
-        for _, module in self.model.named_modules():
+        self.quantizer_names = []
+        for name, module in self.model.named_modules():
             if isinstance(module, quant_nn.TensorQuantizer):
                 self.quantizer_modules.append(module)
+                self.quantizer_names.append(name)
 
         # Training things
         self.criterion = nn.CrossEntropyLoss()
@@ -60,7 +62,7 @@ class QuantizedModel():
         self._bit_widths = new_bit_widths
 
     def get_bit_weighted(self) -> int:
-        return self.weighting_function(self.quantizer_modules)
+        return self.weighting_function(self.quantizer_modules, self.quantizer_names)
 
     def enable_quantization(self):
         [module.enable_quant() for module in self.quantizer_modules]
