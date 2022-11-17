@@ -41,7 +41,6 @@ workload:
 
   retraining:
     epochs: 2
-
     datasets:
       validation:
         type: imagenet
