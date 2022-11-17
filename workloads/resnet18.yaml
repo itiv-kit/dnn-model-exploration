@@ -1,12 +1,4 @@
 workload:
-  dataset:
-    type: imagenet
-    validation:
-      kind: 'imagefolder'
-      path: '/tools/datasets/imagenet/val_images'
-    train:
-      kind: 'webdataset'
-      path: '/tools/datasets/imagenet/train/imagenet-train-{0000..0136}.tar'
   model:
     type: resnet18
     accuracy_function: classification_accuracy
@@ -14,21 +6,40 @@ workload:
 
   calibration:
     samples: null # null sets samples to all
+
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
-        pop_size: 12
-        offsprings: 12
-        generations: 20
-        mutation_eta: 20
-        mutation_prob: 0.9
-        crossover_eta: 15
-        crossover_prob: 0.9
+      pop_size: 12
+      offsprings: 12
+      generations: 20
+      mutation_eta: 20
+      mutation_prob: 0.9
+      crossover_eta: 15
+      crossover_prob: 0.9
     minimum_accuracy: 0.7 # accuracy constraint
-    sample_limit: 8192 # number of validation dataset samples to test for each individual
-    batch_size: 512
+    datasets:
+      validation:
+        type: imagenet
+        kind: 'imagefolder'
+        path: '/tools/datasets/imagenet/val_images'
+        sample_limit: 8192 # number of validation dataset samples to test for each individual
+        batch_size: 512
+
   retraining:
-    batch_size: 512
-    sample_limit: null
     epochs: 2
-    n_best: 1
+
+    datasets:
+      validation:
+        type: imagenet
+        kind: 'imagefolder'
+        path: '/tools/datasets/imagenet/val_images'
+        sample_limit: 8192 # number of validation dataset samples to test for each individual
+        batch_size: 512
+      train:
+        type: imagenet
+        kind: 'webdataset'
+        path: '/tools/datasets/imagenet/train/imagenet-train-{0000..0136}.tar'
+        total_samples: 1281167
+        batch_size: 512
+        sample_limit: null
 
