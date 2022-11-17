@@ -19,7 +19,7 @@ from pymoo.termination import get_termination
 from pymoo.core.evaluator import Evaluator
 
 from src.utils.logger import logger
-from src.utils.setup import setup
+from src.utils.setup import setup_model, setup_torch_device, build_dataloader_generators
 from src.utils.workload import Workload
 from src.exploration.weighting_functions import bits_weighted_linear
 from src.utils.data_loader_generator import DataLoaderGenerator
@@ -54,18 +54,10 @@ def get_fitted_individuals(pkl_file) -> pd.DataFrame:
 
 
 def retrain_best_individuals(workload, calibration_file, results_file, progress=True, verbose=True):
-    model, accuracy_function, validation_dataset, train_dataset, \
-        training_items, collate_fn, device = setup(workload)
 
-    train_dataloader_generator = DataLoaderGenerator(train_dataset, 
-                                                     collate_fn, 
-                                                     items=training_items,
-                                                     batch_size=workload['retraining']['batch_size'],
-                                                     limit=workload['retraining']['sample_limit'])
-    validation_dataloader_generator = DataLoaderGenerator(validation_dataset, 
-                                                          collate_fn, 
-                                                          batch_size=workload['retraining']['batch_size'])
-                                                        #   limit=workload['retraining']['sample_limit'])
+    datasets = build_dataloader_generators(workload['retraining']['datasets'])
+    model, accuracy_function = setup_model(workload['model'])
+    device = setup_torch_device()
 
     fit_individuals = get_fitted_individuals(results_file)
     best_individuals = fit_individuals.sort_values([0, 2],
@@ -82,8 +74,8 @@ def retrain_best_individuals(workload, calibration_file, results_file, progress=
         qmodel.bit_widths = row[3:].to_numpy()
         logger.info("Starting new model (ID #{}) starting acc {:.3f}, starting bits: {}".format(index, row[0], row[2]))
 
-        qmodel.retrain(train_dataloader_generator=train_dataloader_generator,
-                       test_dataloader_generator=validation_dataloader_generator,
+        qmodel.retrain(train_dataloader_generator=datasets['train'],
+                       test_dataloader_generator=datasets['validation'],
                        accuracy_function=accuracy_function,
                        num_epochs=workload['retraining']['epochs'],
                        progress=progress)

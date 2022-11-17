@@ -34,30 +34,17 @@ class Workload:
             self.yaml_data = yaml.safe_load(stream)["workload"]
         
         #check file
-        assert "dataset" in self.yaml_data, "No dataset entry in yaml file given"
         assert "model" in self.yaml_data, "No model entry in yaml file given"
         assert "calibration" in self.yaml_data, "No calibration entry in yaml file given"
         assert "exploration" in self.yaml_data, "No exploration entry in yaml file given"
         assert "retraining" in self.yaml_data, "No retraining entry in yaml file given"
-        assert "nsga" in self.yaml_data["exploration"], "No nsga entry under exploration in yaml file given"
 
 
     def __getitem__(self, item):
         if item in self.yaml_data:
             return self.yaml_data[item]
-        return 0
+        return None
 
-    def get_dataset_settings(self):
-        """Provides the dataset settings.
-
-        Raises:
-            ValueError:
-                When the dataset setting is not present in the workload yaml.
-
-        Returns:
-            dict: The dict containing the dataset settings.
-        """
-        return self.yaml_data["dataset"]
 
     def get_model_settings(self):
         """Provides the model settings.
@@ -70,18 +57,6 @@ class Workload:
             dict: The dict containing the model settings.
         """
         return self.yaml_data["model"]
-
-    def get_nsga_settings(self):
-        """Provides the nsga exploration settings.
-
-        Raises:
-            ValueError:
-                When no exploration setting is present in the workload yaml.
-
-        Returns:
-            dict: The dict containing the nsga exploration settings.
-        """
-        return self.yaml_data["exploration"]["nsga"]
 
     def get_model_name(self):
         """Provides the module name/type.

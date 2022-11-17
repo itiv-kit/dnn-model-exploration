@@ -30,30 +30,34 @@ class DataLoaderGenerator:
         """
         assert dataset is not None, "A dataset has to be provided."
 
+        if isinstance(dataset, wds.WebDataset):
+            assert items is not None, "dataset has no length attribute, hence, we need the items options with the total amount of elements in the dataset"
+            assert limit is None, "webdataset types do not support limits, as shuffling is not working across shards"
+            assert fixed_random is False, "webdatasets do nor support random selection"
+            self.kind = 'wds'
+        elif isinstance(dataset, torch.utils.data.dataset.Dataset):
+            self.kind = 'torch_ds'
+        else:
+            raise ValueError("Only supporting Webdataset or Torch Datasets")
+
         self.collate_fn = collate_fn
         self.dataset = dataset
         self.batch_size = batch_size
         self.limit = limit
         self.dataloader = None
-        if isinstance(self.dataset, wds.WebDataset):
-            assert items is not None, "dataset has no length attribute, hence, we need the items options with the total amount of elements in the dataset"
-            assert limit is None, "webdataset types do not support limits, as shuffling is not working across shards"
+        self.fixed_random = fixed_random
+
+        self._create_data_loader()
+        
+        if self.kind == 'wds':
             self.length = items
+            self.n_batches = (self.length // batch_size) + 1
         else:
             self.length = len(self.dataset)
             if self.limit:
                 self.length = self.limit
-        
-        self.fixed_random = fixed_random
-        
-        self._create_data_loader()
-
-        if hasattr(self.dataset, '__len__'):
             self.n_batches = len(self.dataloader)
-        else:
-            self.n_batches = (self.length // batch_size) + 1
-
-
+        
     def __len__(self) -> int:
         return self.length
 

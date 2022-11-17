@@ -16,12 +16,15 @@ ch.propagate = False
 fh = logging.FileHandler(LOG_FILE_PATH)
 fh.setLevel(logging.DEBUG)
 
-formatter = logging.Formatter(
+formatter_file = logging.Formatter(
     "[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
 )
+formatter_console = logging.Formatter(
+    "[%(asctime)s] %(levelname)-8s - %(message)s"
+)
 
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
+fh.setFormatter(formatter_file)
+ch.setFormatter(formatter_console)
 
 logger.addHandler(fh)
 logger.addHandler(ch)
