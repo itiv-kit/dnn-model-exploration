@@ -79,7 +79,7 @@ class DataLoaderGenerator:
 
         self.dataloader = DataLoader(
             dataset=dataset,
-            num_workers=4,
+            num_workers=8,
             batch_size=self.batch_size,
             collate_fn=self.collate_fn,
             pin_memory=torch.cuda.is_available(),

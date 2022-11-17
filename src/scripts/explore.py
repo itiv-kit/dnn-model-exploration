@@ -157,6 +157,8 @@ def explore_quantization(workload: Workload, calibration_file: str,
     # since we inverted our objective functions we have to invert the result back
     res.F = np.abs(res.F)
 
+    del model, qmodel
+
     return res
 
 

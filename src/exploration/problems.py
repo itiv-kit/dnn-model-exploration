@@ -112,8 +112,7 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
                                                    title="Evaluating {}/{}".format(index + 1, algorithm.pop_size))
         f2_quant_objective = self.qmodel.get_bit_weighted()
 
-        logger.debug(f"Evaluated individual, accuracy: {f1_accuracy_objective}, \
-            weighted bits: {f2_quant_objective}")
+        logger.debug(f"Evaluated individual, accuracy: {f1_accuracy_objective:.4f}, weighted bits: {f2_quant_objective}")
 
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
 
