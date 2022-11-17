@@ -2,7 +2,8 @@
 Contains the setup logic to dynamicly load the required model, dataset and utils modules.
 """
 import importlib
-from src.utils.logger import logger
+import torch
+from src.utils.data_loader_generator import DataLoaderGenerator
 from .workload import Workload
 
 
@@ -33,14 +34,10 @@ def setup_model(model_settings: dict) -> list:
         package=__package__,
     ).accuracy_function
 
-    transforms = importlib.import_module(
-        f"{TRANSFORMS_FOLDER}.{model_settings['transforms']}", package=__package__
-    ).transforms
-
-    return model, accuracy_function, transforms
+    return model, accuracy_function
 
 
-def setup_dataset(dataset_settings: dict, transforms) -> list:
+def setup_dataset(dataset_settings) -> list:
     """This function sets up the dataset and returns the dataset.
 
     Args:
@@ -57,31 +54,29 @@ def setup_dataset(dataset_settings: dict, transforms) -> list:
         f"{DATASETS_FOLDER}.{dataset_settings['type']}", package=__package__
     )
 
-    get_dataset = dataset_module.get_dataset
+    dataset_creator = dataset_module.dataset_creator
+    dataset = dataset_creator(**dataset_settings)
+    
     collate_fn = dataset_module.collate_fn
-
-    dataset = get_dataset(**dataset_settings, transforms=transforms)
 
     return dataset, collate_fn
 
 
-def setup(workload: Workload) -> list:
-    """Loads the model, accuracy_function, dataset, collate_fn to be used.
+def build_dataloader_generators(settings_dict: dict) -> dict:
+    ret_dict = {}
+    for dataset_name, dataset_settings in settings_dict.items():
+        dataset, collate = setup_dataset(dataset_settings)
+        loader_generator = DataLoaderGenerator(dataset, 
+                                               collate, 
+                                               items=dataset_settings.get('total_samples', None),
+                                               batch_size=dataset_settings['batch_size'],
+                                               limit=dataset_settings.get('sample_limit', None))
+        ret_dict[dataset_name] = loader_generator
+        
+    return ret_dict
 
-    Args:
-        workload (Workload): The workload containing the setup setting.
 
-    Returns:
-        list: Returns a list consisting of the model, accuracy funtion,
-        dataset and collate function for the dataloader.
-    """
+def setup_torch_device() -> torch.device:
+    device_str = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    model_settings = workload.get_model_settings()
-    dataset_settings = workload.get_dataset_settings()
-
-    model, accuracy_function, transforms = setup_model(model_settings)
-    dataset, collate_fn = setup_dataset(dataset_settings, transforms)
-
-    logger.info("Setup finished.")
-
-    return model, accuracy_function, dataset, collate_fn
+    return torch.device(device_str)

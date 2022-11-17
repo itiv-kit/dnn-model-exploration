@@ -2,7 +2,7 @@ import tqdm
 import torch
 
 
-def compute_classification_accuracy(base_model, dataloader, progress=True) -> float:
+def compute_classification_accuracy(base_model, dataloader_generator, progress=True, title="") -> float:
     """Calculates the classification accuracy of the provided base classification model on the provided dataloader.
     The accuracy is calculated as the number of correct predictions by the number of samples.
 
@@ -16,14 +16,16 @@ def compute_classification_accuracy(base_model, dataloader, progress=True) -> fl
     """
     dev_string = "cuda" if torch.cuda.is_available() else "cpu"
     device = torch.device(dev_string)
+    cpu_device = torch.device("cpu")
 
-    dataset_size = len(dataloader.dataset)
+    dataset_size = len(dataloader_generator)
+    dataloader = dataloader_generator.get_dataloader()
 
     if progress:
-        progress_bar = tqdm.tqdm(total=dataset_size, ncols=80)
+        progress_bar = tqdm.tqdm(total=dataset_size, desc=title, position=0)
 
-    model = base_model.get_sparse_model()
-    model.to(device)
+    model = base_model
+    model = model.to(device)
 
     correct_pred = 0
 
@@ -41,6 +43,7 @@ def compute_classification_accuracy(base_model, dataloader, progress=True) -> fl
             if progress:
                 progress_bar.update(y_true.size(0))
 
+    correct_pred = correct_pred.to(cpu_device)
     return correct_pred.float() / dataset_size
 
 

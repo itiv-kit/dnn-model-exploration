@@ -44,4 +44,5 @@ def prepare_coco_dataset(path, transforms, groundtruth, **kwargs):
 
 
 collate_fn = coco_collate_fn
-get_dataset = prepare_coco_dataset
+get_validation_dataset = prepare_coco_dataset
+get_train_dataset = None

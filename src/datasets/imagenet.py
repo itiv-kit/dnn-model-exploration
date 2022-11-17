@@ -1,9 +1,7 @@
 import json
 
-from torchvision import datasets
-
-
-BATCH_SIZE = 256
+from torchvision import datasets, transforms
+import webdataset as wds
 
 
 def get_imagenet_label_map(json_file):
@@ -26,18 +24,43 @@ def get_imagenet_label_map(json_file):
     return ret_dict
 
 
-def prepare_imagenet_dataset(path, transforms, **kwargs):
+
+def prepare_imagenet_dataset(path, kind, **kwargs):
     """Load an imagenet dataset.
 
     Args:
         path (str): Root directory for the images.
-        transforms (callable): A function/transform that takes input sample and its target as entry
         and returns a transformed version.
 
     Returns:
         datasets: The loaded dataset.
     """
-    return datasets.ImageFolder(path, transforms)
 
+    def identity(d):
+        return d
+
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                    std=[0.229, 0.224, 0.225])
+
+    transf = transforms.Compose([transforms.Resize(256),
+                                transforms.CenterCrop(224),
+                                transforms.ToTensor(),
+                                normalize])
+        
+    if kind == 'imagefolder':
+        return datasets.ImageFolder(path, transf)
+    elif kind == 'webdataset':
+        dataset_load = (
+            wds.WebDataset(path, shardshuffle=True)
+            .decode("pil")
+            .to_tuple("input.jpeg", "target.cls")
+            .shuffle(10000)
+            .map_tuple(transf, identity)
+        )
+        return dataset_load
+    
+
+
+dataset_creator = prepare_imagenet_dataset
 collate_fn = None
-get_dataset = prepare_imagenet_dataset
+

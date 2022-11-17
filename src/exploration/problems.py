@@ -2,11 +2,46 @@
 This module contains the problem definitions for the quantization exploration using pymoo.
 """
 import numpy as np
+from tqdm import tqdm
 from src.utils.logger import logger
 
-from pymoo.core.problem import ElementwiseProblem
-from src.quantization.quantization import QuantizedActivationsModel
+from pymoo.core.problem import ElementwiseProblem, ElementwiseEvaluationFunction, LoopedElementwiseEvaluation
+from pymoo.algorithms.moo.nsga2 import NSGA2
+from src.quantization.quantized_model import QuantizedModel
 
+
+class ElementwiseEvaluationFunctionWithIndex(ElementwiseEvaluationFunction):
+    def __init__(self, problem, args, kwargs) -> None:
+        super().__init__(problem, args, kwargs)
+        
+    def __call__(self, i, x):
+        out = dict()
+        self.problem._evaluate(i, x, out, *self.args, **self.kwargs)
+        return out
+        
+
+class LoopedElementwiseEvaluationWithIndex(LoopedElementwiseEvaluation):
+    def __call__(self, f, X):
+        algorithm:NSGA2 = f.kwargs.get('algorithm')
+        pbar = tqdm(total=len(X), position=1, desc="Generation {}".format(algorithm.n_iter))
+        results = []
+        for i, x in enumerate(X):
+            results.append(f(i, x))
+            pbar.update(1)
+        pbar.close()
+
+        # do some info generation
+        accs = []
+        bits = []
+        for result in results:
+            accs.append(-result['F'][0])
+            bits.append(result['F'][1])
+        acc_str = ", ".join(format(x, ".3f") for x in accs)
+        bits_str = ", ".join(format(x, ".3f") for x in bits)
+        logger.info("Finished Generation {} \n Accs: [{}] \n Bits: [{}]".format(algorithm.n_iter, acc_str, bits_str))
+
+        return results
+        
 
 class LayerwiseQuantizationProblem(ElementwiseProblem):
     """
@@ -15,10 +50,10 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
 
     def __init__(
         self,
-        quantization_model: QuantizedActivationsModel,
-        data_loader_generator,
+        qmodel:QuantizedModel,
+        dataloader_generator,
         accuracy_func,
-        sample_limit=None,
+        progress=True,
         num_bits_upper_limit=8,
         num_bits_lower_limit=2,
         min_accuracy=0.3,
@@ -38,42 +73,47 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
                 Defaults to 0.
         """
         super().__init__(
-            n_var=quantization_model.get_n_quantizers(),
+            n_var=len(qmodel.quantizer_modules),
             n_constr=1,  # accuracy constraint
             n_obj=2,  # accuracy and low bit num
             xl=num_bits_lower_limit,
             xu=num_bits_upper_limit,
+            vtype=int,
+            elementwise_func=ElementwiseEvaluationFunctionWithIndex,
+            elementwise_runner=LoopedElementwiseEvaluationWithIndex(),
             kwargs=kwargs,
-            type_var=int,
         )
 
         assert (
             num_bits_lower_limit > 1
         ), "The lower bound for the bit resolution has to be > 1. 1 bit resolution is not supported and produces NaN."
 
-        self.quantization_model = quantization_model
-        self.data_loader_generator = data_loader_generator
+        self.qmodel = qmodel
+        self.dataloader_generator = dataloader_generator
         self.accuracy_func = accuracy_func
+        
+        self.progress = progress
 
-        self.sample_limit = sample_limit
         self.min_accuracy = min_accuracy
-
         self.num_bits_upper_limit = num_bits_upper_limit
         self.num_bits_lower_limit = num_bits_lower_limit
 
-    def _evaluate(self, layer_bit_nums, out, *args, **kwargs):
+    def _evaluate(self, index, layer_bit_nums, out, *args, **kwargs):
 
-        logger.info("Trying new layer bit resolutions.")
+        algorithm: NSGA2 = kwargs.get('algorithm')
 
-        self.quantization_model.update_layer_n_bits(layer_bit_nums)
-        data_loader = self.data_loader_generator.get_data_loader(
-            limit=self.sample_limit
-        )
+        logger.debug("Evaluating individual #{} of {} in Generation {}".format(
+            index + 1, algorithm.pop_size, algorithm.n_iter
+        ))
 
-        f1_accuracy_objective = self.accuracy_func(self.quantization_model, data_loader)
-        f2_quant_objective = np.sum(layer_bit_nums)
+        self.qmodel.bit_widths = layer_bit_nums
+        
+        f1_accuracy_objective = self.accuracy_func(self.qmodel.model, self.dataloader_generator, progress=self.progress, 
+                                                   title="Evaluating {}/{}".format(index + 1, algorithm.pop_size))
+        f2_quant_objective = self.qmodel.get_bit_weighted()
 
-        logger.info(f"Achieved accuracy: {f1_accuracy_objective}")
+        logger.debug(f"Evaluated individual, accuracy: {f1_accuracy_objective}, \
+            weighted bits: {f2_quant_objective}")
 
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
 

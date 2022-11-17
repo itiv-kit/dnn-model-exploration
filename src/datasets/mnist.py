@@ -1,7 +1,5 @@
 from torch.utils.data import DataLoader
-from torchvision import datasets
-
-from transforms.mnist_transforms import transforms as mnist_trafos
+from torchvision import datasets, transforms
 
 
 BATCH_SIZE = 32
@@ -37,14 +35,14 @@ def get_validation_loader(download=False):
     Returns:
         DataLoader: The data loader for the mnist validation data.
     """
-    valid_dataset = prepare_mnist_dataset("mnist_data", mnist_trafos, download)
+    valid_dataset = prepare_mnist_dataset("mnist_data", download)
 
     return DataLoader(dataset=valid_dataset,
                       batch_size=BATCH_SIZE,
                       shuffle=False)
 
 
-def prepare_mnist_dataset(path, transforms, download=False, **kwargs):
+def prepare_mnist_dataset(path, download=False, **kwargs):
     """Load a mnist dataset.
 
     Args:
@@ -56,6 +54,8 @@ def prepare_mnist_dataset(path, transforms, download=False, **kwargs):
     Returns:
         datasets: The loaded dataset.
     """
+    transforms = transforms.Compose([transforms.Resize((32, 32)),
+                                     transforms.ToTensor()])
 
     return datasets.MNIST(root=path,
                           train=False,
@@ -64,4 +64,5 @@ def prepare_mnist_dataset(path, transforms, download=False, **kwargs):
 
 
 collate_fn = None
-get_dataset = prepare_mnist_dataset
+get_validation_dataset = prepare_mnist_dataset
+get_train_dataset = None
