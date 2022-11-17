@@ -46,30 +46,6 @@ class Workload:
         return None
 
 
-    def get_model_settings(self):
-        """Provides the model settings.
-
-        Raises:
-            ValueError:
-                When the model setting is not present in the workload yaml.
-
-        Returns:
-            dict: The dict containing the model settings.
-        """
-        return self.yaml_data["model"]
-
-    def get_model_name(self):
-        """Provides the module name/type.
-
-        Raises:
-            ValueError:
-                When no type is specified in the model setting inside the workload yaml.
-
-        Returns:
-            dict: The name/type of the module.
-        """
-        return self.yaml_data["model.type"]
-
     def get(self, item, default=None):
         """Gets the item from the workload.
 
