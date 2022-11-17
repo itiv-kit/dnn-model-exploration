@@ -29,6 +29,17 @@ class LoopedElementwiseEvaluationWithIndex(LoopedElementwiseEvaluation):
             results.append(f(i, x))
             pbar.update(1)
         pbar.close()
+
+        # do some info generation
+        accs = []
+        bits = []
+        for result in results:
+            accs.append(-result['F'][0])
+            bits.append(result['F'][1])
+        acc_str = ", ".join(format(x, ".3f") for x in accs)
+        bits_str = ", ".join(format(x, ".3f") for x in bits)
+        logger.info("Finished Generation {} \n Accs: [{}] \n Bits: [{}]".format(algorithm.n_iter, acc_str, bits_str))
+
         return results
         
 
@@ -91,18 +102,17 @@ class LayerwiseQuantizationProblem(ElementwiseProblem):
 
         algorithm: NSGA2 = kwargs.get('algorithm')
 
-        logger.info("Evaluating individual #{} of {} in Generation {}".format(
+        logger.debug("Evaluating individual #{} of {} in Generation {}".format(
             index + 1, algorithm.pop_size, algorithm.n_iter
         ))
 
         self.qmodel.bit_widths = layer_bit_nums
-        data_loader = self.dataloader_generator.get_dataloader()
         
-        f1_accuracy_objective = self.accuracy_func(self.qmodel.model, data_loader, progress=self.progress, 
+        f1_accuracy_objective = self.accuracy_func(self.qmodel.model, self.dataloader_generator, progress=self.progress, 
                                                    title="Evaluating {}/{}".format(index + 1, algorithm.pop_size))
         f2_quant_objective = self.qmodel.get_bit_weighted()
 
-        logger.info(f"Evaluated individual, accuracy: {f1_accuracy_objective}, \
+        logger.debug(f"Evaluated individual, accuracy: {f1_accuracy_objective}, \
             weighted bits: {f2_quant_objective}")
 
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective

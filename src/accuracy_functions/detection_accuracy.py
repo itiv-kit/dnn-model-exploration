@@ -348,7 +348,7 @@ def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None):
     return coords
 
 
-def compute_detection_accuracy(base_model, dataloader, progress=True) -> float:
+def compute_detection_accuracy(base_model, dataloader_generator, progress=True, title="") -> float:
     """Calculates multiple detection metrics for the provided base detection model on the data loader.
 
     Args:
@@ -362,10 +362,11 @@ def compute_detection_accuracy(base_model, dataloader, progress=True) -> float:
     dev_string = "cuda" if torch.cuda.is_available() else "cpu"
     device = torch.device(dev_string)
 
-    dataset_size = len(dataloader.dataset)
+    dataset_size = len(dataloader_generator)
+    dataloader = dataloader_generator.get_dataloader()
 
     if progress:
-        progress_bar = tqdm.tqdm(total=dataset_size, ncols=80)
+        progress_bar = tqdm.tqdm(total=dataset_size, ncols=80, desc=title)
 
     model = base_model
     model.to(device)

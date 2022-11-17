@@ -6,6 +6,13 @@ workload:
 
   calibration:
     samples: null # null sets samples to all
+    datasets:
+      calibrate:
+        type: imagenet
+        kind: 'imagefolder'
+        path: '/tools/datasets/imagenet/val_images'
+        sample_limit: 8192 # number of validation dataset samples to test for each individual
+        batch_size: 512
 
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
@@ -17,12 +24,19 @@ workload:
       crossover_eta: 15
       crossover_prob: 0.9
     minimum_accuracy: 0.7 # accuracy constraint
+    bit_widths: [2, 16]
     datasets:
-      validation:
+      exploration:
         type: imagenet
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
-        sample_limit: 8192 # number of validation dataset samples to test for each individual
+        sample_limit: 2048 # number of validation dataset samples to test for each individual
+        batch_size: 512
+      baseline:
+        type: imagenet
+        kind: 'imagefolder'
+        path: '/tools/datasets/imagenet/val_images'
+        sample_limit: 4096
         batch_size: 512
 
   retraining:

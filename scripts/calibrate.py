@@ -3,7 +3,7 @@ import sys
 import argparse
 from src.utils.logger import logger
 
-from src.utils.setup import setup
+from src.utils.setup import build_dataloader_generators, setup_model, setup_torch_device
 from src.utils.workload import Workload
 from src.utils.predicates import conv2d_predicate
 from src.utils.data_loader_generator import DataLoaderGenerator
@@ -11,9 +11,12 @@ from src.quantization.quantized_model import QuantizedModel
 
 
 def generate_calibration(workload: Workload, verbose: bool, progress: bool, filename:str):
+
+    dataloaders = build_dataloader_generators(workload['calibration']['datasets'])
+    model, _ = setup_model(workload['model'])
+    device = setup_torch_device()
     
-    model, accuracy_function, dataset, collate_fn, device = setup(workload)
-    dataset_gen = DataLoaderGenerator(dataset, collate_fn, batch_size=256, limit=10000, fixed_random=True)
+    dataset_gen = dataloaders['calibrate']
     
     qmodel = QuantizedModel(model, device, conv2d_predicate, verbose=verbose)
 
@@ -58,7 +61,7 @@ if __name__ == "__main__":
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
 
-        filename = 'calib_{}_{}.pkl'.format(workload['model']['type'], workload['dataset']['type'])
+        filename = 'calib_{}_{}.pkl'.format(workload['model']['type'], workload['calibration']['datasets']['calibrate']['type'])
         if opt.filename:
             filename = opt.filename
         if os.path.exists(filename) and opt.force is False:

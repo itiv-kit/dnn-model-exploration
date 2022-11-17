@@ -28,7 +28,7 @@ from pymoo.termination import get_termination
 from pymoo.core.evaluator import Evaluator
 
 from src.utils.logger import logger
-from src.utils.setup import setup
+from src.utils.setup import build_dataloader_generators, setup_torch_device, setup_model
 from src.utils.workload import Workload
 from src.exploration.weighting_functions import bits_weighted_linear
 from src.utils.data_loader_generator import DataLoaderGenerator
@@ -65,7 +65,9 @@ def save_result(res, model_name, dataset_name):
 
 
 
-def explore_quantization(workload: Workload, calibration_file: str, progress: bool, verbose: bool) -> None:
+def explore_quantization(workload: Workload, calibration_file: str, 
+                         skip_baseline: bool, progress: bool, 
+                         verbose: bool) -> None:
     """Runs the given workload.
 
     Args:
@@ -74,11 +76,9 @@ def explore_quantization(workload: Workload, calibration_file: str, progress: bo
         collect_baseline (bool):
             Whether to collect basline metrics of the model without quantization.
     """
-    model, accuracy_function, dataset, collate_fn, device = setup(workload)
-    dataloader_generator = DataLoaderGenerator(dataset, 
-                                               collate_fn, 
-                                               batch_size=workload['exploration']['batch_size'],
-                                               limit=workload['exploration']['sample_limit'])
+    dataloaders = build_dataloader_generators(workload['exploration']['datasets'])
+    model, accuracy_function = setup_model(workload['model'])
+    device = setup_torch_device()
 
     # now switch to quantized model
     qmodel = QuantizedModel(model, device, 
@@ -86,13 +86,14 @@ def explore_quantization(workload: Workload, calibration_file: str, progress: bo
                             verbose=verbose)
     logger.info("Added {} Quantizer modules to the model".format(len(qmodel.quantizer_modules)))
 
-    # collect model basline information
-    baseline_data_loader = dataloader_generator.get_dataloader()
-    logger.info("Collecting baseline...")
-    qmodel.disable_quantization()
-    baseline = accuracy_function(qmodel.model, baseline_data_loader, len(dataloader_generator), title="Baseline Generation")
-    qmodel.enable_quantization()
-    logger.info(f"Done. Baseline accuracy: {baseline}")
+    if not skip_baseline:
+        # collect model basline information
+        baseline_dataloader = dataloaders['baseline']
+        logger.info("Collecting baseline...")
+        qmodel.disable_quantization()
+        baseline = accuracy_function(qmodel.model, baseline_dataloader, title="Baseline Generation")
+        qmodel.enable_quantization()
+        logger.info(f"Done. Baseline accuracy: {baseline:.3f}")
 
     # Load the previously generated calibration file
     logger.info(f"Loading calibration file: {calibration_file}")
@@ -102,10 +103,10 @@ def explore_quantization(workload: Workload, calibration_file: str, progress: bo
     # FIXME: add to workload file
     problem = LayerwiseQuantizationProblem(
         qmodel,
-        dataloader_generator,
+        dataloaders['exploration'],
         accuracy_function,
-        num_bits_upper_limit=16,
-        num_bits_lower_limit=2,
+        num_bits_upper_limit=workload['exploration']['bit_widths'][1],
+        num_bits_lower_limit=workload['exploration']['bit_widths'][0],
         min_accuracy=workload['exploration']['minimum_accuracy'],
         progress=progress
     )
@@ -177,6 +178,12 @@ if __name__ == "__main__":
         "-fn",
         "--filename",
         help="override default filename for calibration pickle file")
+    parser.add_argument(
+        "-s",
+        "--skip-baseline",
+        help="skip baseline computation to save time",
+        action="store_true"
+    )
     opt = parser.parse_args()
 
     logger.info("Quantization Exploration Started")
@@ -184,7 +191,7 @@ if __name__ == "__main__":
     workload_file = opt.workload
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
-        results = explore_quantization(workload, opt.calibration_file, opt.progress, opt.verbose)
+        results = explore_quantization(workload, opt.calibration_file, opt.skip_baseline, opt.progress, opt.verbose)
         save_result(results, workload['model']['type'], workload['dataset']['type'])
 
     else:
