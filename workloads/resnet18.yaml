@@ -57,3 +57,13 @@ workload:
         batch_size: 512
         sample_limit: null
 
+  reevaluation:
+    bit_weighting_function: 'bits_weighted_per_layer'
+    datasets:
+      reevaluate:
+        type: imagenet
+        kind: 'imagefolder'
+        path: '/tools/datasets/imagenet/val_images'
+        sample_limit: null
+        batch_size: 512
+
