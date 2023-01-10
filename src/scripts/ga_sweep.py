@@ -1,13 +1,3 @@
-"""
-Run a quantization exploration from a workload .yaml file
-Usage:
-    $ python path/to/main.py --workloads resnet50.yaml
-Usage:
-    $ python path/to/main.py --workloads fcn-resnet50.yaml      # TorchVision: fully connected ResNet50
-                                         resnet50.yaml          # TorchVision: ResNet50
-                                         yolov5.yaml            # TorchVision: YoloV5
-                                         lenet5.yaml            # Custom: LeNet5
-"""
 import os
 import argparse
 import numpy as np
@@ -67,12 +57,12 @@ def sweep_ga_parameters(workload, calibration_file):
             logger.info("Running Sweep point with mut_eta={}, crossover_eta={}".format(mutation_eta, crossover_eta))
             logger.info("#"*80)
 
-            results = explore_quantization(workload, calibration_file, 
-                                           skip_baseline, progress=False, verbose=False)
+            result = explore_quantization(workload, calibration_file, 
+                                          skip_baseline, progress=False, verbose=False)
             
-            filename = os.path.join(result_dir, 'result_meta_{}_ceta_{}.pkl'.format(mutation_eta, crossover_eta))
+            filename = os.path.join(result_dir, 'result_muteta_{}_croeta_{}.pkl'.format(mutation_eta, crossover_eta))
             with open(filename, 'wb') as res_file:
-                pickle.dump(results, res_file)
+                pickle.dump(result, res_file)
 
             logger.info("Done saved at {}".format(filename))
             logger.info("#"*80)

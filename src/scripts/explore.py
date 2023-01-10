@@ -157,8 +157,6 @@ def explore_quantization(workload: Workload, calibration_file: str,
     # since we inverted our objective functions we have to invert the result back
     res.F = np.abs(res.F)
 
-    del model, qmodel
-
     return res
 
 
@@ -198,7 +196,7 @@ if __name__ == "__main__":
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
         results = explore_quantization(workload, opt.calibration_file, opt.skip_baseline, opt.progress, opt.verbose)
-        save_result(results, workload['model']['type'], workload['dataset']['type'])
+        save_result(results, workload['model']['type'], workload['exploration']['datasets']['exploration']['type'])
 
     else:
         logger.warning("Declared workload file could not be found.")
