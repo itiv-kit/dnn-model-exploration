@@ -11,19 +11,19 @@ workload:
         type: imagenet
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
-        sample_limit: 8192 # number of validation dataset samples to test for each individual
+        sample_limit: null # number of validation dataset samples to test for each individual
         batch_size: 512
 
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
-      pop_size: 12
-      offsprings: 12
-      generations: 20
+      pop_size: 20
+      offsprings: 20
+      generations: 25
       mutation_eta: 20
       mutation_prob: 0.9
       crossover_eta: 15
       crossover_prob: 0.9
-    minimum_accuracy: 0.7 # accuracy constraint
+    minimum_accuracy: 0.65 # accuracy constraint
     bit_widths: [2, 16]
     bit_weighting_function: 'bits_weighted_per_layer'
     datasets:
@@ -31,13 +31,13 @@ workload:
         type: imagenet
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
-        sample_limit: 2048 # number of validation dataset samples to test for each individual
+        sample_limit: 8196 # number of validation dataset samples to test for each individual
         batch_size: 512
       baseline:
         type: imagenet
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
-        sample_limit: 4096
+        sample_limit: null
         batch_size: 512
 
   retraining:

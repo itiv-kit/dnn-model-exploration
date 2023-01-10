@@ -152,7 +152,7 @@ class QuantizedModel():
                 module.disable()
 
         # Run the dataset ...
-        for data, *_ in tqdm(dataloader, desc="Calibrating", disable=progress):
+        for data, *_ in tqdm(dataloader, desc="Calibrating", disable=not progress):
             # no need for actual accuracy function ...
             self.model(data.to(self.device))
 
