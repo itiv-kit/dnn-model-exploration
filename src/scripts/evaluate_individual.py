@@ -35,6 +35,7 @@ def reevaluate_individual(workload: Workload, calibration_file: str, results_fil
 
     # Load the specified results file and pick n individuals 
     rl = ResultsLoader(pickle_file=results_file)
+    rl.drop_duplicate_bits()
     individuals = rl.get_accuracy_sorted_individuals()[:count]
 
     results = pd.DataFrame(columns=['gen', 'individual', 'acc_explore', 'acc_full', 'weighted_bits', 'bits'])
@@ -45,8 +46,8 @@ def reevaluate_individual(workload: Workload, calibration_file: str, results_fil
         logger.debug("Evaluating {} / {} models with optimization accuracy: {}".format(
                 i+1, len(individuals), individual.accuracy))
         qmodel.bit_widths = individual.bits
-        # full_accuracy = accuracy_function(qmodel.model, reevaluate_dataloader, progress=progress,
-        #                                   title="Reevaluating {}/{}".format(i+1, len(individuals)))
+        full_accuracy = accuracy_function(qmodel.model, reevaluate_dataloader, progress=progress,
+                                          title="Reevaluating {}/{}".format(i+1, len(individuals)))
         full_accuracy = 1
         logger.info("Done with ind {} / {}, accuracy is {:.4f}, before was {:.4f}".format(
                 i+1, len(individuals), full_accuracy, individual.accuracy))
@@ -58,7 +59,7 @@ def reevaluate_individual(workload: Workload, calibration_file: str, results_fil
                           'weighted_bits': individual.weighted_bits,
                           'bits': individual.bits}
 
-    results.to_csv('results.csv')
+    results.to_csv('./results/results.csv')
 
 
 if __name__ == "__main__":

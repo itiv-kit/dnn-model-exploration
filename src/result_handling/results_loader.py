@@ -22,10 +22,20 @@ class ResultsLoader():
                     ResultEntry(
                         accuracy=-(ind.get("F")[0]),
                         weighted_bits=ind.get("F")[1],
-                        bits=ind.get("X"),
+                        bits=ind.get("X").tolist(),
                         generation=generation_idx,
                         individual_idx=individual_idx
                         ))
+
+    def drop_duplicate_bits(self):
+        # in place
+        seen_lists = []
+        new_individuals = []
+        for ind in self.individuals:
+            if not ind.bits in seen_lists:
+                seen_lists.append(ind.bits)
+                new_individuals.append(ind)
+        self.individuals = new_individuals
 
     def get_bit_sorted_individuals(self):
         return sorted(self.individuals, key=lambda ind:ind.weighted_bits)
