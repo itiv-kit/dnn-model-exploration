@@ -49,7 +49,7 @@ def sweep_ga_parameters(workload, calibration_file):
         os.makedirs(result_dir)
 
     for mutation_eta in [10, 30, 50, 100]:
-        for crossover_eta in [5, 15, 30]:
+        for crossover_eta in [15, 30, 45]:
             workload['exploration']['nsga']['mutation_eta'] = mutation_eta
             workload['exploration']['nsga']['crossover_eta'] = crossover_eta
 

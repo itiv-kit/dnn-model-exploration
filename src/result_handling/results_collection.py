@@ -5,14 +5,20 @@ import pymoo.algorithms.moo.nsga2
 import pandas as pd
 
 
-class ResultsLoader():
+class ResultsCollection():
     
-    def __init__(self, pickle_file) -> None:
+    def __init__(self, pickle_file=None) -> None:
+        self.accuracy_limit = 0.0
+        self.quantizer_names = []
+        self.individuals = []
+        if pickle_file:
+            self._load(pickle_file)
+        
+    def _load(self, pickle_file):
         with open(pickle_file, 'rb') as f:
             d:Result = CPUUnpickler(f).load()
-        
+
         self.accuracy_limit = d.problem.min_accuracy
-        self.individuals = []
         self.quantizer_names = d.problem.qmodel.quantizer_names
         
         for generation_idx, h in enumerate(d.history):
@@ -24,8 +30,14 @@ class ResultsLoader():
                         weighted_bits=ind.get("F")[1],
                         bits=ind.get("X").tolist(),
                         generation=generation_idx,
-                        individual_idx=individual_idx
+                        individual_idx=individual_idx,
+                        pymoo_mating=h.mating
                         ))
+
+    def merge(self, other):
+        assert self.accuracy_limit == other.accuracy_limit
+        assert self.quantizer_names == other.quantizer_names
+        self.individuals.extend(other.individuals)
 
     def drop_duplicate_bits(self):
         # in place

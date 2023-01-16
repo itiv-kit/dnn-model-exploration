@@ -56,7 +56,7 @@ class DataLoaderGenerator:
             self.length = len(self.dataset)
             if self.limit:
                 self.length = self.limit
-            self.n_batches = len(self.dataloader)
+            self.n_batches = len(self.dataloader) // batch_size
         
     def __len__(self) -> int:
         return self.length

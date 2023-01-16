@@ -104,7 +104,6 @@ def explore_quantization(workload: Workload, calibration_file: str,
     qmodel.load_parameters(calibration_file)
 
     # configure exploration
-    # FIXME: add to workload file
     problem = LayerwiseQuantizationProblem(
         qmodel,
         dataloaders['exploration'],
@@ -115,7 +114,6 @@ def explore_quantization(workload: Workload, calibration_file: str,
         progress=progress
     )
 
-    # TODO put into own module and pass args from workload
     # TODO set through workload
     sampling = IntegerRandomSampling()
     crossover = SBX(prob_var=workload['exploration']['nsga']['crossover_prob'],
