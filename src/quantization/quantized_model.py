@@ -78,6 +78,8 @@ class QuantizedModel():
         # Run Training
         self.model.to(self.device)
 
+        epoch_accs = []
+
         for epoch_idx in range(num_epochs):
             self.model.train()
 
@@ -117,10 +119,12 @@ class QuantizedModel():
 
             self.model.eval()
             # FIXME! 
-            test_dataloader = test_dataloader_generator.get_dataloader()
-            acc = accuracy_function(self.model, test_dataloader, progress, title="Eval {} / {}".
+            acc = accuracy_function(self.model, test_dataloader_generator, progress, title="Eval {} / {}".
                                     format(epoch_idx+1, num_epochs))
+            epoch_accs.append(acc)
             logger.info("Inference Accuracy after Epoch {}: {}".format(epoch_idx+1, acc))
+
+        return epoch_accs
         
     # LOADING and STORING
     def load_parameters(self, filename: str):

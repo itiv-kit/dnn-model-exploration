@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 from datetime import datetime
 import pandas as pd
+import glob
 
 # import troch quantization and activate the replacement of modules
 from pytorch_quantization import quant_modules
@@ -21,12 +22,29 @@ from pymoo.core.evaluator import Evaluator
 from src.utils.logger import logger
 from src.utils.setup import setup_model, setup_torch_device, build_dataloader_generators
 from src.utils.workload import Workload
-from src.exploration.weighting_functions import bits_weighted_linear
+from src.result_handling.results_collection import ResultsCollection
 from src.utils.data_loader_generator import DataLoaderGenerator
 from src.utils.pickeling import CPUUnpickler
 
 from src.exploration.problems import LayerwiseQuantizationProblem
 from src.quantization.quantized_model import QuantizedModel
+
+
+
+RESULTS_DIR = "./results"
+
+
+def save_results(result_df:pd.DataFrame, model_name:str, dataset_name:str):
+    # store results in csv
+    if not os.path.exists(RESULTS_DIR):
+        os.makedirs(RESULTS_DIR)
+        
+    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    
+    filename = 'retrain_results_{}_{}_{}.csv'.format(
+        model_name, dataset_name, date_str)
+    result_df.to_csv(filename)
+    logger.info(f"Saved result object to: {filename}")
 
 
 def get_fitted_individuals(pkl_file) -> pd.DataFrame:
@@ -53,40 +71,87 @@ def get_fitted_individuals(pkl_file) -> pd.DataFrame:
     return df_fit
 
 
-def retrain_best_individuals(workload, calibration_file, results_file, progress=True, verbose=True):
+def retrain_best_individuals(workload, calibration_file, results_path, count, progress=True, verbose=True):
 
     datasets = build_dataloader_generators(workload['retraining']['datasets'])
-    model, accuracy_function = setup_model(workload['model'])
+    reeval_datasets = build_dataloader_generators(workload['reevaluation']['datasets'])
+    reevaluate_dataloader = reeval_datasets['reevaluate']
     device = setup_torch_device()
 
-    fit_individuals = get_fitted_individuals(results_file)
-    best_individuals = fit_individuals.sort_values([0, 2],
-                                                   ascending=[False, True]) #sort by accuracy and then by #bits 
-    
-    counter = 0
-    for index, row in best_individuals.iterrows():
-        counter += 1
+    # Load the specified results file and pick n individuals 
+    if os.path.isdir(results_path):
+        # if path start with empty results loader
+        results_collection = ResultsCollection()
+        for result_file in glob.glob(os.path.join(results_path, '*.pkl')):
+            rl = ResultsCollection(pickle_file=result_file)
+            if results_collection.individuals == []:
+                results_collection = rl
+            else:
+                results_collection.merge(rl)
+            logger.debug("Added results file: {} with {} individual(s)".format(result_file, len(rl.individuals)))
+    else:
+        results_collection = ResultsCollection(results_path)
+        logger.debug("Added results file: {} with {} individual(s)".format(results_path, len(results_collection.individuals)))
 
+    results_collection.drop_duplicate_bits()
+    logger.debug("Loaded in total {} individuals".format(len(results_collection.individuals)))
+
+    # select individuals with limit and cost function
+    individuals = results_collection.get_better_than_individuals(0.72)
+    # get max and min for normalize
+    max_weighted_bits = max([ind.weighted_bits for ind in individuals])
+    min_weighted_bits = min([ind.weighted_bits for ind in individuals])
+    max_accuracy = max([ind.accuracy for ind in individuals])
+    min_accuracy = min([ind.accuracy for ind in individuals])
+    
+    individuals_with_cost = []
+    for ind in individuals:
+        cost = 0.5*((ind.weighted_bits - min_weighted_bits) / (max_weighted_bits - min_weighted_bits)) + \
+               0.5-(0.5*((ind.accuracy - min_accuracy) / (max_accuracy - min_accuracy)))
+        individuals_with_cost.append((cost, ind))
+
+    individuals_with_cost.sort(key=lambda ind: ind[0])
+    individuals_with_cost = individuals_with_cost[:count]
+
+    results = pd.DataFrame(columns=['generation', 'individual', 'accuracy', 'full_acc_after',
+                                    'full_acc_before', 'retrain_epoch_accs',
+                                    'weighted_bits', 'mutation_eta', 'mutation_prob', 
+                                    'crossover_eta', 'crossover_prob', 'selection_press',
+                                    'cost', 'bits'])
+
+    logger.info("Selecting {} individual(s) for retraining.".format(len(individuals_with_cost)))
+    
+    for index, (cost, individual) in enumerate(individuals_with_cost):
+        model, accuracy_function = setup_model(workload['model'])
         qmodel = QuantizedModel(model, device=device, verbose=verbose)
         qmodel.load_parameters(calibration_file)
-        
-        # Update Model 
-        qmodel.bit_widths = row[3:].to_numpy()
-        logger.info("Starting new model (ID #{}) starting acc {:.3f}, starting bits: {}".format(index, row[0], row[2]))
+        full_accuracy_before = accuracy_function(qmodel.model, reevaluate_dataloader, progress=progress,
+                                                 title="Reevaluating")
 
-        qmodel.retrain(train_dataloader_generator=datasets['train'],
-                       test_dataloader_generator=datasets['validation'],
-                       accuracy_function=accuracy_function,
-                       num_epochs=workload['retraining']['epochs'],
-                       progress=progress)
+        # Update Model 
+        qmodel.bit_widths = individual.bits
+        logger.info("Starting new model (ID #{}) starting acc {:.3f}, starting bits: {}".format(index, full_accuracy_before.float(), individual.weighted_bits))
+
+        epoch_accs = qmodel.retrain(train_dataloader_generator=datasets['train'],
+                                    test_dataloader_generator=datasets['validation'],
+                                    accuracy_function=accuracy_function,
+                                    num_epochs=workload['retraining']['epochs'],
+                                    progress=progress)
         qmodel.save_parameters('retrained_model_{}.pkl'.format(index))
+        full_accuracy_after = accuracy_function(qmodel.model, reevaluate_dataloader, progress=progress,
+                                                title="Reevaluating")
+
+        loc_dict = individual.to_dict_without_bits()
+        loc_dict['full_acc_after'] = full_accuracy_after.float()
+        loc_dict['full_acc_before'] = full_accuracy_before.float()
+        loc_dict['retrain_epoch_acs'] = epoch_accs
+        loc_dict['bits'] = individual.bits
+        loc_dict['cost'] = cost
+        results.loc[index] = loc_dict
 
         logger.info("Saved retrained Model")
-        
-        # stop after the amount of individuals ...
-        if counter >= workload['retraining']['n_best']:
-            break
 
+    return results
 
 
 if __name__ == "__main__":
@@ -94,7 +159,8 @@ if __name__ == "__main__":
 
     parser.add_argument("calibration_file")
     parser.add_argument("workload_file")
-    parser.add_argument("results_file")
+    parser.add_argument("results_path")
+    parser.add_argument('-n', "--top_elements", help="Select n individuals with the lowest bits", type=int)
     parser.add_argument(
         "-v",
         "--verbose",
@@ -105,21 +171,18 @@ if __name__ == "__main__":
         "--progress",
         action="store_true",
         help="Show the current inference progress.")
-    parser.add_argument(
-        "-fn",
-        "--filename",
-        help="override default filename for calibration pickle file")
     opt = parser.parse_args()
 
-    logger.info("Quantization Exploration Started")
+    logger.info("Retraining of {} individuals started".format(opt.top_elements))
 
     workload_file = opt.workload_file
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
-        retrain_best_individuals(workload, opt.calibration_file, opt.results_file, opt.progress, opt.verbose)
+        results = retrain_best_individuals(workload, opt.calibration_file, opt.results_path, opt.top_elements, opt.progress, opt.verbose)
+        save_results(results, workload['model']['type'], workload['reevaluation']['datasets']['reevaluate']['type'])
 
     else:
         logger.warning("Declared workload file could not be found.")
         raise Exception(f"No file {opt.workload} found.")
 
-    logger.info("Quantization Exploration Finished")
+    logger.info("Retraining Process Finished")
