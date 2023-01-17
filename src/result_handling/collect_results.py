@@ -22,3 +22,5 @@ def collect_results(path):
 
     results_collection.drop_duplicate_bits()
     logger.debug("Loaded in total {} individuals".format(len(results_collection.individuals)))
+
+    return results_collection

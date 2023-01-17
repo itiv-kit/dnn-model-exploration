@@ -23,6 +23,7 @@ from src.utils.logger import logger
 from src.utils.setup import setup_model, setup_torch_device, build_dataloader_generators
 from src.utils.workload import Workload
 from src.result_handling.results_collection import ResultsCollection
+from src.result_handling.collect_results import collect_results
 from src.utils.data_loader_generator import DataLoaderGenerator
 from src.utils.pickeling import CPUUnpickler
 
@@ -47,30 +48,6 @@ def save_results(result_df:pd.DataFrame, model_name:str, dataset_name:str):
     logger.info(f"Saved result object to: {filename}")
 
 
-def get_fitted_individuals(pkl_file) -> pd.DataFrame:
-    with open(pkl_file, 'rb') as f:
-        d = CPUUnpickler(f).load()
-    
-    accuracy_bound = d.problem.min_accuracy
-    shape_x = d.problem.n_obj + d.problem.n_constr + d.problem.n_var
-
-    all_individuals = np.empty( (0, shape_x) )
-
-    for h in d.history:
-        for ind in h.opt:
-            individual_row = np.concatenate( (ind.get("G") - accuracy_bound, ind.get("F"), ind.get("X")) )
-            individual_row = np.expand_dims(individual_row, axis=0)
-            all_individuals = np.concatenate( (all_individuals, individual_row), axis=0)
-        
-    # remove all rows with nan values
-    all_individuals = all_individuals[~np.isnan(all_individuals).any(axis=1)]
-            
-    df = pd.DataFrame(all_individuals)
-    df[0] = -df[0] # invert Accuracy
-    df_fit = df.where(df[0] > accuracy_bound) 
-    return df_fit
-
-
 def retrain_best_individuals(workload, calibration_file, results_path, count, progress=True, verbose=True):
 
     datasets = build_dataloader_generators(workload['retraining']['datasets'])
@@ -79,19 +56,7 @@ def retrain_best_individuals(workload, calibration_file, results_path, count, pr
     device = setup_torch_device()
 
     # Load the specified results file and pick n individuals 
-    if os.path.isdir(results_path):
-        # if path start with empty results loader
-        results_collection = ResultsCollection()
-        for result_file in glob.glob(os.path.join(results_path, '*.pkl')):
-            rl = ResultsCollection(pickle_file=result_file)
-            if results_collection.individuals == []:
-                results_collection = rl
-            else:
-                results_collection.merge(rl)
-            logger.debug("Added results file: {} with {} individual(s)".format(result_file, len(rl.individuals)))
-    else:
-        results_collection = ResultsCollection(results_path)
-        logger.debug("Added results file: {} with {} individual(s)".format(results_path, len(results_collection.individuals)))
+    results_collection = collect_results(results_path)
 
     results_collection.drop_duplicate_bits()
     logger.debug("Loaded in total {} individuals".format(len(results_collection.individuals)))

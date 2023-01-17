@@ -14,6 +14,7 @@ from src.utils.setup import build_dataloader_generators, setup_torch_device, set
 from src.utils.workload import Workload
 from src.quantization.quantized_model import QuantizedModel
 from src.result_handling.results_collection import ResultsCollection
+from src.result_handling.collect_results import collect_results
 
 
 RESULTS_DIR = "./results"
@@ -52,19 +53,7 @@ def reevaluate_individuals(workload: Workload, calibration_file: str, results_pa
 
 
     # Load the specified results file and pick n individuals 
-    if os.path.isdir(results_path):
-        # if path start with empty results loader
-        results_collection = ResultsCollection()
-        for result_file in glob.glob(os.path.join(results_path, '*.pkl')):
-            rl = ResultsCollection(pickle_file=result_file)
-            if results_collection.individuals == []:
-                results_collection = rl
-            else:
-                results_collection.merge(rl)
-            logger.debug("Added results file: {} with {} individual(s)".format(result_file, len(rl.individuals)))
-    else:
-        results_collection = ResultsCollection(results_path)
-        logger.debug("Added results file: {} with {} individual(s)".format(results_path, len(results_collection.individuals)))
+    results_collection = collect_results(results_path)
 
     results_collection.drop_duplicate_bits()
     logger.debug("Loaded in total {} individuals".format(len(results_collection.individuals)))
