@@ -41,20 +41,20 @@ workload:
         batch_size: 512
 
   retraining:
-    epochs: 2
+    epochs: 4
     datasets:
       validation:
         type: imagenet
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
         sample_limit: 8192 # number of validation dataset samples to test for each individual
-        batch_size: 512
+        batch_size: 256
       train:
         type: imagenet
         kind: 'webdataset'
         path: '/tools/datasets/imagenet/train/imagenet-train-{0000..0136}.tar'
         total_samples: 1281167
-        batch_size: 512
+        batch_size: 256
         sample_limit: null
 
   reevaluation:
@@ -65,6 +65,6 @@ workload:
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
         sample_limit: null
-        batch_size: 512
+        batch_size: 256
 
 
