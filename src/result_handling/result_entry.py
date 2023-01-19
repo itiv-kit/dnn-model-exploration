@@ -5,6 +5,7 @@ import pymoo.operators.mutation.pm
 import pymoo.operators.crossover.sbx
 import pymoo.operators.selection.tournament
 
+
 @dataclass
 class ResultEntry:
     accuracy: float
@@ -13,15 +14,14 @@ class ResultEntry:
     individual_idx: int
     weighted_bits: int
     pymoo_mating: pymoo.core.mating.Mating
-    
-    
+
     def bit_sum(self):
         return sum(self.bits)
-    
+
     def to_dict_without_bits(self):
         rdict = {
-            "generation" : self.generation,
-            "individual" : self.individual_idx,
+            "generation": self.generation,
+            "individual": self.individual_idx,
             "accuracy": self.accuracy,
             "weighted_bits": self.weighted_bits
         }
@@ -33,13 +33,12 @@ class ResultEntry:
             rdict['crossover_prob'] = self.pymoo_mating.crossover.prob.value
         if isinstance(self.pymoo_mating.selection, pymoo.operators.selection.tournament.TournamentSelection):
             rdict['selection_press'] = self.pymoo_mating.selection.pressure
-        
+
         return rdict
-    
 
     def to_dict(self, layer_names=[]):
         rdict = self.to_dict_without_bits()
-        
+
         if layer_names == []:
             for idx, bit in enumerate(self.bits):
                 rdict['bits_{}'.format(idx)] = bit
@@ -48,4 +47,4 @@ class ResultEntry:
                 rdict[name] = bit
 
         return rdict
-    
+

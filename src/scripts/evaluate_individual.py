@@ -10,7 +10,7 @@ from pytorch_quantization import quant_modules
 quant_modules.initialize()
 
 from src.utils.logger import logger
-from src.utils.setup import build_dataloader_generators, setup_torch_device, setup_model
+from src.utils.setup import build_dataloader_generators, setup_torch_device, setup_workload
 from src.utils.workload import Workload
 from src.quantization.quantized_model import QuantizedModel
 from src.result_handling.results_collection import ResultsCollection
@@ -38,7 +38,7 @@ def reevaluate_individuals(workload: Workload, calibration_file: str, results_pa
     
     dataloaders = build_dataloader_generators(workload['reevaluation']['datasets'])
     reevaluate_dataloader = dataloaders['reevaluate']
-    model, accuracy_function = setup_model(workload['model'])
+    model, accuracy_function = setup_workload(workload['model'])
     device = setup_torch_device()
     weighting_function = getattr(importlib.import_module('src.exploration.weighting_functions'), 
                                  workload['reevaluation']['bit_weighting_function'], None)

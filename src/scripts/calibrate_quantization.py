@@ -3,17 +3,17 @@ import sys
 import argparse
 from src.utils.logger import logger
 
-from src.utils.setup import build_dataloader_generators, setup_model, setup_torch_device
+from src.utils.setup import build_dataloader_generators, setup_workload, setup_torch_device
 from src.utils.workload import Workload
 from src.utils.predicates import conv2d_predicate
 from src.utils.data_loader_generator import DataLoaderGenerator
 from src.quantization.quantized_model import QuantizedModel
 
 
-def generate_calibration(workload: Workload, verbose: bool, progress: bool, filename:str):
+def generate_calibration(workload: Workload, verbose: bool, progress: bool, filename: str):
 
     dataloaders = build_dataloader_generators(workload['calibration']['datasets'])
-    model, _ = setup_model(workload['model'])
+    model, _ = setup_workload(workload['model'])
     device = setup_torch_device()
     
     dataset_gen = dataloaders['calibrate']
@@ -42,11 +42,6 @@ if __name__ == "__main__":
         help="Show the current inference progress.",
     )
     parser.add_argument(
-        "-fn",
-        "--filename",
-        help="override default filename for calibration pickle file"
-    )
-    parser.add_argument(
         "-f",
         "--force",
         help="Force overwrite file, if exists",
@@ -61,7 +56,7 @@ if __name__ == "__main__":
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
 
-        filename = 'calib_{}_{}.pkl'.format(workload['model']['type'], workload['calibration']['datasets']['calibrate']['type'])
+        filename = workload['calibration']['file']
         if opt.filename:
             filename = opt.filename
         if os.path.exists(filename) and opt.force is False:

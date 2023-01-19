@@ -35,9 +35,9 @@ class Workload:
         
         #check file
         assert "model" in self.yaml_data, "No model entry in yaml file given"
-        assert "calibration" in self.yaml_data, "No calibration entry in yaml file given"
         assert "exploration" in self.yaml_data, "No exploration entry in yaml file given"
         assert "retraining" in self.yaml_data, "No retraining entry in yaml file given"
+        assert "problem" in self.yaml_data, "No problem entry in yaml file given"
 
 
     def __getitem__(self, item):

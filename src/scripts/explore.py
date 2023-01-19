@@ -3,8 +3,8 @@ Run a quantization exploration from a workload .yaml file
 Usage:
     $ python path/to/main.py --workloads resnet50.yaml
 Usage:
-    $ python path/to/main.py --workloads fcn-resnet50.yaml      # TorchVision: fully connected ResNet50
-                                         resnet50.yaml          # TorchVision: ResNet50
+    $ python path/to/main.py --workloads fcn-resnet50.yaml      # TorchVision: fully connected etesNet50
+                                             resnet50.yaml          # TorchVision: ResNet50
                                          yolov5.yaml            # TorchVision: YoloV5
                                          lenet5.yaml            # Custom: LeNet5
 """
@@ -30,15 +30,15 @@ from pymoo.core.evaluator import Evaluator
 
 import src.exploration.weighting_functions
 from src.utils.logger import logger
-from src.utils.setup import build_dataloader_generators, setup_torch_device, setup_model
+from src.utils.setup import build_dataloader_generators, setup_torch_device, setup_workload, get_prepare_exploration_function
 from src.utils.workload import Workload
 from src.utils.data_loader_generator import DataLoaderGenerator
 
-from src.exploration.problems import LayerwiseQuantizationProblem
 from src.quantization.quantized_model import QuantizedModel
 
 
 RESULTS_DIR = "./results"
+
 
 
 def save_result(res, model_name, dataset_name):
@@ -55,7 +55,7 @@ def save_result(res, model_name, dataset_name):
         os.makedirs(RESULTS_DIR)
 
     date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    
+
     filename = 'exploration_{}_{}_{}.pkl'.format(
         model_name, dataset_name, date_str)
 
@@ -66,59 +66,30 @@ def save_result(res, model_name, dataset_name):
 
 
 
-def explore_quantization(workload: Workload, calibration_file: str, 
-                         skip_baseline: bool, progress: bool, 
+def explore_quantization(workload: Workload,
+                         skip_baseline: bool,
+                         progress: bool,
                          verbose: bool) -> None:
-    """Runs the given workload.
-
-    Args:
-        workload (Workload):
-            The workload loaded from a workload yaml file.
-        collect_baseline (bool):
-            Whether to collect basline metrics of the model without quantization.
-    """
     dataloaders = build_dataloader_generators(workload['exploration']['datasets'])
-    model, accuracy_function = setup_model(workload['model'])
+    model, accuracy_function = setup_workload(workload['model'])
     device = setup_torch_device()
-    weighting_function = getattr(importlib.import_module('src.exploration.weighting_functions'), 
-                                 workload['exploration']['bit_weighting_function'], None)
-    assert weighting_function is not None and callable(weighting_function), "error loading weighting function"
-
-    # now switch to quantized model
-    qmodel = QuantizedModel(model, device, 
-                            weighting_function=weighting_function,
-                            verbose=verbose)
-    logger.info("Added {} Quantizer modules to the model".format(len(qmodel.quantizer_modules)))
 
     if not skip_baseline:
         # collect model basline information
         baseline_dataloader = dataloaders['baseline']
         logger.info("Collecting baseline...")
-        qmodel.disable_quantization()
-        baseline = accuracy_function(qmodel.model, baseline_dataloader, title="Baseline Generation")
-        qmodel.enable_quantization()
+        baseline = accuracy_function(model, baseline_dataloader, title="Baseline Generation")
         logger.info(f"Done. Baseline accuracy: {baseline:.3f}")
 
-    # Load the previously generated calibration file
-    logger.info(f"Loading calibration file: {calibration_file}")
-    qmodel.load_parameters(calibration_file)
+    prepare_function: callable = get_prepare_exploration_function(workload['problem']['problem_function'])
+    kwargs: dict = workload['exploration']['extra_args']
+    kwargs['calibration_file'] = workload.get('calibration.file', None)
+    problem = prepare_function(model, device, dataloaders['exploration'], verbose, kwargs)
 
-    # configure exploration
-    problem = LayerwiseQuantizationProblem(
-        qmodel,
-        dataloaders['exploration'],
-        accuracy_function,
-        num_bits_upper_limit=workload['exploration']['bit_widths'][1],
-        num_bits_lower_limit=workload['exploration']['bit_widths'][0],
-        min_accuracy=workload['exploration']['minimum_accuracy'],
-        progress=progress
-    )
-
-    # TODO set through workload
     sampling = IntegerRandomSampling()
     crossover = SBX(prob_var=workload['exploration']['nsga']['crossover_prob'],
                     eta=workload['exploration']['nsga']['crossover_eta'],
-                    repair=RoundingRepair(), 
+                    repair=RoundingRepair(),
                     vtype=float)
     mutation = PolynomialMutation(prob=workload['exploration']['nsga']['mutation_prob'],
                                   eta=workload['exploration']['nsga']['mutation_eta'],
@@ -162,9 +133,8 @@ def explore_quantization(workload: Workload, calibration_file: str,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("calibration_file")
     parser.add_argument(
-        "workload", 
+        "workload",
         help="The path to the workload yaml file.")
     parser.add_argument(
         "-v",
@@ -176,10 +146,6 @@ if __name__ == "__main__":
         "--progress",
         action="store_true",
         help="Show the current inference progress.")
-    parser.add_argument(
-        "-fn",
-        "--filename",
-        help="override default filename for calibration pickle file")
     parser.add_argument(
         "-s",
         "--skip-baseline",
@@ -193,7 +159,7 @@ if __name__ == "__main__":
     workload_file = opt.workload
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
-        results = explore_quantization(workload, opt.calibration_file, opt.skip_baseline, opt.progress, opt.verbose)
+        results = explore_quantization(workload, opt.skip_baseline, opt.progress, opt.verbose)
         save_result(results, workload['model']['type'], workload['exploration']['datasets']['exploration']['type'])
 
     else:

@@ -1,11 +1,18 @@
 workload:
+  problem:
+    problem_function: SparsityThresholdProblem
+
   model:
     type: resnet18
     accuracy_function: classification_accuracy
     weights: null
+    extra_args:
+      weighting_function: 'bits_weighted_per_layer'
 
+  # Calibration is only required for quantization exploration
   calibration:
     samples: null # null sets samples to all
+    file: './results/resnet18_quant_calib.yaml'
     datasets:
       calibrate:
         type: imagenet
@@ -24,8 +31,6 @@ workload:
       crossover_eta: 15
       crossover_prob: 0.9
     minimum_accuracy: 0.65 # accuracy constraint
-    bit_widths: [2, 16]
-    bit_weighting_function: 'bits_weighted_per_layer'
     datasets:
       exploration:
         type: imagenet
@@ -39,6 +44,15 @@ workload:
         path: '/tools/datasets/imagenet/val_images'
         sample_limit: null
         batch_size: 512
+    extra_args:
+      # for quantization
+      num_bits_upper_limit: 16
+      num_bits_lower_limit: 2
+      bit_weighting_function: 'bits_weighted_per_layer'
+      # for sparsity
+      discrete_threshold_steps: 100
+      discrete_threshold_method: linear
+      threshold_limit: 0.1
 
   retraining:
     epochs: 2

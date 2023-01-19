@@ -20,14 +20,14 @@ from pymoo.termination import get_termination
 from pymoo.core.evaluator import Evaluator
 
 from src.utils.logger import logger
-from src.utils.setup import setup_model, setup_torch_device, build_dataloader_generators
+from src.utils.setup import setup_workload, setup_torch_device, build_dataloader_generators
 from src.utils.workload import Workload
 from src.result_handling.results_collection import ResultsCollection
 from src.result_handling.collect_results import collect_results
 from src.utils.data_loader_generator import DataLoaderGenerator
 from src.utils.pickeling import CPUUnpickler
 
-from src.exploration.problems import LayerwiseQuantizationProblem
+from src.problems.problems import LayerwiseQuantizationProblem
 from src.quantization.quantized_model import QuantizedModel
 
 
@@ -87,7 +87,7 @@ def retrain_best_individuals(workload, calibration_file, results_path, count, pr
     logger.info("Selecting {} individual(s) for retraining.".format(len(individuals_with_cost)))
     
     for index, (cost, individual) in enumerate(individuals_with_cost):
-        model, accuracy_function = setup_model(workload['model'])
+        model, accuracy_function = setup_workload(workload['model'])
         qmodel = QuantizedModel(model, device=device, verbose=verbose)
         qmodel.load_parameters(calibration_file)
         full_accuracy_before = accuracy_function(qmodel.model, reevaluate_dataloader, progress=progress,

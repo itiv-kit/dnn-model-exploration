@@ -4,16 +4,16 @@ Contains the setup logic to dynamicly load the required model, dataset and utils
 import importlib
 import torch
 from src.utils.data_loader_generator import DataLoaderGenerator
-from .workload import Workload
 
 
-MODEL_FOLDER = "..models"
+MODEL_FOLDER = "..workloads"
 ACCURACY_FUNCTIONS_FOLDER = "..accuracy_functions"
 TRANSFORMS_FOLDER = "..transforms"
 DATASETS_FOLDER = "..datasets"
+PROBLEMS_FOLDER = "..problems"
 
 
-def setup_model(model_settings: dict) -> list:
+def setup_workload(model_settings: dict) -> list:
     """This function sets up the model and returns the model as well as the accuracy function.
 
     Args:
@@ -35,6 +35,21 @@ def setup_model(model_settings: dict) -> list:
     ).accuracy_function
 
     return model, accuracy_function
+
+
+def get_prepare_exploration_function(problem_name: str) -> callable:
+    """This function returns the preparation function which is defined in the problem file
+
+    Args:
+        problem_name (str): name of the problem definition, matches the file in problems
+
+    Returns:
+        callable: preparation function
+    """
+    prepare_exploration_function = importlib.import_module(
+        f"{PROBLEMS_FOLDER}.{problem_name}", package=__package__
+    ).prepare_exploration_function
+    return prepare_exploration_function
 
 
 def setup_dataset(dataset_settings) -> list:
