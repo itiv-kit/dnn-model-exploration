@@ -2,9 +2,8 @@ import numpy as np
 from tqdm import tqdm
 from src.utils.logger import logger
 
-from pymoo.core.problem import ElementwiseProblem, ElementwiseEvaluationFunction, LoopedElementwiseEvaluation
+from pymoo.core.problem import ElementwiseEvaluationFunction, LoopedElementwiseEvaluation
 from pymoo.algorithms.moo.nsga2 import NSGA2
-from src.quantization.quantized_model import QuantizedModel
 
 
 class ElementwiseEvaluationFunctionWithIndex(ElementwiseEvaluationFunction):
@@ -19,7 +18,7 @@ class ElementwiseEvaluationFunctionWithIndex(ElementwiseEvaluationFunction):
 
 class LoopedElementwiseEvaluationWithIndex(LoopedElementwiseEvaluation):
     def __call__(self, f, X):
-        algorithm:NSGA2 = f.kwargs.get('algorithm')
+        algorithm: NSGA2 = f.kwargs.get('algorithm')
         pbar = tqdm(total=len(X), position=1, desc="Generation {}".format(algorithm.n_iter))
         results = []
         for i, x in enumerate(X):

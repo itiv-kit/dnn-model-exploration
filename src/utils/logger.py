@@ -1,7 +1,12 @@
+import os
 import logging
 
-LOGGER_NAME = "quantization_logger"
-LOG_FILE_PATH = "results/workload_run.log"
+LOGGER_NAME = "exploration_logger"
+LOG_DIR = "results"
+LOG_FILE = "exploration_run.log"
+
+if not os.path.exists(LOG_DIR):
+    os.mkdir(LOG_DIR)
 
 logger = logging.getLogger(LOGGER_NAME)
 logger.propagate = False
@@ -13,7 +18,7 @@ ch.setLevel(logging.INFO)
 ch.propagate = False
 
 # log to file
-fh = logging.FileHandler(LOG_FILE_PATH)
+fh = logging.FileHandler(os.path.join(LOG_DIR, LOG_FILE))
 fh.setLevel(logging.DEBUG)
 
 formatter_file = logging.Formatter(

@@ -13,7 +13,6 @@ import argparse
 import numpy as np
 from datetime import datetime
 import pickle
-import importlib
 
 # import troch quantization and activate the replacement of modules
 from pytorch_quantization import quant_modules
@@ -26,15 +25,10 @@ from pymoo.operators.crossover.sbx import SBX
 from pymoo.operators.mutation.pm import PolynomialMutation
 from pymoo.optimize import minimize
 from pymoo.termination import get_termination
-from pymoo.core.evaluator import Evaluator
 
-import src.exploration.weighting_functions
 from src.utils.logger import logger
 from src.utils.setup import build_dataloader_generators, setup_torch_device, setup_workload, get_prepare_exploration_function
 from src.utils.workload import Workload
-from src.utils.data_loader_generator import DataLoaderGenerator
-
-from src.quantization.quantized_model import QuantizedModel
 
 
 RESULTS_DIR = "./results"
@@ -83,8 +77,9 @@ def explore_quantization(workload: Workload,
 
     prepare_function: callable = get_prepare_exploration_function(workload['problem']['problem_function'])
     kwargs: dict = workload['exploration']['extra_args']
-    kwargs['calibration_file'] = workload.get('calibration.file', None)
-    problem = prepare_function(model, device, dataloaders['exploration'], verbose, kwargs)
+    if 'calibration' in workload.yaml_data:
+        kwargs['calibration_file'] = workload['calibration']['file']
+    problem = prepare_function(model, device, dataloaders['exploration'], accuracy_function, verbose, **kwargs)
 
     sampling = IntegerRandomSampling()
     crossover = SBX(prob_var=workload['exploration']['nsga']['crossover_prob'],

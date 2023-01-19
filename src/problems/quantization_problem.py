@@ -1,4 +1,5 @@
 import torch
+import os
 import importlib
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
@@ -10,9 +11,12 @@ from src.models.quantized_model import QuantizedModel
 from src.utils.data_loader_generator import DataLoaderGenerator
 
 
-def prepare_quantization_problem(model: nn.module, device: torch.device,
+def prepare_quantization_problem(model: nn.Module,
+                                 device: torch.device,
                                  dataloader_generator: DataLoaderGenerator,
-                                 verbose: bool, **kwargs: dict):
+                                 accuracy_function: callable,
+                                 verbose: bool,
+                                 **kwargs: dict):
     num_bits_upper_limit = kwargs.get('num_bits_upper_limit')
     num_bits_lower_limit = kwargs.get('num_bits_lower_limit')
     weighting_function_name = kwargs.get('bit_weighting_function')
@@ -28,6 +32,10 @@ def prepare_quantization_problem(model: nn.module, device: torch.device,
     logger.debug("Added {} Quantizer modules to the model".format(len(qmodel.quantizer_modules)))
 
     # Load the previously generated calibration file
+    if not os.path.exists(calibration_file):
+        logger.error("Calibtraion file not found")
+        raise FileNotFoundError("Calibration file not found")
+
     logger.debug(f"Loading calibration file: {calibration_file}")
     qmodel.load_parameters(calibration_file)
 
@@ -35,6 +43,7 @@ def prepare_quantization_problem(model: nn.module, device: torch.device,
 
     return LayerwiseQuantizationProblem(qmodel=qmodel,
                                         dataloader_generator=dataloader_generator,
+                                        accuracy_function=accuracy_function,
                                         num_bits_lower_limit=num_bits_lower_limit,
                                         num_bits_upper_limit=num_bits_upper_limit)
 
@@ -48,6 +57,7 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
         self,
         qmodel: QuantizedModel,
         dataloader_generator: DataLoaderGenerator,
+        accuracy_function: callable,
         num_bits_upper_limit: int = 8,
         num_bits_lower_limit: int = 2,
         **kwargs,
@@ -55,6 +65,7 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
         """Inits a quantization exploration problem.
         """
         super().__init__(
+            accuracy_function=accuracy_function,
             n_var=len(qmodel.quantizer_modules),
             n_constr=1,  # accuracy constraint
             n_obj=2,  # accuracy and low bit num
@@ -83,8 +94,8 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
 
         self.qmodel.bit_widths = layer_bit_nums
 
-        f1_accuracy_objective = self.accuracy_func(self.qmodel.model, self.dataloader_generator, progress=self.progress,
-                                                   title="Evaluating {}/{}".format(index + 1, algorithm.pop_size))
+        f1_accuracy_objective = self.accuracy_function(self.qmodel.model, self.dataloader_generator, progress=self.progress,
+                                                       title="Evaluating {}/{}".format(index + 1, algorithm.pop_size))
         f2_quant_objective = self.qmodel.get_bit_weighted()
 
         logger.debug(f"Evaluated individual, accuracy: {f1_accuracy_objective:.4f}, weighted bits: {f2_quant_objective}")
@@ -97,4 +108,4 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
         out["G"] = [g1_accuracy_constraint]
 
 
-prepare_exploration_problem = prepare_quantization_problem
+prepare_exploration_function = prepare_quantization_problem

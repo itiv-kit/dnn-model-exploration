@@ -11,7 +11,7 @@ class CustomModel():
     def __init__(self,
                  model: nn.Module,
                  device: torch.device,
-                 verbose=False
+                 verbose: bool = False
                  ) -> None:
         super().__init__()
 

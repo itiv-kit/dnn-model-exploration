@@ -1,6 +1,6 @@
 workload:
   problem:
-    problem_function: SparsityThresholdProblem
+    problem_function: quantization_problem
 
   model:
     type: resnet18
@@ -12,7 +12,7 @@ workload:
   # Calibration is only required for quantization exploration
   calibration:
     samples: null # null sets samples to all
-    file: './results/resnet18_quant_calib.yaml'
+    file: './results/resnet18_quant_calib.pkl'
     datasets:
       calibrate:
         type: imagenet

@@ -1,11 +1,6 @@
-import numpy as np
-from tqdm import tqdm
-from src.utils.logger import logger
 from src.problems.evaluation_functions import ElementwiseEvaluationFunctionWithIndex, LoopedElementwiseEvaluationWithIndex
 
 from pymoo.core.problem import ElementwiseProblem
-from pymoo.algorithms.moo.nsga2 import NSGA2
-from src.quantization.quantized_model import QuantizedModel
 
 
 class CustomExplorationProblem(ElementwiseProblem):

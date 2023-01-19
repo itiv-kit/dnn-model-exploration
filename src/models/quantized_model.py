@@ -12,6 +12,7 @@ from pytorch_quantization import calib
 from pytorch_quantization.tensor_quant import QuantDescriptor
 
 from src.exploration.weighting_functions import bits_weighted_linear
+from src.models.custom_model import CustomModel
 
 
 class QuantizedModel(CustomModel):
@@ -21,7 +22,7 @@ class QuantizedModel(CustomModel):
                  weighting_function: callable = bits_weighted_linear,
                  verbose=False
                  ) -> None:
-        super().__init__(self, model, device, verbose)
+        super().__init__(model, device, verbose)
 
         self._bit_widths = {}
         self.weighting_function = weighting_function
