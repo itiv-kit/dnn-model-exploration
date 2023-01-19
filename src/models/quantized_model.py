@@ -16,12 +16,12 @@ from src.models.custom_model import CustomModel
 
 
 class QuantizedModel(CustomModel):
+
     def __init__(self,
                  model: nn.Module,
                  device: torch.device,
                  weighting_function: callable = bits_weighted_linear,
-                 verbose=False
-                 ) -> None:
+                 verbose=False) -> None:
         super().__init__(model, device, verbose)
 
         self._bit_widths = {}
@@ -35,15 +35,18 @@ class QuantizedModel(CustomModel):
                 self.quantizer_modules.append(module)
                 self.quantizer_names.append(name)
 
-
     @property
     def bit_widths(self):
         return self._bit_widths
 
     @bit_widths.setter
     def bit_widths(self, new_bit_widths):
-        assert isinstance(new_bit_widths, list) or isinstance(new_bit_widths, np.ndarray), "bit_width have to be a list or ndarray"
-        assert len(new_bit_widths) == len(self.quantizer_modules), "bit_width list has to match the amount of quantization layers"
+        assert isinstance(new_bit_widths, list) or isinstance(
+            new_bit_widths,
+            np.ndarray), "bit_width have to be a list or ndarray"
+        assert len(new_bit_widths) == len(
+            self.quantizer_modules
+        ), "bit_width list has to match the amount of quantization layers"
 
         # Update Model ...
         for i, module in enumerate(self.quantizer_modules):
@@ -52,28 +55,36 @@ class QuantizedModel(CustomModel):
         self._bit_widths = new_bit_widths
 
     def get_bit_weighted(self) -> int:
-        return self.weighting_function(self.quantizer_modules, self.quantizer_names)
+        return self.weighting_function(self.quantizer_modules,
+                                       self.quantizer_names)
 
     def enable_quantization(self):
         [module.enable_quant() for module in self.quantizer_modules]
 
     def disable_quantization(self):
         [module.disable_quant() for module in self.quantizer_modules]
-        
+
     # CALIBRATION PART
-    def run_calibration(self, dataloader: DataLoader, progress=True, calib_method='histogram', **kwargs):
-        assert calib_method in ['max', 'histogram'], "method has to be either max or histogram"
+    def run_calibration(self,
+                        dataloader: DataLoader,
+                        progress=True,
+                        calib_method='histogram',
+                        **kwargs):
+        assert calib_method in ['max', 'histogram'
+                                ], "method has to be either max or histogram"
 
         quant_desc_input = QuantDescriptor(calib_method=calib_method)
         quant_nn.QuantConv2d.set_default_quant_desc_input(quant_desc_input)
         quant_nn.QuantLinear.set_default_quant_desc_input(quant_desc_input)
         quant_nn.QuantLSTMCell.set_default_quant_desc_input(quant_desc_input)
-        
-        self._collect_stats(dataloader=dataloader, progress=progress, kwargs=kwargs)
+
+        self._collect_stats(dataloader=dataloader,
+                            progress=progress,
+                            kwargs=kwargs)
 
     def _collect_stats(self, dataloader, progress, kwargs):
         self.model.to(self.device)
-        
+
         # Enable Calibrators
         for module in self.quantizer_modules:
             if module._calibrator is not None:
@@ -83,7 +94,9 @@ class QuantizedModel(CustomModel):
                 module.disable()
 
         # Run the dataset ...
-        for data, *_ in tqdm(dataloader, desc="Calibrating", disable=not progress):
+        for data, *_ in tqdm(dataloader,
+                             desc="Calibrating",
+                             disable=not progress):
             # no need for actual accuracy function ...
             self.model(data.to(self.device))
 
@@ -102,4 +115,3 @@ class QuantizedModel(CustomModel):
                     module.load_calib_amax()
                 else:
                     module.load_calib_amax(**kwargs)
-

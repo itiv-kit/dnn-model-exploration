@@ -1,6 +1,5 @@
 import os
 import argparse
-import numpy as np
 from datetime import datetime
 import pickle
 
@@ -31,7 +30,7 @@ def save_result(res, model_name, dataset_name):
         os.makedirs(RESULTS_DIR)
 
     date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    
+
     filename = 'exploration_{}_{}_{}.pkl'.format(
         model_name, dataset_name, date_str)
 
@@ -57,9 +56,9 @@ def sweep_ga_parameters(workload, calibration_file):
             logger.info("Running Sweep point with mut_eta={}, crossover_eta={}".format(mutation_eta, crossover_eta))
             logger.info("#"*80)
 
-            result = explore_quantization(workload, calibration_file, 
+            result = explore_quantization(workload, calibration_file,
                                           skip_baseline, progress=False, verbose=False)
-            
+
             filename = os.path.join(result_dir, 'result_muteta_{}_croeta_{}.pkl'.format(mutation_eta, crossover_eta))
             with open(filename, 'wb') as res_file:
                 pickle.dump(result, res_file)
@@ -75,7 +74,7 @@ if __name__ == "__main__":
 
     parser.add_argument("calibration_file")
     parser.add_argument(
-        "workload", 
+        "workload",
         help="The path to the workload yaml file.")
     opt = parser.parse_args()
 

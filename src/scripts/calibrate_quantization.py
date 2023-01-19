@@ -14,14 +14,14 @@ def generate_calibration(workload: Workload, verbose: bool, progress: bool, file
     dataloaders = build_dataloader_generators(workload['calibration']['datasets'])
     model, _ = setup_workload(workload['model'])
     device = setup_torch_device()
-    
+
     dataset_gen = dataloaders['calibrate']
-    
+
     qmodel = QuantizedModel(model, device, conv2d_predicate, verbose=verbose)
 
-    qmodel.run_calibration(dataset_gen.get_dataloader(), progress, calib_method='histogram', 
+    qmodel.run_calibration(dataset_gen.get_dataloader(), progress, calib_method='histogram',
                            mehtod='percentile', percentile=99.99)
-    
+
     qmodel.save_parameters(filename)
 
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     )
 
     opt = parser.parse_args()
-    
+
     logger.info("Calibration Started")
 
     workload_file = opt.workload
@@ -59,11 +59,11 @@ if __name__ == "__main__":
         if os.path.exists(filename) and opt.force is False:
             logger.warning("Calibration file already exists, stopping")
             sys.exit(0)
-        
+
         generate_calibration(workload, opt.verbose, opt.progress, filename)
     else:
         logger.warning("Declared workload file could not be found.")
         raise Exception(f"No file {opt.workload} found.")
-    
+
     logger.info("Calibtration Finished")
 

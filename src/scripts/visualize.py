@@ -6,7 +6,7 @@ import os
 from src.visualize.exploration_visualizer import ExplorationVisualizer
 from src.utils.pickeling import CPUUnpickler
 
-         
+
 
 def render_results(pickle_file, output_dir):
     # WARNING: this is not backwards compatible
@@ -16,7 +16,7 @@ def render_results(pickle_file, output_dir):
         res = CPUUnpickler(f).load()
     if not isinstance(res, pymoo.core.result.Result):
         raise TypeError("Failed to read pickle file .. not correct output format")
-    
+
     print("... Done ... Plotting now ...")
     exp_vis = ExplorationVisualizer(
         output_dir,
@@ -49,6 +49,6 @@ if __name__ == "__main__":
 
     date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     output_dir = opt.output_dir if opt.output_dir else './results/viz_{}/'.format(date_str)
-    
+
     render_results(opt.results_file, output_dir)
 

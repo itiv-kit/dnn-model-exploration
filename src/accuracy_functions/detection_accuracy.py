@@ -2,8 +2,8 @@ import torch
 import numpy as np
 import torchvision
 import time
-import logging
 import tqdm
+import logging
 
 # code mostly taken from:
 # https://github.com/pytorch/vision/blob/77cad12779a237c6fb415f48243bc149e9ecc36a/references/detection/coco_eval.py#L152
@@ -32,8 +32,9 @@ def ap_per_class(tp, conf, pred_cls, target_cls, eps=1e-16):
     nc = unique_classes.shape[0]  # number of classes, number of detections
 
     # Create Precision-Recall curve and compute AP for each class
-    px, py = np.linspace(0, 1, 1000), []  # for plotting
-    ap, p, r = np.zeros((nc, tp.shape[1])), np.zeros((nc, 1000)), np.zeros((nc, 1000))
+    px, _ = np.linspace(0, 1, 1000), []  # for plotting
+    ap, p, r = np.zeros((nc, tp.shape[1])), np.zeros((nc, 1000)), np.zeros(
+        (nc, 1000))
     for ci, c in enumerate(unique_classes):
         i = pred_cls == c
         n_l = nt[ci]  # number of labels
@@ -47,13 +48,13 @@ def ap_per_class(tp, conf, pred_cls, target_cls, eps=1e-16):
 
         # Recall
         recall = tpc / (n_l + eps)  # recall curve
-        r[ci] = np.interp(
-            -px, -conf[i], recall[:, 0], left=0
-        )  # negative x, xp because xp decreases
+        r[ci] = np.interp(-px, -conf[i], recall[:, 0],
+                          left=0)  # negative x, xp because xp decreases
 
         # Precision
         precision = tpc / (tpc + fpc)  # precision curve
-        p[ci] = np.interp(-px, -conf[i], precision[:, 0], left=1)  # p at pr_score
+        p[ci] = np.interp(-px, -conf[i], precision[:, 0],
+                          left=1)  # p at pr_score
 
         # AP from recall-precision curve
         for j in range(tp.shape[1]):
@@ -72,7 +73,8 @@ def ap_per_class(tp, conf, pred_cls, target_cls, eps=1e-16):
 
 def smooth(y, f=0.05):
     # Box filter of fraction f
-    nf = round(len(y) * f * 2) // 2 + 1  # number of filter elements (must be odd)
+    nf = round(
+        len(y) * f * 2) // 2 + 1  # number of filter elements (must be odd)
     p = np.ones(nf // 2)  # ones padding
     yp = np.concatenate((p * y[0], y, p * y[-1]), 0)  # y padded
     return np.convolve(yp, np.ones(nf) / nf, mode="valid")  # y-smoothed
@@ -100,7 +102,8 @@ def compute_ap(recall, precision):
         x = np.linspace(0, 1, 101)  # 101-point interp (COCO)
         ap = np.trapz(np.interp(x, mrec, mpre), x)  # integrate
     else:  # 'continuous'
-        i = np.where(mrec[1:] != mrec[:-1])[0]  # points where x axis (recall) changes
+        i = np.where(
+            mrec[1:] != mrec[:-1])[0]  # points where x axis (recall) changes
         ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])  # area under curve
 
     return ap, mpre, mrec
@@ -151,42 +154,41 @@ def process_batch(detections, labels, iouv):
     Returns:
         correct (Array[N, 10]), for 10 IoU levels
     """
-    correct = torch.zeros(
-        detections.shape[0], iouv.shape[0], dtype=torch.bool, device=iouv.device
-    )
+    correct = torch.zeros(detections.shape[0],
+                          iouv.shape[0],
+                          dtype=torch.bool,
+                          device=iouv.device)
     iou = box_iou(labels[:, 1:], detections[:, :4])
     correct_class = labels[:, 0:1] == detections[:, 5]
 
     for i, iouv_i in enumerate(iouv):
-        x = torch.where(
-            (iou >= iouv_i) & correct_class
-        )  # IoU > threshold and classes match
+        x = torch.where((iou >= iouv_i)
+                        & correct_class)  # IoU > threshold and classes match
 
         if x[0].shape[0]:
-            matches = (
-                torch.cat((torch.stack(x, 1), iou[x[0], x[1]][:, None]), 1)
-                .cpu()
-                .numpy()
-            )  # [label, detect, iou]
+            matches = (torch.cat((torch.stack(x, 1), iou[x[0], x[1]][:, None]),
+                                 1).cpu().numpy())  # [label, detect, iou]
             if x[0].shape[0] > 1:
                 matches = matches[matches[:, 2].argsort()[::-1]]
-                matches = matches[np.unique(matches[:, 1], return_index=True)[1]]
+                matches = matches[np.unique(matches[:, 1],
+                                            return_index=True)[1]]
                 # matches = matches[matches[:, 2].argsort()[::-1]]
-                matches = matches[np.unique(matches[:, 0], return_index=True)[1]]
+                matches = matches[np.unique(matches[:, 0],
+                                            return_index=True)[1]]
             correct[matches[:, 1].astype(int), i] = True
 
     return correct
 
 
 def non_max_suppression(
-    prediction,
-    conf_thres=0.25,
-    iou_thres=0.45,
-    classes=None,
-    agnostic=False,
-    multi_label=False,
-    labels=(),
-    max_det=300,
+        prediction,
+        conf_thres=0.25,
+        iou_thres=0.45,
+        classes=None,
+        agnostic=False,
+        multi_label=False,
+        labels=(),
+        max_det=300,
 ):
     """Non-Maximum Suppression (NMS) on inference results to reject overlapping bounding boxes
     Returns:
@@ -201,9 +203,8 @@ def non_max_suppression(
     assert (
         0 <= conf_thres <= 1
     ), f"Invalid Confidence threshold {conf_thres}, valid values are between 0.0 and 1.0"
-    assert (
-        0 <= iou_thres <= 1
-    ), f"Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0"
+    assert (0 <= iou_thres <= 1
+            ), f"Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0"
 
     # Settings
     # min_wh = 2  # (pixels) minimum box width and height
@@ -246,7 +247,8 @@ def non_max_suppression(
             x = torch.cat((box[i], x[i, j + 5, None], j[:, None].float()), 1)
         else:  # best class only
             conf, j = x[:, 5:].max(1, keepdim=True)
-            x = torch.cat((box, conf, j.float()), 1)[conf.view(-1) > conf_thres]
+            x = torch.cat((box, conf, j.float()),
+                          1)[conf.view(-1) > conf_thres]
 
         # Filter by class
         if classes is not None:
@@ -261,21 +263,23 @@ def non_max_suppression(
         if not n:  # no boxes
             continue
         elif n > max_nms:  # excess boxes
-            x = x[x[:, 4].argsort(descending=True)[:max_nms]]  # sort by confidence
+            x = x[x[:, 4].argsort(
+                descending=True)[:max_nms]]  # sort by confidence
 
         # Batched NMS
         c = x[:, 5:6] * (0 if agnostic else max_wh)  # classes
-        boxes, scores = x[:, :4] + c, x[:, 4]  # boxes (offset by class), scores
+        boxes, scores = x[:, :4] + c, x[:,
+                                        4]  # boxes (offset by class), scores
         i = torchvision.ops.nms(boxes, scores, iou_thres)  # NMS
         if i.shape[0] > max_det:  # limit detections
             i = i[:max_det]
-        if merge and (1 < n < 3e3):  # Merge NMS (boxes merged using weighted mean)
+        if merge and (1 < n <
+                      3e3):  # Merge NMS (boxes merged using weighted mean)
             # update boxes as boxes(i,4) = weights(i,n) * boxes(n,4)
             iou = box_iou(boxes[i], boxes) > iou_thres  # iou matrix
             weights = iou * scores[None]  # box weights
             x[i, :4] = torch.mm(weights, x[:, :4]).float() / weights.sum(
-                1, keepdim=True
-            )  # merged boxes
+                1, keepdim=True)  # merged boxes
             if redundant:
                 i = i[iou.sum(1) > 1]  # require redundancy
 
@@ -302,17 +306,12 @@ def prepare_for_coco_detection(predictions):
         scores = prediction["scores"].tolist()
         labels = prediction["labels"].tolist()
 
-        coco_results.extend(
-            [
-                {
-                    "image_id": original_id,
-                    "category_id": labels[k],
-                    "bbox": box,
-                    "score": scores[k],
-                }
-                for k, box in enumerate(boxes)
-            ]
-        )
+        coco_results.extend([{
+            "image_id": original_id,
+            "category_id": labels[k],
+            "bbox": box,
+            "score": scores[k],
+        } for k, box in enumerate(boxes)])
     return coco_results
 
 
@@ -331,12 +330,10 @@ def clip_coords(boxes, shape):
 def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None):
     # Rescale coords (xyxy) from img1_shape to img0_shape
     if ratio_pad is None:  # calculate from img0_shape
-        gain = min(
-            img1_shape[0] / img0_shape[0], img1_shape[1] / img0_shape[1]
-        )  # gain  = old / new
+        gain = min(img1_shape[0] / img0_shape[0],
+                   img1_shape[1] / img0_shape[1])  # gain  = old / new
         pad = (img1_shape[1] - img0_shape[1] * gain) / 2, (
-            img1_shape[0] - img0_shape[0] * gain
-        ) / 2  # wh padding
+            img1_shape[0] - img0_shape[0] * gain) / 2  # wh padding
     else:
         gain = ratio_pad[0][0]
         pad = ratio_pad[1]
@@ -348,7 +345,10 @@ def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None):
     return coords
 
 
-def compute_detection_accuracy(base_model, dataloader_generator, progress=True, title="") -> float:
+def compute_detection_accuracy(base_model,
+                               dataloader_generator,
+                               progress=True,
+                               title="") -> float:
     """Calculates multiple detection metrics for the provided base detection model on the data loader.
 
     Args:
@@ -378,7 +378,8 @@ def compute_detection_accuracy(base_model, dataloader_generator, progress=True, 
     # conf and iou_thres taken from mAP settings: https://github.com/ultralytics/yolov5#pretrained-checkpoints
     conf_thres, iou_thres = 0.001, 0.65  # separate values for NMS
 
-    iouv = torch.linspace(0.5, 0.95, 10, device=device)  # iou vector for mAP@0.5:0.95
+    iouv = torch.linspace(0.5, 0.95, 10,
+                          device=device)  # iou vector for mAP@0.5:0.95
     niou = iouv.numel()
 
     stats = []
@@ -396,13 +397,14 @@ def compute_detection_accuracy(base_model, dataloader_generator, progress=True, 
             out = model(im)
 
             # Non max suppression to remove overlapping boxes (as done in yoloV5 val.py)
-            targets[:, 2:] *= torch.tensor(
-                (width, height, width, height), device=device
-            )  # to pixels
+            targets[:, 2:] *= torch.tensor((width, height, width, height),
+                                           device=device)  # to pixels
             lb = []
-            out = non_max_suppression(
-                out, conf_thres, iou_thres, labels=lb, multi_label=True
-            )
+            out = non_max_suppression(out,
+                                      conf_thres,
+                                      iou_thres,
+                                      labels=lb,
+                                      multi_label=True)
 
             for si, pred in enumerate(out):
 
@@ -411,32 +413,31 @@ def compute_detection_accuracy(base_model, dataloader_generator, progress=True, 
                     labels.shape[0],
                     pred.shape[0],
                 )  # number of labels, predictions
-                correct = torch.zeros(
-                    npr, niou, dtype=torch.bool, device=device
-                )  # init
+                correct = torch.zeros(npr,
+                                      niou,
+                                      dtype=torch.bool,
+                                      device=device)  # init
 
                 shape = shapes[si][0]
 
                 if npr == 0:
                     if nl:  # no predictions but labels were provided
-                        stats.append((correct, *torch.zeros((3, 0), device=device)))
+                        stats.append((correct, *torch.zeros(
+                            (3, 0), device=device)))
                     continue
 
                 # Predictions
                 predn = pred.clone()
-                scale_coords(
-                    im[si].shape[1:], predn[:, :4], shape, shapes[si][1]
-                )  # native-space pred
+                scale_coords(im[si].shape[1:], predn[:, :4], shape,
+                             shapes[si][1])  # native-space pred
 
                 # Evaluate
                 if nl:
                     tbox = xywh2xyxy(labels[:, 1:5])  # target boxes
-                    scale_coords(
-                        im[si].shape[1:], tbox, shape, shapes[si][1]
-                    )  # native-space labels
-                    labelsn = torch.cat(
-                        (labels[:, 0:1], tbox), 1
-                    )  # native-space labels
+                    scale_coords(im[si].shape[1:], tbox, shape,
+                                 shapes[si][1])  # native-space labels
+                    labelsn = torch.cat((labels[:, 0:1], tbox),
+                                        1)  # native-space labels
                     correct = process_batch(predn, labelsn, iouv)
                     # confusion_matrix.process_batch(predn, labelsn)
 
@@ -454,16 +455,15 @@ def compute_detection_accuracy(base_model, dataloader_generator, progress=True, 
     tp, fp, p, r, f1, ap, ap_class = ap_per_class(*stats)
     ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
     mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
-    nt = np.bincount(
-        stats[3].astype(int), minlength=N_CLASSES
-    )  # number of targets per class
+    nt = np.bincount(stats[3].astype(int),
+                     minlength=N_CLASSES)  # number of targets per class
 
     pf = "%20s" * 6  # print format
-    # logging.info(pf % ("samples", "n tpc", "mP", "mR", "mAP50", "mAP"))
+    logging.info(pf % ("samples", "n tpc", "mP", "mR", "mAP50", "mAP"))
 
     pf = "%11i" * 2 + "%11.3g" * 4  # print format
-    # logging.info(pf % (n, nt.sum(), mp, mr, map50, map))
-    # logging.info("\n")
+    logging.info(pf % (0, nt.sum(), mp, mr, map50, map))
+    logging.info("\n")
 
     return map  # confusion_matrix.global_acc()
 

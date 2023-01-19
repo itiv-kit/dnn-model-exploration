@@ -3,15 +3,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pymoo.visualization.scatter import Scatter
-from pymoo.util import plotting
-from pymoo.util.running_metric import RunningMetric
-
 from pytorch_quantization import nn as quant_nn
 
 # mainly taken from: https://pymoo.org/getting_started/part_4.html
 
+
 class ExplorationVisualizer:
+
     def __init__(self, output_dir, res):
 
         self.output_dir = output_dir
@@ -23,7 +21,8 @@ class ExplorationVisualizer:
         self.n_evals = []  # corresponding number of function evaluations\
 
         self.hist_cv = []  # constraint violation in each generation
-        self.hist_cv_avg = []  # average constraint violation in the whole population
+        self.hist_cv_avg = [
+        ]  # average constraint violation in the whole population
 
         self.hist_F = []  # the objective space values in each generation
         self.hist_X = []  # design variables of each generation
@@ -33,8 +32,7 @@ class ExplorationVisualizer:
 
         self.hist_opt_F = []  # the optimum values for each generation
         self.hist_opt_X = (
-            []
-        )  # the thresholds for the optimum values for each generation
+            [])  # the thresholds for the optimum values for each generation
 
         self.global_opt_F = self.res.F  # the resulting pareto optima
         self.global_opt_X = self.res.X  # the thresholds for the pareto optima
@@ -129,7 +127,8 @@ class ExplorationVisualizer:
 
     def plot_constraint_violation_over_n_gen(self):
 
-        # replace this line by `hist_cv` if you like to analyze the least feasible optimal solution and not the population
+        # replace this line by `hist_cv` if you like to analyze the least
+        # feasible optimal solution and not the population
         vals = self.hist_cv_avg
 
         mins = np.where(np.array(vals) <= 0.0)[0]
@@ -144,9 +143,20 @@ class ExplorationVisualizer:
         )
 
         plt.figure(figsize=(7, 5))
-        plt.plot(self.n_evals, vals, color="black", lw=0.7, label="Avg. CV of Pop")
-        plt.scatter(self.n_evals, vals, facecolor="none", edgecolor="black", marker="p")
-        plt.axvline(self.n_evals[k], color="red", label="All Feasible", linestyle="--")
+        plt.plot(self.n_evals,
+                 vals,
+                 color="black",
+                 lw=0.7,
+                 label="Avg. CV of Pop")
+        plt.scatter(self.n_evals,
+                    vals,
+                    facecolor="none",
+                    edgecolor="black",
+                    marker="p")
+        plt.axvline(self.n_evals[k],
+                    color="red",
+                    label="All Feasible",
+                    linestyle="--")
         plt.title("Convergence")
         plt.xlabel("Function Evaluations")
         plt.ylabel("Constraint Violation")

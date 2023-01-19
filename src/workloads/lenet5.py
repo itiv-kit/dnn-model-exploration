@@ -1,7 +1,6 @@
 # the code to setup LeNet has been copied (with small alternations) from:
 # https://github.com/erykml/medium_articles/blob/master/Computer%20Vision/lenet5_pytorch.ipynb
 
-import numpy as np
 from datetime import datetime
 import os
 from progress.bar import Bar
@@ -31,15 +30,13 @@ class LeNet5(nn.Module):
 
         self.feature_extractor = nn.Sequential(
             nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5, stride=1),
-            nn.Tanh(),
-            nn.AvgPool2d(kernel_size=2),
+            nn.Tanh(), nn.AvgPool2d(kernel_size=2),
             nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5, stride=1),
-            nn.Tanh(),
-            nn.AvgPool2d(kernel_size=2),
-            nn.Conv2d(in_channels=16, out_channels=120,
-                      kernel_size=5, stride=1),
-            nn.Tanh()
-        )
+            nn.Tanh(), nn.AvgPool2d(kernel_size=2),
+            nn.Conv2d(in_channels=16,
+                      out_channels=120,
+                      kernel_size=5,
+                      stride=1), nn.Tanh())
 
         self.classifier = nn.Sequential(
             nn.Linear(in_features=120, out_features=84),
@@ -143,13 +140,19 @@ def validate(valid_loader, model, criterion, device):
     return model, epoch_loss
 
 
-def training_loop(model, criterion, optimizer, train_loader, valid_loader, epochs, device, print_every=1):
+def training_loop(model,
+                  criterion,
+                  optimizer,
+                  train_loader,
+                  valid_loader,
+                  epochs,
+                  device,
+                  print_every=1):
     '''
     Function defining the entire training loop
     '''
 
     # set objects for storing metrics
-    best_loss = 1e10
     train_losses = []
     valid_losses = []
 
@@ -157,14 +160,14 @@ def training_loop(model, criterion, optimizer, train_loader, valid_loader, epoch
     for epoch in range(0, epochs):
 
         # training
-        model, optimizer, train_loss = train(
-            train_loader, model, criterion, optimizer, device)
+        model, optimizer, train_loss = train(train_loader, model, criterion,
+                                             optimizer, device)
         train_losses.append(train_loss)
 
         # validation
         with torch.no_grad():
-            model, valid_loss = validate(
-                valid_loader, model, criterion, device)
+            model, valid_loss = validate(valid_loader, model, criterion,
+                                         device)
             valid_losses.append(valid_loss)
 
         if epoch % print_every == (print_every - 1):
@@ -181,6 +184,7 @@ def training_loop(model, criterion, optimizer, train_loader, valid_loader, epoch
 
     return model, optimizer, (train_losses, valid_losses)
 
+
 def init_model():
 
     transform = mnist.get_data_transform()
@@ -195,33 +199,34 @@ def init_model():
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
     criterion = nn.CrossEntropyLoss()
 
-    model, optimizer, _ = training_loop(
-        model, criterion, optimizer, train_loader, valid_loader, N_EPOCHS, DEVICE)
+    model, optimizer, _ = training_loop(model, criterion, optimizer,
+                                        train_loader, valid_loader, N_EPOCHS,
+                                        DEVICE)
 
-    torch.save(model.state_dict(), os.path.join(
-        os.path.dirname(__file__), "lenet5_state_dict.pt"))
+    torch.save(model.state_dict(),
+               os.path.join(os.path.dirname(__file__), "lenet5_state_dict.pt"))
 
 
 def leNet5_init():
 
     model = LeNet5(N_CLASSES)
 
-    state_file = os.path.join(os.path.abspath(
-        os.path.dirname(__file__)), "./lenet5_state_dict.pt")
+    state_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                              "./lenet5_state_dict.pt")
 
     if not os.path.isfile(state_file):
         print("No model found at {}, training from scratch".format(state_file))
         init_model()
 
     assert os.path.isfile(
-        state_file), "Failed to create and load lenet5_state_dict.pt for pretrained LeNet5."
+        state_file
+    ), "Failed to create and load lenet5_state_dict.pt for pretrained LeNet5."
     model.load_state_dict(torch.load(state_file))
 
     return model
 
 
 model = leNet5_init()
-
 
 if __name__ == "main":
     init_model()

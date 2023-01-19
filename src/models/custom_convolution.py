@@ -44,11 +44,12 @@ class CustomConvModule(nn.Module):
                  * (self.kernel_size[1] - 1) - 1) / self.stride[1] + 1
         h_out, w_out = int(h_out), int(w_out)
 
-        # modified convolution equivalent code from: https://pytorch.org/docs/stable/generated/torch.nn.Unfold.html#torch.nn.Unfold
+        # modified convolution equivalent code from:
+        # https://pytorch.org/docs/stable/generated/torch.nn.Unfold.html#torch.nn.Unfold
         # Convolution <=> Unfold + Matrix Multiplication + Fold (or view to output shape)
 
         inp_unf = nn.functional.unfold(inp, self.kernel_size, self.dilation, self.padding, self.stride)
-        
+
         inp_transp = inp_unf.transpose(1, 2)
 
         # apply sparsity filter or any other custom transformation

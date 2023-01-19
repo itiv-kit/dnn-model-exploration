@@ -1,8 +1,8 @@
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
-
 BATCH_SIZE = 32
+
 
 def get_train_loader(transform):
     """Get a mnist training data loader.
@@ -54,12 +54,13 @@ def prepare_mnist_dataset(path, download=False, **kwargs):
     Returns:
         datasets: The loaded dataset.
     """
-    transforms = transforms.Compose([transforms.Resize((32, 32)),
-                                     transforms.ToTensor()])
+    transf = transforms.Compose(
+        [transforms.Resize((32, 32)),
+         transforms.ToTensor()])
 
     return datasets.MNIST(root=path,
                           train=False,
-                          transform=transforms,
+                          transform=transf,
                           download=download)
 
 

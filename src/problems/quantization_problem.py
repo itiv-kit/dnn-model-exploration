@@ -11,25 +11,27 @@ from src.models.quantized_model import QuantizedModel
 from src.utils.data_loader_generator import DataLoaderGenerator
 
 
-def prepare_quantization_problem(model: nn.Module,
-                                 device: torch.device,
+def prepare_quantization_problem(model: nn.Module, device: torch.device,
                                  dataloader_generator: DataLoaderGenerator,
-                                 accuracy_function: callable,
-                                 verbose: bool,
+                                 accuracy_function: callable, verbose: bool,
                                  **kwargs: dict):
     num_bits_upper_limit = kwargs.get('num_bits_upper_limit')
     num_bits_lower_limit = kwargs.get('num_bits_lower_limit')
     weighting_function_name = kwargs.get('bit_weighting_function')
     calibration_file = kwargs.get('calibration_file')
 
-    weighting_function = getattr(importlib.import_module('src.exploration.weighting_functions'),
-                                 weighting_function_name, None)
-    assert weighting_function is not None and callable(weighting_function), "error loading weighting function"
+    weighting_function = getattr(
+        importlib.import_module('src.exploration.weighting_functions'),
+        weighting_function_name, None)
+    assert weighting_function is not None and callable(
+        weighting_function), "error loading weighting function"
 
-    qmodel = QuantizedModel(model, device,
+    qmodel = QuantizedModel(model,
+                            device,
                             weighting_function=weighting_function,
                             verbose=verbose)
-    logger.debug("Added {} Quantizer modules to the model".format(len(qmodel.quantizer_modules)))
+    logger.debug("Added {} Quantizer modules to the model".format(
+        len(qmodel.quantizer_modules)))
 
     # Load the previously generated calibration file
     if not os.path.exists(calibration_file):
@@ -41,11 +43,12 @@ def prepare_quantization_problem(model: nn.Module,
 
     logger.info("Model loaded and initialized")
 
-    return LayerwiseQuantizationProblem(qmodel=qmodel,
-                                        dataloader_generator=dataloader_generator,
-                                        accuracy_function=accuracy_function,
-                                        num_bits_lower_limit=num_bits_lower_limit,
-                                        num_bits_upper_limit=num_bits_upper_limit)
+    return LayerwiseQuantizationProblem(
+        qmodel=qmodel,
+        dataloader_generator=dataloader_generator,
+        accuracy_function=accuracy_function,
+        num_bits_lower_limit=num_bits_lower_limit,
+        num_bits_upper_limit=num_bits_upper_limit)
 
 
 class LayerwiseQuantizationProblem(CustomExplorationProblem):
@@ -81,7 +84,7 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
 
         self.qmodel = qmodel
         self.dataloader_generator = dataloader_generator
-        
+
         self.num_bits_upper_limit = num_bits_upper_limit
         self.num_bits_lower_limit = num_bits_lower_limit
 
@@ -89,16 +92,20 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
         algorithm: NSGA2 = kwargs.get('algorithm')
 
         logger.debug("Evaluating individual #{} of {} in Generation {}".format(
-            index + 1, algorithm.pop_size, algorithm.n_iter
-        ))
+            index + 1, algorithm.pop_size, algorithm.n_iter))
 
         self.qmodel.bit_widths = layer_bit_nums
 
-        f1_accuracy_objective = self.accuracy_function(self.qmodel.model, self.dataloader_generator, progress=self.progress,
-                                                       title="Evaluating {}/{}".format(index + 1, algorithm.pop_size))
+        f1_accuracy_objective = self.accuracy_function(
+            self.qmodel.model,
+            self.dataloader_generator,
+            progress=self.progress,
+            title="Evaluating {}/{}".format(index + 1, algorithm.pop_size))
         f2_quant_objective = self.qmodel.get_bit_weighted()
 
-        logger.debug(f"Evaluated individual, accuracy: {f1_accuracy_objective:.4f}, weighted bits: {f2_quant_objective}")
+        logger.debug(
+            f"Evaluated individual, accuracy: {f1_accuracy_objective:.4f}, weighted bits: {f2_quant_objective}"
+        )
 
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
 

@@ -5,24 +5,26 @@ from utils.sparsity_metrics import set_configuration, store_current_pass, \
 from utils.custom_timeit import timings
 import logging
 
+
 class SparsityThresholdProblem(ElementwiseProblem):
     """A pymoo problem defenition for the sparsity exploration.
     """
 
-    def __init__(self,
-                sparse_model_generator,
-                data_loader_generator,
-                func_eval=looped_eval,
-                runner=None,
-                discrete_threshold_steps=1,
-                discrete_threshold_method=None,
-                sample_limit = None,
-                x_upper_limit = 0.4, #upper limit of threshold raw values
-                threshold_limit = 1.0,
-                min_accuracy = 0,
-                base_network_name = None,
-                base_dataset_name = None,
-                **kwargs):
+    def __init__(
+            self,
+            sparse_model_generator,
+            data_loader_generator,
+            func_eval=looped_eval,
+            runner=None,
+            discrete_threshold_steps=1,
+            discrete_threshold_method=None,
+            sample_limit=None,
+            x_upper_limit=0.4,  # upper limit of threshold raw values
+            threshold_limit=1.0,
+            min_accuracy=0,
+            base_network_name=None,
+            base_dataset_name=None,
+            **kwargs):
         """Inits a sparsety exploration problem.
 
         Args:
@@ -84,24 +86,29 @@ class SparsityThresholdProblem(ElementwiseProblem):
         self.base_network_name = base_network_name
         self.base_dataset_name = base_dataset_name
 
-
     def _evaluate(self, thresholds, out, *args, **kwargs):
 
-        set_configuration(self.config_counter) # set the id/ number of this configuration
+        set_configuration(
+            self.config_counter)  # set the id/ number of this configuration
 
         if self.discrete_threshold_method is not None:
             if self.discrete_threshold_method == 'linear':
-                discrete_thresholds = [(t / self.discrete_threshold_steps) *
-                    self.threshold_limit for t in thresholds]
+                discrete_thresholds = [
+                    (t / self.discrete_threshold_steps) * self.threshold_limit
+                    for t in thresholds
+                ]
             elif self.discrete_threshold_method == 'log':
                 pass
         else:
             discrete_thresholds = thresholds
 
-        sparse_model = self.sparse_model_generator.update_sparse_model(discrete_thresholds)
-        data_loader = self.data_loader_generator.get_data_loader(self.sample_limit)
+        sparse_model = self.sparse_model_generator.update_sparse_model(
+            discrete_thresholds)
+        data_loader = self.data_loader_generator.get_data_loader(
+            self.sample_limit)
 
-        f1_accuracy_objective = sparse_model.compute_accuracy(data_loader, progress=self.progress).item()
+        f1_accuracy_objective = sparse_model.compute_accuracy(
+            data_loader, progress=self.progress).item()
 
         # f2 is the mean of created sparse blocks
         f2_sparsity_objective = get_current_pass_sparse_created_mean()
@@ -110,11 +117,16 @@ class SparsityThresholdProblem(ElementwiseProblem):
 
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
 
-        logging.getLogger('sparsity-analysis').info(f"Current Accuracy: {f1_accuracy_objective}")
-        logging.getLogger('sparsity-analysis').info(f"Sparse Blocks: {f2_sparsity_objective}")
+        logging.getLogger('sparsity-analysis').info(
+            f"Current Accuracy: {f1_accuracy_objective}")
+        logging.getLogger('sparsity-analysis').info(
+            f"Sparse Blocks: {f2_sparsity_objective}")
 
         # FIXME: make more flexible
-        acc_funcs = ['compute_detection_accuracy', 'compute_segmentation_accuracy', 'compute_classification_accuracy']
+        acc_funcs = [
+            'compute_detection_accuracy', 'compute_segmentation_accuracy',
+            'compute_classification_accuracy'
+        ]
 
         time_acc = None
 
@@ -123,7 +135,8 @@ class SparsityThresholdProblem(ElementwiseProblem):
                 time_acc = timings[func]
                 break
 
-        add_accuracy_and_timing(len(data_loader.dataset), f1_accuracy_objective, time_acc)
+        add_accuracy_and_timing(len(data_loader.dataset),
+                                f1_accuracy_objective, time_acc)
 
         store_current_pass()
 

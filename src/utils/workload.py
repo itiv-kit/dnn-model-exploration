@@ -32,8 +32,8 @@ class Workload:
 
         with open(filename, "r") as stream:
             self.yaml_data = yaml.safe_load(stream)["workload"]
-        
-        #check file
+
+        # check file for consistency
         assert "model" in self.yaml_data, "No model entry in yaml file given"
         assert "exploration" in self.yaml_data, "No exploration entry in yaml file given"
         assert "retraining" in self.yaml_data, "No retraining entry in yaml file given"

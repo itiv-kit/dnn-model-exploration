@@ -27,7 +27,8 @@ from pymoo.optimize import minimize
 from pymoo.termination import get_termination
 
 from src.utils.logger import logger
-from src.utils.setup import build_dataloader_generators, setup_torch_device, setup_workload, get_prepare_exploration_function
+from src.utils.setup import build_dataloader_generators, setup_torch_device, \
+        setup_workload, get_prepare_exploration_function
 from src.utils.workload import Workload
 
 

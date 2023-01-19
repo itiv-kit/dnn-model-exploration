@@ -1,9 +1,9 @@
 import logging
-import copy 
+import copy
 import functools
 
 from modules.sparse_convolution import SparseConv
-import modules.search_predicates as search_predicates
+
 
 class SparseModel():
     """The base model for our custom sparse models.
@@ -36,9 +36,11 @@ class SparseModel():
         Returns:
             SparseConv: The newly created sparse convolution module.
         """
-        return SparseConv(old_module, new_module_dict["name"], new_module_dict["threshold"],
-                new_module_dict["block_size"], visualise=new_module_dict["visualize"])
-
+        return SparseConv(old_module,
+                          new_module_dict["name"],
+                          new_module_dict["threshold"],
+                          new_module_dict["block_size"],
+                          visualise=new_module_dict["visualize"])
 
     def compute_accuracy(self, dataloader, progress=True):
         """Computes the accuracy metric for an instance of this sparse model class.
@@ -54,6 +56,7 @@ class SparseModel():
 
 
 class NodeSparseModel(SparseModel):
+
     def __init__(self, model, layers, block_size, accuracy_function) -> None:
         super().__init__(model, accuracy_function)
 
@@ -67,7 +70,7 @@ class NodeSparseModel(SparseModel):
 
 # FIXME: rename
 class NodeSparseCopyModel(NodeSparseModel):
-    """This model implements a sparse model, which takes any torch model and 
+    """This model implements a sparse model, which takes any torch model and
     lets you add the nodes which have to be replaces by a certain threshold and block
     size.
     """
@@ -82,10 +85,14 @@ class NodeSparseCopyModel(NodeSparseModel):
         self.remove_sparse_nodes()
 
         for idx, layername in enumerate(self.layers):
-            self.add_explicit_sparse_node(layername, thresholds[idx], self.block_size, False)
-        
+            self.add_explicit_sparse_node(layername, thresholds[idx],
+                                          self.block_size, False)
 
-    def add_explicit_sparse_node(self, node_name, threshold, block_size, visualize=False):
+    def add_explicit_sparse_node(self,
+                                 node_name,
+                                 threshold,
+                                 block_size,
+                                 visualize=False):
 
         self.sparse_nodes.append({
             'name': node_name,
@@ -98,40 +105,46 @@ class NodeSparseCopyModel(NodeSparseModel):
         self.sparse_nodes.clear()
 
     def get_sparse_model(self):
-        
+
         sparse_model = copy.deepcopy(self.model)
 
         for sparse_node in self.sparse_nodes:
-            
+
             module_path = sparse_node["name"].split('.')[:-1]
             module_name = sparse_node["name"].split('.')[-1]
 
-            old_module = functools.reduce(getattr, [sparse_model] + sparse_node["name"].split('.'))
-            
-            replacement_module = self.sparse_conv2d_module_generator(old_module, sparse_node)
+            old_module = functools.reduce(getattr, [sparse_model] +
+                                          sparse_node["name"].split('.'))
 
-            module_parent = functools.reduce(getattr, [sparse_model] + module_path)
+            replacement_module = self.sparse_conv2d_module_generator(
+                old_module, sparse_node)
+
+            module_parent = functools.reduce(getattr,
+                                             [sparse_model] + module_path)
 
             # replace the old module with the new one
             setattr(module_parent, module_name, replacement_module)
 
-            logging.getLogger('sparsity-analysis').info("Replaced node {}, with threshold: {}, block_size: {}".format(
-                sparse_node['name'], sparse_node['threshold'], sparse_node['block_size']))
+            logging.getLogger('sparsity-analysis').info(
+                "Replaced node {}, with threshold: {}, block_size: {}".format(
+                    sparse_node['name'], sparse_node['threshold'],
+                    sparse_node['block_size']))
 
         return sparse_model
 
     def __str__(self) -> str:
-        return "Sparse Model, with {} replaced nodes".format(len(self.sparse_nodes))
+        return "Sparse Model, with {} replaced nodes".format(
+            len(self.sparse_nodes))
 
     def __repr__(self) -> str:
         return "Sparse Model, with {} replaced Nodes:\n\t{}".\
             format(len(self.sparse_nodes), ";\n\t".join(["{}, thres:{}, bs:{}".format(
-                x['name'], x['threshold'], x['block_size']) 
+                x['name'], x['threshold'], x['block_size'])
                 for x in self.sparse_nodes]))
 
 
 class NodeSparseRefModel(NodeSparseCopyModel):
-    """This model implements a sparse model, which takes any torch model and 
+    """This model implements a sparse model, which takes any torch model and
     lets you add the nodes which have to be replaces by a certain threshold and block
     size. The values can then be edited without creating a new instance.
     """
@@ -145,13 +158,15 @@ class NodeSparseRefModel(NodeSparseCopyModel):
         self.sparse_conv_nodes = {}
 
     def update_thresholds(self, thresholds: list):
-        """Update the thresholds of the sparse model without creating a new instance or create one no instance exists yet.
+        """Update the thresholds of the sparse model without creating a new
+        instance or create one no instance exists yet.
 
         Args:
             thresholds (list): The list of thresholds.
         """
 
-        assert len(thresholds) == len(self.layers), "Length missmatch for thresholds and layers list."
+        assert len(thresholds) == len(
+            self.layers), "Length missmatch for thresholds and layers list."
 
         if self.sparse_model is None:
             self.sparse_model = self.get_sparse_model(thresholds)
@@ -159,15 +174,19 @@ class NodeSparseRefModel(NodeSparseCopyModel):
 
         # update the thresholds of the layers without having to create new ones
         for i, threshold in enumerate(thresholds):
-        
+
             self.sparse_conv_nodes[self.layers[i]].threshold = threshold
-            logging.getLogger('sparsity-analysis').info("Update threshold of {} to: {:.5f}".format(self.layers[i], threshold))
+            logging.getLogger('sparsity-analysis').info(
+                "Update threshold of {} to: {:.5f}".format(
+                    self.layers[i], threshold))
 
     def sparse_conv2d_module_generator(self, old_module, new_module_dict):
-        
+
         # the module is only given as a reference to allow changing of its attributes
-        self.sparse_conv_nodes[new_module_dict["name"]] = super().sparse_conv2d_module_generator(old_module, new_module_dict)
-        
+        self.sparse_conv_nodes[
+            new_module_dict["name"]] = super().sparse_conv2d_module_generator(
+                old_module, new_module_dict)
+
         return self.sparse_conv_nodes[new_module_dict["name"]]
 
     def get_sparse_model(self, thresholds=None):
@@ -182,14 +201,15 @@ class NodeSparseRefModel(NodeSparseCopyModel):
 
         if self.sparse_model is not None:
             return self.sparse_model
-        
+
         if thresholds is None:
             return self.model
-        
-        #FIXME: is this redunant now?
-        for i, threshold in enumerate(thresholds):
-            self.add_explicit_sparse_node(self.layers[i], threshold, self.block_size)
 
-        # FIXME: also this super() might break now ... 
+        # FIXME: is this redunant now?
+        for i, threshold in enumerate(thresholds):
+            self.add_explicit_sparse_node(self.layers[i], threshold,
+                                          self.block_size)
+
+        # FIXME: also this super() might break now ...
         self.sparse_model = super().get_sparse_model()
         return self.sparse_model

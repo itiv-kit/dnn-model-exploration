@@ -1,9 +1,11 @@
 import torchvision
 import torch
 
+
 def coco_collate_fn(batch):
-    """Since each image may have a different number of objects, we need a collate function (to be passed to the DataLoader).
-    This describes how to combine these tensors of different sizes. We use lists.
+    """Since each image may have a different number of objects, we need a
+    collate function (to be passed to the DataLoader).  This describes how to
+    combine these tensors of different sizes. We use lists.
 
     Args:
         batch (tuple): an iterable of N sets from __getitem__()
@@ -18,10 +20,10 @@ def coco_collate_fn(batch):
     for b in batch:
         images.append(b[0])
         targets.append(b[1])
-    
+
     if isinstance(images[0], torch.Tensor):
         images = torch.stack(images, dim=0)
-    
+
     return images, targets
 
 
@@ -37,8 +39,9 @@ def prepare_coco_dataset(path, transforms, groundtruth, **kwargs):
     Returns:
         torchvision.datasets.CocoDetection: The loaded dataset.
     """
-    dataset = torchvision.datasets.CocoDetection(path, groundtruth,
-        transforms=transforms)
+    dataset = torchvision.datasets.CocoDetection(path,
+                                                 groundtruth,
+                                                 transforms=transforms)
 
     return dataset
 

@@ -71,7 +71,7 @@ def setup_dataset(dataset_settings) -> list:
 
     dataset_creator = dataset_module.dataset_creator
     dataset = dataset_creator(**dataset_settings)
-    
+
     collate_fn = dataset_module.collate_fn
 
     return dataset, collate_fn
@@ -81,13 +81,13 @@ def build_dataloader_generators(settings_dict: dict) -> dict:
     ret_dict = {}
     for dataset_name, dataset_settings in settings_dict.items():
         dataset, collate = setup_dataset(dataset_settings)
-        loader_generator = DataLoaderGenerator(dataset, 
-                                               collate, 
+        loader_generator = DataLoaderGenerator(dataset,
+                                               collate,
                                                items=dataset_settings.get('total_samples', None),
                                                batch_size=dataset_settings['batch_size'],
                                                limit=dataset_settings.get('sample_limit', None))
         ret_dict[dataset_name] = loader_generator
-        
+
     return ret_dict
 
 

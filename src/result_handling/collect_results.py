@@ -5,7 +5,7 @@ from src.utils.logger import logger
 
 
 def collect_results(path):
-    # Load the specified results file and pick n individuals 
+    # Load the specified results file and pick n individuals
     if os.path.isdir(path):
         # if path start with empty results loader
         results_collection = ResultsCollection()

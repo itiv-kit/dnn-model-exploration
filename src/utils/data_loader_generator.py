@@ -6,10 +6,13 @@ import webdataset as wds
 class DataLoaderGenerator:
     """Generator for different dataloaders depending on the sample limit."""
 
-    def __init__(
-        self, dataset, collate_fn: callable, batch_size: int = 32, 
-        items: int = None, limit: int = None, fixed_random: bool = False
-    ) -> None:
+    def __init__(self,
+                 dataset,
+                 collate_fn: callable,
+                 batch_size: int = 32,
+                 items: int = None,
+                 limit: int = None,
+                 fixed_random: bool = False) -> None:
         """Inits a dataloader generator with the given parameters and configures
         the batch size for all generated data loaders.
 
@@ -31,7 +34,8 @@ class DataLoaderGenerator:
         assert dataset is not None, "A dataset has to be provided."
 
         if isinstance(dataset, wds.WebDataset):
-            assert items is not None, "dataset has no length attribute, hence, we need the items options with the total amount of elements in the dataset"
+            assert items is not None, "dataset has no length attribute, hence, we need the items \
+                    options with the total amount of elements in the dataset"
             assert limit is None, "webdataset types do not support limits, as shuffling is not working across shards"
             assert fixed_random is False, "webdatasets do nor support random selection"
             self.kind = 'wds'
@@ -48,7 +52,7 @@ class DataLoaderGenerator:
         self.fixed_random = fixed_random
 
         self._create_data_loader()
-        
+
         if self.kind == 'wds':
             self.length = items
             self.n_batches = (self.length // batch_size) + 1
@@ -57,7 +61,7 @@ class DataLoaderGenerator:
             if self.limit:
                 self.length = self.limit
             self.n_batches = len(self.dataloader) // batch_size
-        
+
     def __len__(self) -> int:
         return self.length
 
@@ -77,11 +81,9 @@ class DataLoaderGenerator:
         if self.fixed_random:
             sampler = RandomSampler(dataset)
 
-        self.dataloader = DataLoader(
-            dataset=dataset,
-            num_workers=4,
-            batch_size=self.batch_size,
-            collate_fn=self.collate_fn,
-            pin_memory=torch.cuda.is_available(),
-            sampler=sampler
-        )
+        self.dataloader = DataLoader(dataset=dataset,
+                                     num_workers=4,
+                                     batch_size=self.batch_size,
+                                     collate_fn=self.collate_fn,
+                                     pin_memory=torch.cuda.is_available(),
+                                     sampler=sampler)

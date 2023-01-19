@@ -2,6 +2,7 @@ import pickle
 import torch
 import io
 
+
 class CPUUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
         if module == 'torch.storage' and name == '_load_from_bytes':
