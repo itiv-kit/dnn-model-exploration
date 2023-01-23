@@ -1,24 +1,21 @@
-import logging
+import torch
 import copy
 import functools
 
-from modules.sparse_convolution import SparseConv
+from torch import nn
+
+from models.sparse_convolution import SparseConv
+from models.custom_model import CustomModel
 
 
-class SparseModel():
+class SparseModel(CustomModel):
     """The base model for our custom sparse models.
     """
 
-    def __init__(self, model, accuracy_function) -> None:
+    def __init__(self, model: nn.Module, device: torch.device, verbose: bool = False) -> None:
         """Initilizes a sparse model with the provided arguments.
-
-        Args:
-            model (nn.Model): The model where layers are to be replaced by our custom sparse layers.
-            accuracy_function (callable): A function to evaluate the accuracy of the new sparse model.
         """
-        super().__init__()
-        self.model = model
-        self.accuracy_function = accuracy_function
+        super().__init__(model, device, verbose)
 
     def get_sparse_model(self):
         """Placeholder method to be overwritten by subclasses.

@@ -1,9 +1,9 @@
 workload:
   problem:
-    problem_function: sparsity_problem
+    problem_function: quantization_problem
 
   model:
-    type: resnet18
+    type: resnet9
     accuracy_function: classification_accuracy
     weights: null
     extra_args:
@@ -12,12 +12,10 @@ workload:
   # Calibration is only required for quantization exploration
   calibration:
     samples: null # null sets samples to all
-    file: './results/resnet18_quant_calib.pkl'
+    file: './results/resnet9_quant_calib.pkl'
     datasets:
       calibrate:
-        type: imagenet
-        kind: 'imagefolder'
-        path: '/tools/datasets/imagenet/val_images'
+        type: cifar10
         sample_limit: null # number of validation dataset samples to test for each individual
         batch_size: 512
 

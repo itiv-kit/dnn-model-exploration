@@ -1,6 +1,8 @@
 import os
 import torch
 
+from torch import nn 
+
 from utils.sparsity_metrics import add_forward_data, add_layer_information
 from utils.custom_timeit import timeit
 
@@ -9,7 +11,7 @@ from .custom_convolution import CustomConvModule
 from visualizations.tensor2d import tensor2d_to_heatmap_comparison
 
 
-class SparseConv(CustomConvModule):
+class SparseConv(nn.Conv2d):
     """Sparse convolution module that splits the im2col representation of the forwarded input
     into blocks of the provided block sizes. The mean of each block is then compared to a
     pre-set threshold. If the mean is smaller than the threshold the block is set to zero.
@@ -17,12 +19,10 @@ class SparseConv(CustomConvModule):
     """
 
     def __init__(self,
-                 old_module,
-                 node_name,
-                 threshold,
-                 block_size,
-                 collect_details=True,
-                 visualise=False):
+                 old_module: nn.Conv2d,
+                 node_name: str,
+                 threshold: float,
+                 block_size: int):
         """Initilizes a sparse convolution module.
 
         Args:
@@ -33,24 +33,12 @@ class SparseConv(CustomConvModule):
             collect_details (bool, optional): Wether to collect metrics on the sparse forward method. Defaults to True.
             visualise (bool, optional): Wether to visualize the applied sparsity. Defaults to False.
         """
-        super().__init__(old_module)
+        super(SparseConv, self).__init__(old_module)
 
         self.threshold = threshold
         self.block_width = block_size[0]
         self.block_height = block_size[1]
         self.node_name = node_name
-        self.collect_details = collect_details
-        self.visualize = visualise
-
-        # for visualization purposes
-        self.sample_counter = 0
-        self.visualization_folder = os.path.join(
-            'blocks', '{}_{}_{}'.format(self.node_name, self.threshold,
-                                        self.block_height))
-
-        if visualise:
-            if not os.path.exists(self.visualization_folder):
-                os.makedirs(self.visualization_folder)
 
         add_layer_information(node_name, threshold, block_size[0])
 
