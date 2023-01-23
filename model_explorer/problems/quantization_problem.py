@@ -13,7 +13,8 @@ from model_explorer.utils.data_loader_generator import DataLoaderGenerator
 
 def prepare_quantization_problem(model: nn.Module, device: torch.device,
                                  dataloader_generator: DataLoaderGenerator,
-                                 accuracy_function: callable, verbose: bool,
+                                 accuracy_function: callable, min_accuracy: float,
+                                 verbose: bool, progress: bool,
                                  **kwargs: dict):
     num_bits_upper_limit = kwargs.get('num_bits_upper_limit')
     num_bits_lower_limit = kwargs.get('num_bits_lower_limit')
@@ -47,6 +48,8 @@ def prepare_quantization_problem(model: nn.Module, device: torch.device,
         qmodel=qmodel,
         dataloader_generator=dataloader_generator,
         accuracy_function=accuracy_function,
+        min_accuracy=min_accuracy,
+        progress=progress,
         num_bits_lower_limit=num_bits_lower_limit,
         num_bits_upper_limit=num_bits_upper_limit)
 
@@ -61,15 +64,19 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
         qmodel: QuantizedModel,
         dataloader_generator: DataLoaderGenerator,
         accuracy_function: callable,
-        num_bits_upper_limit: int = 8,
-        num_bits_lower_limit: int = 2,
+        min_accuracy: float,
+        progress: bool,
+        num_bits_upper_limit: int,
+        num_bits_lower_limit: int,
         **kwargs,
     ):
         """Inits a quantization exploration problem.
         """
         super().__init__(
             accuracy_function=accuracy_function,
-            n_var=len(qmodel.quantizer_modules),
+            progress=progress,
+            min_accuracy=min_accuracy,
+            n_var=qmodel.get_explorable_parameter_count(),
             n_constr=1,  # accuracy constraint
             n_obj=2,  # accuracy and low bit num
             xl=num_bits_lower_limit,
@@ -100,7 +107,8 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
             self.qmodel.model,
             self.dataloader_generator,
             progress=self.progress,
-            title="Evaluating {}/{}".format(index + 1, algorithm.pop_size))
+            title="Evaluating {}/{}".format(index + 1, algorithm.pop_size)
+        )
         f2_quant_objective = self.qmodel.get_bit_weighted()
 
         logger.debug(

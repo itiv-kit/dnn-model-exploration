@@ -8,8 +8,8 @@ class CustomExplorationProblem(ElementwiseProblem):
 
     def __init__(self,
                  accuracy_function: callable,
-                 progress: bool = True,
-                 min_accuracy: float = 0.3,
+                 progress: bool,
+                 min_accuracy: float,
                  elementwise: bool = True,
                  **kwargs):
         super().__init__(

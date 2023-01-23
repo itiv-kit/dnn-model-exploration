@@ -53,6 +53,7 @@ workload:
       discrete_threshold_steps: 100
       discrete_threshold_method: linear
       threshold_limit: 0.1
+      block_size: [8,8]
 
   retraining:
     epochs: 2

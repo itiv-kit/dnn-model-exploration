@@ -5,7 +5,8 @@ setup(
     install_requires=[
         'pymoo',
         'torch',
-        'matplotlib'
+        'matplotlib',
+        'tqdm'
     ],
     version='0.3',
     packages=find_packages(),

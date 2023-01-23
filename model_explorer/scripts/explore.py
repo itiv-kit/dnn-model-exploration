@@ -61,10 +61,10 @@ def save_result(res, model_name, dataset_name):
 
 
 
-def explore_quantization(workload: Workload,
-                         skip_baseline: bool,
-                         progress: bool,
-                         verbose: bool) -> None:
+def explore_model(workload: Workload,
+                  skip_baseline: bool,
+                  progress: bool,
+                  verbose: bool) -> None:
     dataloaders = build_dataloader_generators(workload['exploration']['datasets'])
     model, accuracy_function = setup_workload(workload['model'])
     device = setup_torch_device()
@@ -80,7 +80,10 @@ def explore_quantization(workload: Workload,
     kwargs: dict = workload['exploration']['extra_args']
     if 'calibration' in workload.yaml_data:
         kwargs['calibration_file'] = workload['calibration']['file']
-    problem = prepare_function(model, device, dataloaders['exploration'], accuracy_function, verbose, **kwargs)
+    min_accuracy = workload['exploration']['minimum_accuracy']
+    problem = prepare_function(model, device, dataloaders['exploration'],
+                               accuracy_function, min_accuracy,
+                               verbose, progress, **kwargs)
 
     sampling = IntegerRandomSampling()
     crossover = SBX(prob_var=workload['exploration']['nsga']['crossover_prob'],
@@ -150,17 +153,17 @@ if __name__ == "__main__":
     )
     opt = parser.parse_args()
 
-    logger.info("Quantization Exploration Started")
+    logger.info("Model exploration started")
 
     workload_file = opt.workload
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
-        results = explore_quantization(workload, opt.skip_baseline, opt.progress, opt.verbose)
+        results = explore_model(workload, opt.skip_baseline, opt.progress, opt.verbose)
         save_result(results, workload['model']['type'], workload['exploration']['datasets']['exploration']['type'])
 
     else:
         logger.warning("Declared workload file could not be found.")
         raise Exception(f"No file {opt.workload} found.")
 
-    logger.info("Quantization Exploration Finished")
+    logger.info("Model exploration finished")
 

@@ -9,7 +9,7 @@ quant_modules.initialize()
 
 from model_explorer.utils.logger import logger
 from model_explorer.utils.workload import Workload
-from model_explorer.scripts.explore import explore_quantization
+from model_explorer.scripts.explore import explore_model
 
 
 
@@ -56,7 +56,7 @@ def sweep_ga_parameters(workload, calibration_file):
             logger.info("Running Sweep point with mut_eta={}, crossover_eta={}".format(mutation_eta, crossover_eta))
             logger.info("#"*80)
 
-            result = explore_quantization(workload, calibration_file,
+            result = explore_model(workload, calibration_file,
                                           skip_baseline, progress=False, verbose=False)
 
             filename = os.path.join(result_dir, 'result_muteta_{}_croeta_{}.pkl'.format(mutation_eta, crossover_eta))

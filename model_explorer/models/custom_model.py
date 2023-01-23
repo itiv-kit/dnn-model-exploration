@@ -27,6 +27,10 @@ class CustomModel():
                                                             step_size=1,
                                                             gamma=0.1)
 
+    def get_explorable_parameter_count(self) -> int:
+        # Has to be overwritten by child function for exploration problem
+        pass
+
     # LOADING and STORING
     def load_parameters(self, filename: str):
         self.model.load_state_dict(
