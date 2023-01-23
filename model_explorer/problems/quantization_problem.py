@@ -5,10 +5,10 @@ import importlib
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from torch import nn
 
-from src.problems.custom_problem import CustomExplorationProblem
-from src.utils.logger import logger
-from src.models.quantized_model import QuantizedModel
-from src.utils.data_loader_generator import DataLoaderGenerator
+from model_explorer.problems.custom_problem import CustomExplorationProblem
+from model_explorer.utils.logger import logger
+from model_explorer.models.quantized_model import QuantizedModel
+from model_explorer.utils.data_loader_generator import DataLoaderGenerator
 
 
 def prepare_quantization_problem(model: nn.Module, device: torch.device,

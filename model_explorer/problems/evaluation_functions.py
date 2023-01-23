@@ -1,6 +1,6 @@
 import numpy as np
 from tqdm import tqdm
-from src.utils.logger import logger
+from model_explorer.utils.logger import logger
 
 from pymoo.core.problem import ElementwiseEvaluationFunction, LoopedElementwiseEvaluation
 from pymoo.algorithms.moo.nsga2 import NSGA2

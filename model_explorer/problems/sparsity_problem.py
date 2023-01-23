@@ -3,10 +3,10 @@ import importlib
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
 
-from src.models.sparse_model import SparseModel
-from src.utils.logger import logger
-from src.problems.custom_problem import CustomExplorationProblem
-from src.utils.data_loader_generator import DataLoaderGenerator
+from model_explorer.models.sparse_model import SparseModel
+from model_explorer.utils.logger import logger
+from model_explorer.problems.custom_problem import CustomExplorationProblem
+from model_explorer.utils.data_loader_generator import DataLoaderGenerator
 
 
 class SparsityThresholdProblem(CustomExplorationProblem):

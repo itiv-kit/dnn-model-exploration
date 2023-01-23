@@ -3,8 +3,8 @@ import torch
 from tqdm import tqdm
 from torch import nn
 
-from src.utils.data_loader_generator import DataLoaderGenerator
-from src.utils.logger import logger
+from model_explorer.utils.data_loader_generator import DataLoaderGenerator
+from model_explorer.utils.logger import logger
 
 
 class CustomModel():

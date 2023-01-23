@@ -1,5 +1,5 @@
-from src.utils.pickeling import CPUUnpickler
-from src.result_handling.result_entry import ResultEntry
+from model_explorer.utils.pickeling import CPUUnpickler
+from model_explorer.result_handling.result_entry import ResultEntry
 from pymoo.core.result import Result
 import pymoo.algorithms.moo.nsga2
 import pandas as pd

@@ -7,9 +7,9 @@ import pickle
 from pytorch_quantization import quant_modules
 quant_modules.initialize()
 
-from src.utils.logger import logger
-from src.utils.workload import Workload
-from src.scripts.explore import explore_quantization
+from model_explorer.utils.logger import logger
+from model_explorer.utils.workload import Workload
+from model_explorer.scripts.explore import explore_quantization
 
 
 

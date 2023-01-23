@@ -4,7 +4,7 @@ import glob
 import os
 import numpy as np
 from torchvision.transforms import functional as F
-from src.utils.logger import logger
+from model_explorer.utils.logger import logger
 from pathlib import Path
 from torch.utils.data import Dataset
 

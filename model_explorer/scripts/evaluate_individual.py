@@ -9,11 +9,11 @@ from pytorch_quantization import quant_modules
 
 quant_modules.initialize()
 
-from src.utils.logger import logger
-from src.utils.setup import build_dataloader_generators, setup_torch_device, setup_workload
-from src.utils.workload import Workload
-from src.quantization.quantized_model import QuantizedModel
-from src.result_handling.collect_results import collect_results
+from model_explorer.utils.logger import logger
+from model_explorer.utils.setup import build_dataloader_generators, setup_torch_device, setup_workload
+from model_explorer.utils.workload import Workload
+from model_explorer.quantization.quantized_model import QuantizedModel
+from model_explorer.result_handling.collect_results import collect_results
 
 RESULTS_DIR = "./results"
 

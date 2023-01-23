@@ -1,4 +1,4 @@
-from src.problems.evaluation_functions import ElementwiseEvaluationFunctionWithIndex, \
+from model_explorer.problems.evaluation_functions import ElementwiseEvaluationFunctionWithIndex, \
         LoopedElementwiseEvaluationWithIndex
 
 from pymoo.core.problem import ElementwiseProblem

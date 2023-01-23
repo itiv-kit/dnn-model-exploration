@@ -9,7 +9,7 @@ import torchvision.datasets as datasets
 from tqdm import tqdm
 from PIL import Image
 
-from src.utils.logger import logger
+from model_explorer.utils.logger import logger
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'

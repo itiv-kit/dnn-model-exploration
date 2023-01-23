@@ -3,8 +3,8 @@ import argparse
 import pymoo
 import os
 
-from src.visualize.exploration_visualizer import ExplorationVisualizer
-from src.utils.pickeling import CPUUnpickler
+from model_explorer.visualize.exploration_visualizer import ExplorationVisualizer
+from model_explorer.utils.pickeling import CPUUnpickler
 
 
 

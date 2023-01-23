@@ -1,12 +1,12 @@
 import os
 import sys
 import argparse
-from src.utils.logger import logger
+from model_explorer.utils.logger import logger
 
-from src.utils.setup import build_dataloader_generators, setup_workload, setup_torch_device
-from src.utils.workload import Workload
-from src.utils.predicates import conv2d_predicate
-from src.models.quantized_model import QuantizedModel
+from model_explorer.utils.setup import build_dataloader_generators, setup_workload, setup_torch_device
+from model_explorer.utils.workload import Workload
+from model_explorer.utils.predicates import conv2d_predicate
+from model_explorer.models.quantized_model import QuantizedModel
 
 
 def generate_calibration(workload: Workload, verbose: bool, progress: bool, filename: str):

@@ -1,7 +1,7 @@
 import os
 import glob
-from src.result_handling.results_collection import ResultsCollection
-from src.utils.logger import logger
+from model_explorer.result_handling.results_collection import ResultsCollection
+from model_explorer.utils.logger import logger
 
 
 def collect_results(path):

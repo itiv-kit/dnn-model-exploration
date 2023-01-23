@@ -11,8 +11,8 @@ from pytorch_quantization import nn as quant_nn
 from pytorch_quantization import calib
 from pytorch_quantization.tensor_quant import QuantDescriptor
 
-from src.exploration.weighting_functions import bits_weighted_linear
-from src.models.custom_model import CustomModel
+from model_explorer.exploration.weighting_functions import bits_weighted_linear
+from model_explorer.models.custom_model import CustomModel
 
 
 class QuantizedModel(CustomModel):

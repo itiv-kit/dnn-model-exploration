@@ -3,7 +3,7 @@ Contains the setup logic to dynamicly load the required model, dataset and utils
 """
 import importlib
 import torch
-from src.utils.data_loader_generator import DataLoaderGenerator
+from model_explorer.utils.data_loader_generator import DataLoaderGenerator
 
 
 MODEL_FOLDER = "..workloads"
