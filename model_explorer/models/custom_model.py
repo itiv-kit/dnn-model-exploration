@@ -15,14 +15,14 @@ class CustomModel():
                  verbose: bool = False) -> None:
         super().__init__()
 
-        self.model = model
+        self.base_model = model
         self._bit_widths = {}
         self.device = device
         self.verbose = verbose
 
         # Training things
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.0001)
+        self.optimizer = torch.optim.SGD(self.base_model.parameters(), lr=0.0001)
         self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer,
                                                             step_size=1,
                                                             gamma=0.1)
@@ -33,11 +33,11 @@ class CustomModel():
 
     # LOADING and STORING
     def load_parameters(self, filename: str):
-        self.model.load_state_dict(
+        self.base_model.load_state_dict(
             torch.load(filename, map_location=self.device))
 
     def save_parameters(self, filename: str):
-        torch.save(self.model.state_dict(), filename)
+        torch.save(self.base_model.state_dict(), filename)
 
     # Retraining
     def retrain(self,
@@ -46,12 +46,12 @@ class CustomModel():
                 accuracy_function: callable,
                 num_epochs=10,
                 progress=False) -> list:
-        self.model.to(self.device)
+        self.base_model.to(self.device)
 
         epoch_accs = []
 
         for epoch_idx in range(num_epochs):
-            self.model.train()
+            self.base_model.train()
 
             logger.info("Starting Epoch {} / {}".format(
                 epoch_idx + 1, num_epochs))
@@ -71,7 +71,7 @@ class CustomModel():
                 self.optimizer.zero_grad()
 
                 with torch.set_grad_enabled(mode=True):
-                    output = self.model(image)
+                    output = self.base_model(image)
                     loss = self.criterion(output, target)
                     loss.backward()
                     self.optimizer.step()
@@ -90,9 +90,9 @@ class CustomModel():
             logger.info("Ran Epoch {} / {} with loss of: {}".format(
                 epoch_idx + 1, num_epochs, epoch_loss))
 
-            self.model.eval()
+            self.base_model.eval()
             # FIXME!
-            acc = accuracy_function(self.model,
+            acc = accuracy_function(self.base_model,
                                     test_dataloader_generator,
                                     progress,
                                     title="Eval {} / {}".format(

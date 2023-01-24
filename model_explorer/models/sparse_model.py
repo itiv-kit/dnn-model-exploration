@@ -1,5 +1,4 @@
 import torch
-import copy
 import functools
 
 from torch import nn
@@ -30,7 +29,6 @@ class SparseModel(CustomModel):
 
     @thresholds.setter
     def thresholds(self, new_thresholds: list):
-        # TODO: Update model
         assert len(new_thresholds) == self.get_explorable_parameter_count()
         for i, module in enumerate(self.sparse_modules):
             module.threshold = new_thresholds[i]
@@ -47,23 +45,18 @@ class SparseModel(CustomModel):
         [module.reset_stats() for module in self.sparse_modules]
 
     def _create_sparse_model(self):
-        self.sparse_model = copy.deepcopy(self.model)
+        # TODO: Do we need a copy of the model to make it sparse?
 
-        for name, module in self.model.named_modules():
+        for name, module in self.base_model.named_modules():
             if isinstance(module, nn.Conv2d):
                 self.thresholds[name] = 0.0
                 sparse_conv = SparseConv2d(module, self._block_size)
                 self.sparse_modules.append(sparse_conv)
                 self.sparse_module_names.append(name)
+
                 # Replace actual conv2d with sparse_conv2d
-                setattr(self.sparse_model, name, sparse_conv)
-
-    # def __str__(self) -> str:
-    #     return "Sparse Model, with {} replaced nodes".format(
-    #         len(self.sparse_nodes))
-
-    # def __repr__(self) -> str:
-    #     return "Sparse Model, with {} replaced Nodes:\n\t{}".\
-    #         format(len(self.sparse_nodes), ";\n\t".join(["{}, thres:{}, bs:{}".format(
-    #             x['name'], x['threshold'], x['block_size'])
-    #             for x in self.sparse_nodes]))
+                # FIXME: is this save for all networks?
+                module_name = name.split('.')[-1]
+                module_path = name.split('.')[:-1]
+                module_parent = functools.reduce(getattr, [self.base_model] + module_path)
+                setattr(module_parent, module_name, sparse_conv)

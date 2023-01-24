@@ -14,10 +14,6 @@ import numpy as np
 from datetime import datetime
 import pickle
 
-# import troch quantization and activate the replacement of modules
-from pytorch_quantization import quant_modules
-quant_modules.initialize()
-
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.operators.sampling.rnd import IntegerRandomSampling
 from pymoo.operators.repair.rounding import RoundingRepair

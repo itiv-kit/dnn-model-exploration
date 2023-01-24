@@ -5,6 +5,10 @@ import importlib
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from torch import nn
 
+# import troch quantization and activate the replacement of modules
+from pytorch_quantization import quant_modules
+quant_modules.initialize()
+
 from model_explorer.problems.custom_problem import CustomExplorationProblem
 from model_explorer.utils.logger import logger
 from model_explorer.models.quantized_model import QuantizedModel
@@ -104,7 +108,7 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
         self.qmodel.bit_widths = layer_bit_nums
 
         f1_accuracy_objective = self.accuracy_function(
-            self.qmodel.model,
+            self.qmodel.base_model,
             self.dataloader_generator,
             progress=self.progress,
             title="Evaluating {}/{}".format(index + 1, algorithm.pop_size)

@@ -55,6 +55,11 @@ class SparseConv2d(nn.Conv2d):
         self.number_of_blocks_w: int = 0
         self.number_of_blocks_h: int = 0
 
+    def extra_repr(self):
+        s = super().extra_repr()
+        s += ", block_size={block_width}x{block_height}, threshold={_threshold}"
+        return s.format(**self.__dict__)
+
     def forward(self, x):
         return self._custom_conv(x)
 

@@ -24,12 +24,6 @@ def prepare_sparsity_problem(model: nn.Module, device: torch.device,
     smodel = SparseModel(model, block_size, device, verbose)
     logger.debug("Inited sparse model with {} sparse modules".format(smodel.get_explorable_parameter_count()))
 
-    print(smodel.sparse_model)
-
-    # FIXME: it only does one individual ...
-    # and it still has the quantizer modules in there ... 
-    sys.exit(0)
-
     return SparsityThresholdProblem(
         sparse_model=smodel,
         dataloader_generator=dataloader_generator,
@@ -98,8 +92,10 @@ class SparsityThresholdProblem(CustomExplorationProblem):
 
         self.sparse_model.thresholds = thresholds
 
+        print(self.sparse_model.base_model)
+
         f1_accuracy_objective = self.accuracy_function(
-            self.sparse_model.sparse_model,
+            self.sparse_model.base_model,
             self.dataloader_generator,
             progress=self.progress,
             title="Evaluating {}/{}".format(index + 1, algorithm.pop_size)

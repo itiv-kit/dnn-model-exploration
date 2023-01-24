@@ -30,7 +30,7 @@ class QuantizedModel(CustomModel):
         # supposingly this is not going to change
         self.quantizer_modules = []
         self.quantizer_names = []
-        for name, module in self.model.named_modules():
+        for name, module in self.base_model.named_modules():
             if isinstance(module, quant_nn.TensorQuantizer):
                 self.quantizer_modules.append(module)
                 self.quantizer_names.append(name)
@@ -83,7 +83,7 @@ class QuantizedModel(CustomModel):
                             kwargs=kwargs)
 
     def _collect_stats(self, dataloader, progress, kwargs):
-        self.model.to(self.device)
+        self.base_model.to(self.device)
 
         # Enable Calibrators
         for module in self.quantizer_modules:
@@ -98,7 +98,7 @@ class QuantizedModel(CustomModel):
                              desc="Calibrating",
                              disable=not progress):
             # no need for actual accuracy function ...
-            self.model(data.to(self.device))
+            self.base_model(data.to(self.device))
 
         # Disable Calibrators
         for module in self.quantizer_modules:
