@@ -32,7 +32,7 @@ RESULTS_DIR = "./results"
 
 
 
-def save_result(res, model_name, dataset_name):
+def save_result(res, problem_name, model_name, dataset_name):
     """Save the result object from the exploration as a pickle file.
 
     Args:
@@ -45,10 +45,10 @@ def save_result(res, model_name, dataset_name):
     if not os.path.exists(RESULTS_DIR):
         os.makedirs(RESULTS_DIR)
 
-    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M")
 
-    filename = 'exploration_{}_{}_{}.pkl'.format(
-        model_name, dataset_name, date_str)
+    filename = 'expl_{}_{}_{}_{}.pkl'.format(
+        problem_name, model_name, dataset_name, date_str)
 
     with open(os.path.join(RESULTS_DIR, filename), "wb") as res_file:
         pickle.dump(res, res_file)
@@ -72,7 +72,7 @@ def explore_model(workload: Workload,
         baseline = accuracy_function(model, baseline_dataloader, title="Baseline Generation")
         logger.info(f"Done. Baseline accuracy: {baseline:.3f}")
 
-    prepare_function: callable = get_prepare_exploration_function(workload['problem']['problem_function'])
+    prepare_function, repair_method, sampling_method = get_prepare_exploration_function(workload['problem']['problem_function'])
     kwargs: dict = workload['exploration']['extra_args']
     if 'calibration' in workload.yaml_data:
         kwargs['calibration_file'] = workload['calibration']['file']
@@ -81,19 +81,18 @@ def explore_model(workload: Workload,
                                accuracy_function, min_accuracy,
                                verbose, progress, **kwargs)
 
-    sampling = IntegerRandomSampling()
     crossover = SBX(prob_var=workload['exploration']['nsga']['crossover_prob'],
                     eta=workload['exploration']['nsga']['crossover_eta'],
-                    repair=RoundingRepair(),
+                    repair=repair_method,
                     vtype=float)
     mutation = PolynomialMutation(prob=workload['exploration']['nsga']['mutation_prob'],
                                   eta=workload['exploration']['nsga']['mutation_eta'],
-                                  repair=RoundingRepair())
+                                  repair=repair_method)
 
     algorithm = NSGA2(
         pop_size=workload['exploration']['nsga']['pop_size'],
         n_offsprings=workload['exploration']['nsga']['offsprings'],
-        sampling=sampling,
+        sampling=sampling_method,
         crossover=crossover,
         mutation=mutation,
         eliminate_duplicates=True,
@@ -155,7 +154,7 @@ if __name__ == "__main__":
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
         results = explore_model(workload, opt.skip_baseline, opt.progress, opt.verbose)
-        save_result(results, workload['model']['type'], workload['exploration']['datasets']['exploration']['type'])
+        save_result(results, workload['problem']['problem_function'] workload['model']['type'], workload['exploration']['datasets']['exploration']['type'])
 
     else:
         logger.warning("Declared workload file could not be found.")
