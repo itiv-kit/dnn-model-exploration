@@ -54,6 +54,9 @@ class QuantizedModel(CustomModel):
 
         self._bit_widths = new_bit_widths
 
+    def get_explorable_parameter_count(self) -> int:
+        return len(self.quantizer_modules)
+
     def get_bit_weighted(self) -> int:
         return self.weighting_function(self.quantizer_modules,
                                        self.quantizer_names)

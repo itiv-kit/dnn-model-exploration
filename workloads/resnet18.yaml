@@ -1,6 +1,6 @@
 workload:
   problem:
-    problem_function: sparsity_problem
+    problem_function: quantization_problem
 
   model:
     type: resnet18

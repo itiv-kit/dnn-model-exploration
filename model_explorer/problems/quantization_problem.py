@@ -26,7 +26,7 @@ def prepare_quantization_problem(model: nn.Module, device: torch.device,
     calibration_file = kwargs.get('calibration_file')
 
     weighting_function = getattr(
-        importlib.import_module('src.exploration.weighting_functions'),
+        importlib.import_module('model_explorer.exploration.weighting_functions'),
         weighting_function_name, None)
     assert weighting_function is not None and callable(
         weighting_function), "error loading weighting function"
