@@ -37,7 +37,7 @@ def setup_workload(model_settings: dict) -> list:
     return model, accuracy_function
 
 
-def get_prepare_exploration_function(problem_name: str) -> callable:
+def get_prepare_exploration_function(problem_name: str) -> list:
     """This function returns the preparation function which is defined in the problem file
 
     Args:
@@ -49,7 +49,13 @@ def get_prepare_exploration_function(problem_name: str) -> callable:
     prepare_exploration_function = importlib.import_module(
         f"{PROBLEMS_FOLDER}.{problem_name}", package=__package__
     ).prepare_exploration_function
-    return prepare_exploration_function
+    repair_method = importlib.import_module(
+        f"{PROBLEMS_FOLDER}.{problem_name}", package=__package__
+    ).repair_method
+    sampling_method = importlib.import_module(
+        f"{PROBLEMS_FOLDER}.{problem_name}", package=__package__
+    ).sampling_method
+    return prepare_exploration_function, repair_method, sampling_method
 
 
 def setup_dataset(dataset_settings) -> list:

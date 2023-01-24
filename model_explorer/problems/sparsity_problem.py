@@ -4,6 +4,7 @@ import sys
 
 from torch import nn
 from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.operators.sampling.rnd import FloatRandomSampling
 
 from model_explorer.models.sparse_model import SparseModel
 from model_explorer.utils.logger import logger
@@ -22,7 +23,8 @@ def prepare_sparsity_problem(model: nn.Module, device: torch.device,
     threshold_limit = kwargs.get('threshold_limit')
 
     smodel = SparseModel(model, block_size, device, verbose)
-    logger.debug("Inited sparse model with {} sparse modules".format(smodel.get_explorable_parameter_count()))
+    logger.debug("Initalized sparse model with {} sparse modules".format(smodel.get_explorable_parameter_count()))
+    logger.info("Sparsity problem and model initialized")
 
     return SparsityThresholdProblem(
         sparse_model=smodel,
@@ -47,9 +49,9 @@ class SparsityThresholdProblem(CustomExplorationProblem):
             accuracy_function: callable,
             min_accuracy: float,
             progress: bool,
-            discrete_threshold_steps=1,
-            discrete_threshold_method=None,
-            threshold_limit=1.0,
+            discrete_threshold_steps: int,
+            discrete_threshold_method: str,
+            threshold_limit: float,
             **kwargs):
         """Inits a sparsity exploration problem.
         """
@@ -62,6 +64,7 @@ class SparsityThresholdProblem(CustomExplorationProblem):
             n_obj=2,
             xl=0,
             xu=threshold_limit,
+            vtype=float,
             kwargs=kwargs
         )
 
@@ -92,8 +95,6 @@ class SparsityThresholdProblem(CustomExplorationProblem):
 
         self.sparse_model.thresholds = thresholds
 
-        print(self.sparse_model.base_model)
-
         f1_accuracy_objective = self.accuracy_function(
             self.sparse_model.base_model,
             self.dataloader_generator,
@@ -106,8 +107,8 @@ class SparsityThresholdProblem(CustomExplorationProblem):
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
 
         logger.debug(
-            f"Evaluated individual, accuracy: {f1_accuracy_objective:.4f}, \
-                sparse blocks created: {f2_sparsity_objective}"
+            f"Evaluated individual, accuracy: {f1_accuracy_objective:.4f}, " +
+            f"sparse blocks created: {f2_sparsity_objective}"
         )
 
         # NOTE: In pymoo, each objective function is supposed to be minimized,
@@ -117,3 +118,5 @@ class SparsityThresholdProblem(CustomExplorationProblem):
 
 
 prepare_exploration_function = prepare_sparsity_problem
+repair_method = None
+sampling_method = FloatRandomSampling()

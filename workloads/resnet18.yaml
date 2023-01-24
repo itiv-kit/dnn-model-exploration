@@ -1,6 +1,7 @@
 workload:
   problem:
-    problem_function: quantization_problem
+    problem_function: sparsity_problem
+    # problem_function: quantization_problem
 
   model:
     type: resnet18
@@ -25,7 +26,7 @@ workload:
     nsga: # Setup the parameters for your nsga algorithm
       pop_size: 20
       offsprings: 20
-      generations: 25
+      generations: 20
       mutation_eta: 20
       mutation_prob: 0.9
       crossover_eta: 15
@@ -36,7 +37,7 @@ workload:
         type: imagenet
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
-        sample_limit: 8196 # number of validation dataset samples to test for each individual
+        sample_limit: 4096 # number of validation dataset samples to test for each individual
         batch_size: 512
       baseline:
         type: imagenet

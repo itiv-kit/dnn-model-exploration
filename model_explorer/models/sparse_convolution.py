@@ -25,7 +25,7 @@ class SparseConv2d(nn.Conv2d):
         self.kernel = old_module.weight
         self.bias = old_module.bias
 
-        self._threshold = None
+        self._threshold: float = 0.0
         self.block_width = block_size[0]
         self.block_height = block_size[1]
 

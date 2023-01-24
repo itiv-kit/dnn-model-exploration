@@ -1,14 +1,15 @@
 import torch
-import torch.utils.data
+import functools
 import numpy as np
 
 from tqdm import tqdm
-from torch import nn
+from torch import nn as torch_nn
 
 from torch.utils.data import DataLoader
 
 from pytorch_quantization import nn as quant_nn
 from pytorch_quantization import calib
+from pytorch_quantization import tensor_quant
 from pytorch_quantization.tensor_quant import QuantDescriptor
 
 from model_explorer.exploration.weighting_functions import bits_weighted_linear
@@ -18,7 +19,7 @@ from model_explorer.models.custom_model import CustomModel
 class QuantizedModel(CustomModel):
 
     def __init__(self,
-                 model: nn.Module,
+                 model: torch_nn.Module,
                  device: torch.device,
                  weighting_function: callable = bits_weighted_linear,
                  verbose=False) -> None:
@@ -30,10 +31,7 @@ class QuantizedModel(CustomModel):
         # supposingly this is not going to change
         self.quantizer_modules = []
         self.quantizer_names = []
-        for name, module in self.base_model.named_modules():
-            if isinstance(module, quant_nn.TensorQuantizer):
-                self.quantizer_modules.append(module)
-                self.quantizer_names.append(name)
+        self._create_quant_model()
 
     @property
     def bit_widths(self):
@@ -66,6 +64,36 @@ class QuantizedModel(CustomModel):
 
     def disable_quantization(self):
         [module.disable_quant() for module in self.quantizer_modules]
+
+    def _create_quant_model(self) -> None:
+        for name, module in self.base_model.named_modules():
+            if isinstance(module, torch_nn.modules.conv.Conv2d):
+                # quant_conv = quant_nn.QuantConv2d(**module.__dict__)
+                quant_conv = quant_nn.QuantConv2d(
+                    in_channels=module.in_channels,
+                    out_channels=module.out_channels,
+                    kernel_size=module.kernel_size,
+                    stride=module.stride,
+                    padding=module.padding,
+                    dilation=module.dilation,
+                    groups=module.groups,
+                    bias=module.bias,
+                    padding_mode=module.padding_mode,
+                    quant_desc_input=tensor_quant.QUANT_DESC_8BIT_PER_TENSOR,
+                    quant_desc_weight=tensor_quant.QUANT_DESC_8BIT_PER_TENSOR
+                )
+
+                # FIXME: is this save for all networks?
+                module_name = name.split('.')[-1]
+                module_path = name.split('.')[:-1]
+                module_parent = functools.reduce(getattr, [self.base_model] + module_path)
+                setattr(module_parent, module_name, quant_conv)
+
+        for name, module in self.base_model.named_modules():
+            if isinstance(module, quant_nn.TensorQuantizer):
+                self.quantizer_names.append(name)
+                self.quantizer_modules.append(module)
+
 
     # CALIBRATION PART
     def run_calibration(self,

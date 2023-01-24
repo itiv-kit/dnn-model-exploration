@@ -1,4 +1,3 @@
-import numpy as np
 from tqdm import tqdm
 from model_explorer.utils.logger import logger
 

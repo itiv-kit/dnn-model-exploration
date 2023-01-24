@@ -3,11 +3,9 @@ import os
 import importlib
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.operators.repair.rounding import RoundingRepair
+from pymoo.operators.sampling.rnd import IntegerRandomSampling
 from torch import nn
-
-# import troch quantization and activate the replacement of modules
-from pytorch_quantization import quant_modules
-quant_modules.initialize()
 
 from model_explorer.problems.custom_problem import CustomExplorationProblem
 from model_explorer.utils.logger import logger
@@ -35,6 +33,7 @@ def prepare_quantization_problem(model: nn.Module, device: torch.device,
                             device,
                             weighting_function=weighting_function,
                             verbose=verbose)
+
     logger.debug("Added {} Quantizer modules to the model".format(
         len(qmodel.quantizer_modules)))
 
@@ -46,7 +45,7 @@ def prepare_quantization_problem(model: nn.Module, device: torch.device,
     logger.debug(f"Loading calibration file: {calibration_file}")
     qmodel.load_parameters(calibration_file)
 
-    logger.info("Model loaded and initialized")
+    logger.info("Quantization problem and model initialized")
 
     return LayerwiseQuantizationProblem(
         qmodel=qmodel,
@@ -128,3 +127,5 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
 
 
 prepare_exploration_function = prepare_quantization_problem
+repair_method = RoundingRepair()
+sampling_method = IntegerRandomSampling()
