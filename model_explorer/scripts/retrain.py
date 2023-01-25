@@ -46,7 +46,7 @@ def retrain_best_individuals(workload,
     # Load the specified results file and pick n individuals
     results_collection = collect_results(results_path)
 
-    results_collection.drop_duplicate_bits()
+    results_collection.drop_duplicate_parameters()
     logger.debug("Loaded in total {} individuals".format(
         len(results_collection.individuals)))
 

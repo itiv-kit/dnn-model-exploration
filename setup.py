@@ -6,7 +6,8 @@ setup(
         'pymoo',
         'torch',
         'matplotlib',
-        'tqdm'
+        'tqdm',
+        'pandas'
     ],
     version='0.3',
     packages=find_packages(),

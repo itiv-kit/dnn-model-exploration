@@ -154,7 +154,7 @@ if __name__ == "__main__":
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
         results = explore_model(workload, opt.skip_baseline, opt.progress, opt.verbose)
-        save_result(results, workload['problem']['problem_function'] workload['model']['type'], workload['exploration']['datasets']['exploration']['type'])
+        save_result(results, workload['problem']['problem_function'], workload['model']['type'], workload['exploration']['datasets']['exploration']['type'])
 
     else:
         logger.warning("Declared workload file could not be found.")

@@ -20,6 +20,9 @@ class CustomModel():
         self.device = device
         self.verbose = verbose
 
+        self.explorable_modules = []
+        self.explorable_module_names = []
+
         # Training things
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = torch.optim.SGD(self.base_model.parameters(), lr=0.0001)
@@ -28,8 +31,7 @@ class CustomModel():
                                                             gamma=0.1)
 
     def get_explorable_parameter_count(self) -> int:
-        # Has to be overwritten by child function for exploration problem
-        pass
+        return len(self.explorable_modules)
 
     # LOADING and STORING
     def load_parameters(self, filename: str):

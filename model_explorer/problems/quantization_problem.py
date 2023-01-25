@@ -35,7 +35,7 @@ def prepare_quantization_problem(model: nn.Module, device: torch.device,
                             verbose=verbose)
 
     logger.debug("Added {} Quantizer modules to the model".format(
-        len(qmodel.quantizer_modules)))
+        len(qmodel.explorable_modules)))
 
     # Load the previously generated calibration file
     if not os.path.exists(calibration_file):
@@ -76,6 +76,7 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
         """Inits a quantization exploration problem.
         """
         super().__init__(
+            model=qmodel,
             accuracy_function=accuracy_function,
             progress=progress,
             min_accuracy=min_accuracy,
@@ -92,7 +93,6 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
             num_bits_lower_limit > 1
         ), "The lower bound for the bit resolution has to be > 1. 1 bit resolution is not supported and produces NaN."
 
-        self.qmodel = qmodel
         self.dataloader_generator = dataloader_generator
 
         self.num_bits_upper_limit = num_bits_upper_limit
@@ -104,15 +104,15 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
         logger.debug("Evaluating individual #{} of {} in Generation {}".format(
             index + 1, algorithm.pop_size, algorithm.n_iter))
 
-        self.qmodel.bit_widths = layer_bit_nums
+        self.model.bit_widths = layer_bit_nums
 
         f1_accuracy_objective = self.accuracy_function(
-            self.qmodel.base_model,
+            self.model.base_model,
             self.dataloader_generator,
             progress=self.progress,
             title="Evaluating {}/{}".format(index + 1, algorithm.pop_size)
         )
-        f2_quant_objective = self.qmodel.get_bit_weighted()
+        f2_quant_objective = self.model.get_bit_weighted()
 
         logger.debug(
             f"Evaluated individual, accuracy: {f1_accuracy_objective:.4f}, weighted bits: {f2_quant_objective}"

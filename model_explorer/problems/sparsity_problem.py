@@ -56,6 +56,7 @@ class SparsityThresholdProblem(CustomExplorationProblem):
         """Inits a sparsity exploration problem.
         """
         super().__init__(
+            model=sparse_model,
             accuracy_function=accuracy_function,
             progress=progress,
             min_accuracy=min_accuracy,
@@ -68,7 +69,6 @@ class SparsityThresholdProblem(CustomExplorationProblem):
             kwargs=kwargs
         )
 
-        self.sparse_model = sparse_model
         self.dataloader_generator = dataloader_generator
 
         self.discrete_threshold_steps = discrete_threshold_steps
@@ -93,16 +93,16 @@ class SparsityThresholdProblem(CustomExplorationProblem):
         logger.debug("Evaluating individual #{} of {} in Generation {}".format(
             index + 1, algorithm.pop_size, algorithm.n_iter))
 
-        self.sparse_model.thresholds = thresholds
+        self.model.thresholds = thresholds
 
         f1_accuracy_objective = self.accuracy_function(
-            self.sparse_model.base_model,
+            self.model.base_model,
             self.dataloader_generator,
             progress=self.progress,
             title="Evaluating {}/{}".format(index + 1, algorithm.pop_size)
         )
         # f2 is the mean of created sparse blocks
-        f2_sparsity_objective = self.sparse_model.get_total_created_sparse_blocks()
+        f2_sparsity_objective = self.model.get_total_created_sparse_blocks()
 
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
 

@@ -29,8 +29,8 @@ class QuantizedModel(CustomModel):
         self.weighting_function = weighting_function
 
         # supposingly this is not going to change
-        self.quantizer_modules = []
-        self.quantizer_names = []
+        self.explorable_modules = []
+        self.explorable_module_names = []
         self._create_quant_model()
 
     @property
@@ -43,27 +43,27 @@ class QuantizedModel(CustomModel):
             new_bit_widths,
             np.ndarray), "bit_width have to be a list or ndarray"
         assert len(new_bit_widths) == len(
-            self.quantizer_modules
+            self.explorable_modules
         ), "bit_width list has to match the amount of quantization layers"
 
         # Update Model ...
-        for i, module in enumerate(self.quantizer_modules):
+        for i, module in enumerate(self.explorable_modules):
             module.num_bits = new_bit_widths[i]
 
         self._bit_widths = new_bit_widths
 
     def get_explorable_parameter_count(self) -> int:
-        return len(self.quantizer_modules)
+        return len(self.explorable_modules)
 
     def get_bit_weighted(self) -> int:
-        return self.weighting_function(self.quantizer_modules,
-                                       self.quantizer_names)
+        return self.weighting_function(self.explorable_modules,
+                                       self.explorable_module_names)
 
     def enable_quantization(self):
-        [module.enable_quant() for module in self.quantizer_modules]
+        [module.enable_quant() for module in self.explorable_modules]
 
     def disable_quantization(self):
-        [module.disable_quant() for module in self.quantizer_modules]
+        [module.disable_quant() for module in self.explorable_modules]
 
     def _create_quant_model(self) -> None:
         for name, module in self.base_model.named_modules():
@@ -91,8 +91,8 @@ class QuantizedModel(CustomModel):
 
         for name, module in self.base_model.named_modules():
             if isinstance(module, quant_nn.TensorQuantizer):
-                self.quantizer_names.append(name)
-                self.quantizer_modules.append(module)
+                self.explorable_module_names.append(name)
+                self.explorable_modules.append(module)
 
 
     # CALIBRATION PART
@@ -117,7 +117,7 @@ class QuantizedModel(CustomModel):
         self.base_model.to(self.device)
 
         # Enable Calibrators
-        for module in self.quantizer_modules:
+        for module in self.explorable_modules:
             if module._calibrator is not None:
                 module.disable_quant()
                 module.enable_calib()
@@ -132,7 +132,7 @@ class QuantizedModel(CustomModel):
             self.base_model(data.to(self.device))
 
         # Disable Calibrators
-        for module in self.quantizer_modules:
+        for module in self.explorable_modules:
             if module._calibrator is not None:
                 module.enable_quant()
                 module.disable_calib()
@@ -140,7 +140,7 @@ class QuantizedModel(CustomModel):
                 module.enable()
 
         # Collect amax statistics
-        for module in self.quantizer_modules:
+        for module in self.explorable_modules:
             if module._calibrator is not None:
                 if isinstance(module._calibrator, calib.MaxCalibrator):
                     module.load_calib_amax()
