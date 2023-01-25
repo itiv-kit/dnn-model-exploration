@@ -92,6 +92,8 @@ class SparsityThresholdProblem(CustomExplorationProblem):
 
         logger.debug("Evaluating individual #{} of {} in Generation {}".format(
             index + 1, algorithm.pop_size, algorithm.n_iter))
+        threshold_strs = ['{:.2f}'.format(x) for x in thresholds]
+        logger.debug(f"\tThesholds: {threshold_strs}")
 
         self.model.thresholds = thresholds
 
@@ -107,8 +109,8 @@ class SparsityThresholdProblem(CustomExplorationProblem):
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
 
         logger.debug(
-            f"Evaluated individual, accuracy: {f1_accuracy_objective:.4f}, " +
-            f"sparse blocks created: {f2_sparsity_objective}"
+            f"\tEvaluated, acc: {f1_accuracy_objective:.4f}, " +
+            f"sparse blks created: {f2_sparsity_objective}"
         )
 
         # NOTE: In pymoo, each objective function is supposed to be minimized,

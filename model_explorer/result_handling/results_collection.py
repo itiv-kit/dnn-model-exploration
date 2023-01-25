@@ -18,6 +18,10 @@ class ResultsCollection():
         with open(pickle_file, 'rb') as f:
             d: Result = CPUUnpickler(f).load()
 
+        if d is None:
+            # No feasible solutions found
+            raise ValueError(f"Result collection at {pickle_file} has no solutions")
+
         self.accuracy_limit = d.problem.min_accuracy
         self.explorable_module_names = d.problem.model.explorable_module_names
 

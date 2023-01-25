@@ -1,7 +1,7 @@
 workload:
   problem:
-    problem_function: sparsity_problem
-    # problem_function: quantization_problem
+    # problem_function: sparsity_problem
+    problem_function: quantization_problem
 
   model:
     type: resnet18
@@ -24,14 +24,14 @@ workload:
 
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
-      pop_size: 20
-      offsprings: 20
-      generations: 20
+      pop_size: 5
+      offsprings: 5
+      generations: 5
       mutation_eta: 20
       mutation_prob: 0.9
       crossover_eta: 15
       crossover_prob: 0.9
-    minimum_accuracy: 0.65 # accuracy constraint
+    minimum_accuracy: 0.16 # accuracy constraint
     datasets:
       exploration:
         type: imagenet

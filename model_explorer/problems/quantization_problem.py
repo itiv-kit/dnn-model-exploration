@@ -103,6 +103,8 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
 
         logger.debug("Evaluating individual #{} of {} in Generation {}".format(
             index + 1, algorithm.pop_size, algorithm.n_iter))
+        bits_str = [str(x) for x in layer_bit_nums]
+        logger.debug(f"\tBit widths: {bits_str}")
 
         self.model.bit_widths = layer_bit_nums
 
@@ -115,7 +117,7 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
         f2_quant_objective = self.model.get_bit_weighted()
 
         logger.debug(
-            f"Evaluated individual, accuracy: {f1_accuracy_objective:.4f}, weighted bits: {f2_quant_objective}"
+            f"\t Evaluated, acc: {f1_accuracy_objective:.4f}, weighted bits: {f2_quant_objective}"
         )
 
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
