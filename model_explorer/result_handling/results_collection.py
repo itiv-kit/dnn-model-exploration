@@ -19,15 +19,15 @@ class ResultsCollection():
             d: Result = CPUUnpickler(f).load()
 
         self.accuracy_limit = d.problem.min_accuracy
-        self.explorable_module_names = d.problem.base_model.
+        self.explorable_module_names = d.problem.model.explorable_module_names
 
         for generation_idx, h in enumerate(d.history):
             assert isinstance(h, pymoo.algorithms.moo.nsga2.NSGA2)
             for individual_idx, ind in enumerate(h.pop):
                 self.individuals.append(
                     ResultEntry(accuracy=-(ind.get("F")[0]),
-                                weighted_parameters=ind.get("F")[1],
-                                parameters=ind.get("X").tolist(),
+                                further_objectives=ind.get("F")[1:],
+                                parameter=ind.get("X").tolist(),
                                 generation=generation_idx,
                                 individual_idx=individual_idx,
                                 pymoo_mating=h.mating))
@@ -42,13 +42,13 @@ class ResultsCollection():
         seen_lists = []
         new_individuals = []
         for ind in self.individuals:
-            if ind.bits not in seen_lists:
-                seen_lists.append(ind.bits)
+            if ind.parameter not in seen_lists:
+                seen_lists.append(ind.parameter)
                 new_individuals.append(ind)
         self.individuals = new_individuals
 
-    def get_weighted_params_sorted_individuals(self):
-        return sorted(self.individuals, key=lambda ind: ind.weighted_bits)
+    def get_weighted_params_sorted_individuals(self, index=0):
+        return sorted(self.individuals, key=lambda ind: ind.further_objectives[index])
 
     def get_accuracy_sorted_individuals(self):
         return sorted(self.individuals,
@@ -63,3 +63,9 @@ class ResultsCollection():
     def to_dataframe(self):
         return pd.DataFrame.from_records(
             [r.to_dict(self.explorable_module_names) for r in self.individuals])
+
+    def __len__(self) -> int:
+        return len(self.individuals)
+
+    def __iter__(self) -> iter:
+        yield next(self.individuals)

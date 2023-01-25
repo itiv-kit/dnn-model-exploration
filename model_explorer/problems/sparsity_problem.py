@@ -116,6 +116,8 @@ class SparsityThresholdProblem(CustomExplorationProblem):
         out["F"] = [-f1_accuracy_objective, -f2_sparsity_objective]
         out["G"] = [g1_accuracy_constraint]
 
+        self.model.reset_model_stats()
+
 
 prepare_exploration_function = prepare_sparsity_problem
 repair_method = None
