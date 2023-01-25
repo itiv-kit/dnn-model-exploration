@@ -24,9 +24,9 @@ workload:
 
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
-      pop_size: 20
-      offsprings: 20
-      generations: 20
+      pop_size: 3
+      offsprings: 3
+      generations: 3
       mutation_eta: 20
       mutation_prob: 0.9
       crossover_eta: 15

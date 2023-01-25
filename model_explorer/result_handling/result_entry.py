@@ -9,21 +9,21 @@ import pymoo.operators.selection.tournament
 @dataclass
 class ResultEntry:
     accuracy: float
-    bits: List[int]
+    parameters: List[int]
     generation: int
     individual_idx: int
-    weighted_bits: int
+    weighted_parameters: int
     pymoo_mating: pymoo.core.mating.Mating
 
-    def bit_sum(self):
-        return sum(self.bits)
+    def parameters_sum(self):
+        return sum(self.parameters)
 
-    def to_dict_without_bits(self):
+    def to_dict_without_parameters(self):
         rdict = {
             "generation": self.generation,
             "individual": self.individual_idx,
             "accuracy": self.accuracy,
-            "weighted_bits": self.weighted_bits
+            "weighted_parameters": self.weighted_parameters
         }
         if isinstance(self.pymoo_mating.mutation, pymoo.operators.mutation.pm.PolynomialMutation):
             rdict['mutation_eta'] = self.pymoo_mating.mutation.eta.value
@@ -37,14 +37,14 @@ class ResultEntry:
         return rdict
 
     def to_dict(self, layer_names=[]):
-        rdict = self.to_dict_without_bits()
+        rdict = self.to_dict_without_parameters()
 
         if layer_names == []:
-            for idx, bit in enumerate(self.bits):
-                rdict['bits_{}'.format(idx)] = bit
+            for idx, param in enumerate(self.parameters):
+                rdict['param_{}'.format(idx)] = param
         else:
-            for name, bit in zip(layer_names, self.bits):
-                rdict[name] = bit
+            for name, param in zip(layer_names, self.parameters):
+                rdict[name] = param
 
         return rdict
 

@@ -20,7 +20,7 @@ def collect_results(path):
         results_collection = ResultsCollection(path)
         logger.debug("Added results file: {} with {} individual(s)".format(path, len(results_collection.individuals)))
 
-    results_collection.drop_duplicate_bits()
+    results_collection.drop_duplicate_parameters()
     logger.debug("Loaded in total {} individuals".format(len(results_collection.individuals)))
 
     return results_collection
