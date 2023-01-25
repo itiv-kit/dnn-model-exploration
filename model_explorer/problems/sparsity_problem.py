@@ -1,6 +1,4 @@
 import torch
-import importlib
-import sys
 
 from torch import nn
 from pymoo.algorithms.moo.nsga2 import NSGA2

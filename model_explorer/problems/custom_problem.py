@@ -19,7 +19,7 @@ class CustomExplorationProblem(ElementwiseProblem):
             elementwise_func=ElementwiseEvaluationFunctionWithIndex,
             elementwise_runner=LoopedElementwiseEvaluationWithIndex(),
             **kwargs)
-        
+
         self.model = model
         self.progress = progress
         self.min_accuracy = min_accuracy

@@ -18,7 +18,7 @@ class ElementwiseEvaluationFunctionWithIndex(ElementwiseEvaluationFunction):
 class LoopedElementwiseEvaluationWithIndex(LoopedElementwiseEvaluation):
     def __call__(self, f, X):
         algorithm: NSGA2 = f.kwargs.get('algorithm')
-        pbar = tqdm(total=len(X), position=1, desc="Generation {}".format(algorithm.n_iter))
+        pbar = tqdm(total=len(X), position=1, ascii=True, desc="Generation {}".format(algorithm.n_iter))
         results = []
         for i, x in enumerate(X):
             results.append(f(i, x))

@@ -22,7 +22,7 @@ def compute_classification_accuracy(base_model, dataloader_generator, progress=T
     dataloader = dataloader_generator.get_dataloader()
 
     if progress:
-        progress_bar = tqdm.tqdm(total=dataset_size, desc=title, position=0)
+        progress_bar = tqdm.tqdm(total=dataset_size, ascii=True, desc=title, position=0)
 
     model = base_model
     model = model.to(device)
