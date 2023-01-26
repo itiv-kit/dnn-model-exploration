@@ -15,8 +15,6 @@ from datetime import datetime
 import pickle
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
-from pymoo.operators.sampling.rnd import IntegerRandomSampling
-from pymoo.operators.repair.rounding import RoundingRepair
 from pymoo.operators.crossover.sbx import SBX
 from pymoo.operators.mutation.pm import PolynomialMutation
 from pymoo.optimize import minimize
@@ -88,6 +86,8 @@ def explore_model(workload: Workload,
     mutation = PolynomialMutation(prob=workload['exploration']['nsga']['mutation_prob'],
                                   eta=workload['exploration']['nsga']['mutation_eta'],
                                   repair=repair_method)
+
+    print(sampling_method)
 
     algorithm = NSGA2(
         pop_size=workload['exploration']['nsga']['pop_size'],

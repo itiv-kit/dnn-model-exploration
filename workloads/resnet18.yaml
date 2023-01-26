@@ -24,12 +24,12 @@ workload:
 
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
-      pop_size: 20
-      offsprings: 20
-      generations: 25
-      mutation_eta: 50
+      pop_size: 7
+      offsprings: 7
+      generations: 10
+      mutation_eta: 10
       mutation_prob: 0.9
-      crossover_eta: 30
+      crossover_eta: 5
       crossover_prob: 0.9
     minimum_accuracy: 0.60 # accuracy constraint
     datasets:
@@ -37,7 +37,7 @@ workload:
         type: imagenet
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
-        sample_limit: 8096 # number of validation dataset samples to test for each individual
+        sample_limit: 4096 # number of validation dataset samples to test for each individual
         batch_size: 512
       baseline:
         type: imagenet
@@ -53,7 +53,7 @@ workload:
       # for sparsity
       discrete_threshold_steps: 100
       discrete_threshold_method: linear
-      threshold_limit: 0.3
+      threshold_limit: 0.1
       block_size: [8,8]
 
   retraining:

@@ -1,8 +1,10 @@
 import torch
+import numpy as np
 
 from torch import nn
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.operators.sampling.rnd import FloatRandomSampling
+from pymoo.core.sampling import Sampling
 
 from model_explorer.models.sparse_model import SparseModel
 from model_explorer.utils.logger import logger
@@ -90,7 +92,7 @@ class SparsityThresholdProblem(CustomExplorationProblem):
 
         logger.debug("Evaluating individual #{} of {} in Generation {}".format(
             index + 1, algorithm.pop_size, algorithm.n_iter))
-        threshold_strs = ['{:.2f}'.format(x) for x in thresholds]
+        threshold_strs = ['{:.3f}'.format(x) for x in thresholds]
         logger.debug(f"\tThesholds: {threshold_strs}")
 
         self.model.thresholds = thresholds
@@ -103,6 +105,7 @@ class SparsityThresholdProblem(CustomExplorationProblem):
         )
         # f2 is the mean of created sparse blocks
         f2_sparsity_objective = self.model.get_total_created_sparse_blocks()
+        f2_sparsity_objective /= 100_000_000
 
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
 
@@ -119,6 +122,24 @@ class SparsityThresholdProblem(CustomExplorationProblem):
         self.model.reset_model_stats()
 
 
+class FloatRandomSamplingWithDefinedIndividual(FloatRandomSampling):
+
+    def __init__(self, var_type=np.float64, predefined: list = []) -> None:
+        super().__init__()
+        np.random.seed(None)
+        self.var_type = var_type
+        self.predefined = predefined
+
+    def _do(self, problem, n_samples, **kwargs):
+        pop = super()._do(problem, n_samples, **kwargs)
+        pop = pop[:-len(self.predefined)]
+
+        for predef in self.predefined:
+            predef_ind = np.full((1, problem.n_var), predef)
+            pop = np.concatenate((pop, predef_ind))
+        return pop
+
+
 prepare_exploration_function = prepare_sparsity_problem
 repair_method = None
-sampling_method = FloatRandomSampling()
+sampling_method = FloatRandomSamplingWithDefinedIndividual(predefined=[0.0, 0.01])
