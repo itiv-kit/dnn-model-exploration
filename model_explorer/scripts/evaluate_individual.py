@@ -4,11 +4,6 @@ import pandas as pd
 import importlib
 from datetime import datetime
 
-# import troch quantization and activate the replacement of modules
-from pytorch_quantization import quant_modules
-
-quant_modules.initialize()
-
 from model_explorer.utils.logger import logger
 from model_explorer.utils.setup import build_dataloader_generators, setup_torch_device, setup_workload
 from model_explorer.utils.workload import Workload
