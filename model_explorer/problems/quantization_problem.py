@@ -55,7 +55,7 @@ def prepare_quantization_problem(model: nn.Module, device: torch.device,
     num_bits_upper_limit = kwargs.get('num_bits_upper_limit')
     num_bits_lower_limit = kwargs.get('num_bits_lower_limit')
 
-    qmodel = init_quant_model(model, device, verbose, kwargs)
+    qmodel = init_quant_model(model, device, verbose, **kwargs)
     logger.info("Quantization problem and model initialized")
 
     return LayerwiseQuantizationProblem(

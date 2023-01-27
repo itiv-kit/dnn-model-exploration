@@ -22,10 +22,10 @@ fh = logging.FileHandler(os.path.join(LOG_DIR, LOG_FILE))
 fh.setLevel(logging.DEBUG)
 
 formatter_file = logging.Formatter(
-    "[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
+    "[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s", "%m-%d %H:%M:%S"
 )
 formatter_console = logging.Formatter(
-    "[%(asctime)s] %(levelname)-8s - %(message)s"
+    "[%(asctime)s] %(levelname)-8s - %(message)s", "%m-%d %H:%M:%S"
 )
 
 fh.setFormatter(formatter_file)

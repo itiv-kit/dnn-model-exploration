@@ -32,7 +32,7 @@ def prepare_sparsity_problem(model: nn.Module, device: torch.device,
     discrete_threshold_method = kwargs.get('discrete_threshold_method')
     threshold_limit = kwargs.get('threshold_limit')
 
-    smodel = init_sparse_model(model, device, verbose, kwargs)
+    smodel = init_sparse_model(model, device, verbose, **kwargs)
 
     logger.info("Sparsity problem and model initialized")
 

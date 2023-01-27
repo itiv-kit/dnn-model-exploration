@@ -11,8 +11,6 @@ Usage:
 import os
 import argparse
 import numpy as np
-from datetime import datetime
-import pickle
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.operators.crossover.sbx import SBX
@@ -24,35 +22,7 @@ from model_explorer.utils.logger import logger
 from model_explorer.utils.setup import build_dataloader_generators, setup_torch_device, \
         setup_workload, get_prepare_exploration_function
 from model_explorer.utils.workload import Workload
-
-
-RESULTS_DIR = "./results"
-
-
-
-def save_result(res, problem_name, model_name, dataset_name):
-    """Save the result object from the exploration as a pickle file.
-
-    Args:
-        res (obj):
-            The result object to save.
-        model_name (str):
-            The name of the model this result object belongs to.
-            This is used as a prefix for the saved file.
-    """
-    if not os.path.exists(RESULTS_DIR):
-        os.makedirs(RESULTS_DIR)
-
-    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M")
-
-    filename = 'expl_{}_{}_{}_{}.pkl'.format(
-        problem_name, model_name, dataset_name, date_str)
-
-    with open(os.path.join(RESULTS_DIR, filename), "wb") as res_file:
-        pickle.dump(res, res_file)
-
-    logger.info(f"Saved result object to: {filename}")
-
+from model_explorer.result_handling.save_results import save_result_pickle
 
 
 def explore_model(workload: Workload,
@@ -153,7 +123,7 @@ if __name__ == "__main__":
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
         results = explore_model(workload, opt.skip_baseline, opt.progress, opt.verbose)
-        save_result(results, workload['problem']['problem_function'], workload['model']['type'], workload['exploration']['datasets']['exploration']['type'])
+        save_result_pickle(results, workload['problem']['problem_function'], workload['model']['type'], workload['exploration']['datasets']['exploration']['type'])
 
     else:
         logger.warning("Declared workload file could not be found.")

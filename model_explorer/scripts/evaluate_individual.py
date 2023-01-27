@@ -1,7 +1,6 @@
 import os
 import argparse
 import pandas as pd
-import importlib
 from datetime import datetime
 
 from model_explorer.utils.logger import logger
@@ -9,22 +8,9 @@ from model_explorer.utils.setup import build_dataloader_generators, setup_torch_
 from model_explorer.utils.workload import Workload
 from model_explorer.utils.setup import get_model_init_function, get_model_update_function
 from model_explorer.result_handling.collect_results import collect_results
+from model_explorer.result_handling.save_results import save_results_df_to_csv
 
 RESULTS_DIR = "./results"
-
-
-def save_results(result_df: pd.DataFrame, problem_name: str, model_name: str, dataset_name: str):
-    # store results in csv
-    if not os.path.exists(RESULTS_DIR):
-        os.makedirs(RESULTS_DIR)
-
-    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M")
-
-    filename = 'reeval_{}_{}_{}_{}.csv'.format(
-        problem_name, model_name, dataset_name, date_str)
-    filename = os.path.join(RESULTS_DIR, filename)
-    result_df.to_csv(filename)
-    logger.info(f"Saved result object to: {filename}")
 
 
 def reevaluate_individuals(workload: Workload, results_path: str,
@@ -122,9 +108,11 @@ if __name__ == "__main__":
         results = reevaluate_individuals(workload,
                                          opt.results_path, opt.top_elements,
                                          opt.progress, opt.verbose)
-        save_results(
-            results, workload['problem']['problem_function'], workload['model']['type'],
-            workload['reevaluation']['datasets']['reevaluate']['type'])
+        save_results_df_to_csv(
+            'reeval', results,
+            workload['problem']['problem_function'], workload['model']['type'],
+            workload['reevaluation']['datasets']['reevaluate']['type']
+        )
 
     else:
         logger.warning("Declared workload file could not be found.")

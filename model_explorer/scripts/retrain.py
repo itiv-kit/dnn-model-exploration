@@ -17,19 +17,6 @@ from model_explorer.quantization.quantized_model import QuantizedModel
 RESULTS_DIR = "./results"
 
 
-def save_results(result_df: pd.DataFrame, model_name: str, dataset_name: str):
-    # store results in csv
-    if not os.path.exists(RESULTS_DIR):
-        os.makedirs(RESULTS_DIR)
-
-    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-    filename = 'retrain_results_{}_{}_{}.csv'.format(model_name, dataset_name,
-                                                     date_str)
-    result_df.to_csv(filename)
-    logger.info(f"Saved result object to: {filename}")
-
-
 def retrain_best_individuals(workload,
                              calibration_file,
                              results_path,

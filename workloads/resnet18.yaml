@@ -37,7 +37,7 @@ workload:
         type: imagenet
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
-        sample_limit: 4096 # number of validation dataset samples to test for each individual
+        sample_limit: 1024 # number of validation dataset samples to test for each individual
         batch_size: 512
       baseline:
         type: imagenet
@@ -81,5 +81,4 @@ workload:
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
         sample_limit: null
-        batch_size: 256
-
+        batch_size: 512
