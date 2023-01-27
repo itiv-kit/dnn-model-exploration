@@ -24,11 +24,11 @@ workload:
 
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
-      pop_size: 7
-      offsprings: 7
-      generations: 10
+      pop_size: 15
+      offsprings: 15
+      generations: 25
       mutation_eta: 10
-      mutation_prob: 0.9
+      mutation_prob: 1.0
       crossover_eta: 5
       crossover_prob: 0.9
     minimum_accuracy: 0.60 # accuracy constraint

@@ -4,7 +4,6 @@ import numpy as np
 from torch import nn
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.operators.sampling.rnd import FloatRandomSampling
-from pymoo.core.sampling import Sampling
 
 from model_explorer.models.sparse_model import SparseModel
 from model_explorer.utils.logger import logger
@@ -12,18 +11,29 @@ from model_explorer.problems.custom_problem import CustomExplorationProblem
 from model_explorer.utils.data_loader_generator import DataLoaderGenerator
 
 
+def update_sparse_model_params(model: SparseModel, thresholds: list):
+    model.thresholds = thresholds
+
+
+def init_sparse_model(model: nn.Module, device: torch.device,
+                      verbose: bool, **kwargs: dict) -> SparseModel:
+    block_size = kwargs.get('block_size')
+    smodel = SparseModel(model, block_size, device, verbose)
+    logger.debug("Initalized sparse model with {} sparse modules".format(smodel.get_explorable_parameter_count()))
+    return smodel
+
+
 def prepare_sparsity_problem(model: nn.Module, device: torch.device,
                              dataloader_generator: DataLoaderGenerator,
                              accuracy_function: callable, min_accuracy: float,
                              verbose: bool, progress: bool,
                              **kwargs: dict):
-    block_size = kwargs.get('block_size')
     discrete_threshold_steps = kwargs.get('discrete_threshold_steps')
     discrete_threshold_method = kwargs.get('discrete_threshold_method')
     threshold_limit = kwargs.get('threshold_limit')
 
-    smodel = SparseModel(model, block_size, device, verbose)
-    logger.debug("Initalized sparse model with {} sparse modules".format(smodel.get_explorable_parameter_count()))
+    smodel = init_sparse_model(model, device, verbose, kwargs)
+
     logger.info("Sparsity problem and model initialized")
 
     return SparsityThresholdProblem(
@@ -142,4 +152,6 @@ class FloatRandomSamplingWithDefinedIndividual(FloatRandomSampling):
 
 prepare_exploration_function = prepare_sparsity_problem
 repair_method = None
-sampling_method = FloatRandomSamplingWithDefinedIndividual(predefined=[0.0, 0.01])
+sampling_method = FloatRandomSamplingWithDefinedIndividual(predefined=[0.04])
+init_function = init_sparse_model
+update_params_function = update_sparse_model_params

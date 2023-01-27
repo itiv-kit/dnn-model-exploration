@@ -58,6 +58,20 @@ def get_prepare_exploration_function(problem_name: str) -> list:
     return prepare_exploration_function, repair_method, sampling_method
 
 
+def get_model_init_function(problem_name: str) -> callable:
+    init_func = importlib.import_module(
+        f"{PROBLEMS_FOLDER}.{problem_name}", package=__package__
+    ).init_function
+    return init_func
+
+
+def get_model_update_function(problem_name: str) -> callable:
+    update_func = importlib.import_module(
+        f"{PROBLEMS_FOLDER}.{problem_name}", package=__package__
+    ).update_params_function
+    return update_func
+
+
 def setup_dataset(dataset_settings) -> list:
     """This function sets up the dataset and returns the dataset.
 

@@ -9,7 +9,7 @@ import pymoo.operators.selection.tournament
 @dataclass
 class ResultEntry:
     accuracy: float
-    parameter: List[int]
+    parameter: list
     generation: int
     individual_idx: int
     further_objectives: List[int]

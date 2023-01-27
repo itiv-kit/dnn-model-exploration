@@ -70,7 +70,8 @@ def explore_model(workload: Workload,
         baseline = accuracy_function(model, baseline_dataloader, title="Baseline Generation")
         logger.info(f"Done. Baseline accuracy: {baseline:.3f}")
 
-    prepare_function, repair_method, sampling_method = get_prepare_exploration_function(workload['problem']['problem_function'])
+    prepare_function, repair_method, sampling_method = \
+        get_prepare_exploration_function(workload['problem']['problem_function'])
     kwargs: dict = workload['exploration']['extra_args']
     if 'calibration' in workload.yaml_data:
         kwargs['calibration_file'] = workload['calibration']['file']
@@ -86,8 +87,6 @@ def explore_model(workload: Workload,
     mutation = PolynomialMutation(prob=workload['exploration']['nsga']['mutation_prob'],
                                   eta=workload['exploration']['nsga']['mutation_eta'],
                                   repair=repair_method)
-
-    print(sampling_method)
 
     algorithm = NSGA2(
         pop_size=workload['exploration']['nsga']['pop_size'],

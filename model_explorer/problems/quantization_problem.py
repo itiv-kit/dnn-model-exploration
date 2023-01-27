@@ -13,13 +13,12 @@ from model_explorer.models.quantized_model import QuantizedModel
 from model_explorer.utils.data_loader_generator import DataLoaderGenerator
 
 
-def prepare_quantization_problem(model: nn.Module, device: torch.device,
-                                 dataloader_generator: DataLoaderGenerator,
-                                 accuracy_function: callable, min_accuracy: float,
-                                 verbose: bool, progress: bool,
-                                 **kwargs: dict):
-    num_bits_upper_limit = kwargs.get('num_bits_upper_limit')
-    num_bits_lower_limit = kwargs.get('num_bits_lower_limit')
+def update_quant_model_params(qmodel: QuantizedModel, bits: list):
+    qmodel.bit_widths = bits
+
+
+def init_quant_model(model: nn.Module, device: torch.device,
+                     verbose: bool, **kwargs: dict) -> QuantizedModel:
     weighting_function_name = kwargs.get('bit_weighting_function')
     calibration_file = kwargs.get('calibration_file')
 
@@ -45,6 +44,18 @@ def prepare_quantization_problem(model: nn.Module, device: torch.device,
     logger.debug(f"Loading calibration file: {calibration_file}")
     qmodel.load_parameters(calibration_file)
 
+    return qmodel
+
+
+def prepare_quantization_problem(model: nn.Module, device: torch.device,
+                                 dataloader_generator: DataLoaderGenerator,
+                                 accuracy_function: callable, min_accuracy: float,
+                                 verbose: bool, progress: bool,
+                                 **kwargs: dict):
+    num_bits_upper_limit = kwargs.get('num_bits_upper_limit')
+    num_bits_lower_limit = kwargs.get('num_bits_lower_limit')
+
+    qmodel = init_quant_model(model, device, verbose, kwargs)
     logger.info("Quantization problem and model initialized")
 
     return LayerwiseQuantizationProblem(
@@ -131,3 +142,5 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
 prepare_exploration_function = prepare_quantization_problem
 repair_method = RoundingRepair()
 sampling_method = IntegerRandomSampling()
+init_function = init_quant_model
+update_params_function = update_quant_model_params

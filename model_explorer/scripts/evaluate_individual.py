@@ -12,27 +12,28 @@ quant_modules.initialize()
 from model_explorer.utils.logger import logger
 from model_explorer.utils.setup import build_dataloader_generators, setup_torch_device, setup_workload
 from model_explorer.utils.workload import Workload
-from model_explorer.quantization.quantized_model import QuantizedModel
+from model_explorer.utils.setup import get_model_init_function, get_model_update_function
 from model_explorer.result_handling.collect_results import collect_results
 
 RESULTS_DIR = "./results"
 
 
-def save_results(result_df: pd.DataFrame, model_name: str, dataset_name: str):
+def save_results(result_df: pd.DataFrame, problem_name: str, model_name: str, dataset_name: str):
     # store results in csv
     if not os.path.exists(RESULTS_DIR):
         os.makedirs(RESULTS_DIR)
 
-    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M")
 
-    filename = 'reevaluation_results_{}_{}_{}.csv'.format(
-        model_name, dataset_name, date_str)
+    filename = 'reeval_{}_{}_{}_{}.csv'.format(
+        problem_name, model_name, dataset_name, date_str)
+    filename = os.path.join(RESULTS_DIR, filename)
     result_df.to_csv(filename)
     logger.info(f"Saved result object to: {filename}")
 
 
-def reevaluate_individuals(workload: Workload, calibration_file: str,
-                           results_path: str, count: int, progress: bool,
+def reevaluate_individuals(workload: Workload, results_path: str,
+                           count: int, progress: bool,
                            verbose: bool):
 
     dataloaders = build_dataloader_generators(
@@ -40,19 +41,13 @@ def reevaluate_individuals(workload: Workload, calibration_file: str,
     reevaluate_dataloader = dataloaders['reevaluate']
     model, accuracy_function = setup_workload(workload['model'])
     device = setup_torch_device()
-    weighting_function = getattr(
-        importlib.import_module('src.exploration.weighting_functions'),
-        workload['reevaluation']['bit_weighting_function'], None)
-    assert weighting_function is not None and callable(
-        weighting_function), "error loading weighting function"
 
-    qmodel = QuantizedModel(model,
-                            device,
-                            weighting_function=weighting_function,
-                            verbose=verbose)
-    # Load the previously generated calibration file
-    logger.info(f"Loading calibration file: {calibration_file}")
-    qmodel.load_parameters(calibration_file)
+    model_init_func = get_model_init_function(workload['problem']['problem_function'])
+    model_update_func = get_model_update_function(workload['problem']['problem_function'])
+    kwargs: dict = workload['exploration']['extra_args']
+    if 'calibration' in workload.yaml_data:
+        kwargs['calibration_file'] = workload['calibration']['file']
+    explorable_model = model_init_func(model, device, verbose, **kwargs)
 
     # Load the specified results file and pick n individuals
     results_collection = collect_results(results_path)
@@ -63,53 +58,41 @@ def reevaluate_individuals(workload: Workload, calibration_file: str,
 
     # select individuals with limit and cost function
     individuals = results_collection.get_better_than_individuals(0.72)
-    # get max and min for normalize
-    max_weighted_bits = max([ind.weighted_bits for ind in individuals])
-    min_weighted_bits = min([ind.weighted_bits for ind in individuals])
-    max_accuracy = max([ind.accuracy for ind in individuals])
-    min_accuracy = min([ind.accuracy for ind in individuals])
-
-    individuals_with_cost = []
-    for ind in individuals:
-        cost = 0.5*((ind.weighted_bits - min_weighted_bits) / (max_weighted_bits - min_weighted_bits)) + \
-               0.5-(0.5*((ind.accuracy - min_accuracy) / (max_accuracy - min_accuracy)))
-        individuals_with_cost.append((cost, ind))
 
     results = pd.DataFrame(columns=[
-        'generation', 'individual', 'accuracy', 'acc_full', 'weighted_bits',
+        'generation', 'individual', 'accuracy', 'acc_full', 'F_0',
         'mutation_eta', 'mutation_prob', 'crossover_eta', 'crossover_prob',
-        'selection_press', 'cost', 'bits'
+        'selection_press'
     ])
 
     # sort the individuals for cost and select n with lowest cost
-    individuals_with_cost.sort(key=lambda ind: ind[0])
-    individuals_with_cost = individuals_with_cost[:count]
+    individuals = individuals[:count]
 
     logger.info(
         "Selecting {} individual(s) for reevaluation with the full dataset.".
-        format(len(individuals_with_cost)))
+        format(len(individuals)))
 
-    for i, (cost, individual) in enumerate(individuals_with_cost):
+    for i, individual in enumerate(individuals):
         logger.debug(
             "Evaluating {} / {} models with optimization accuracy: {}".format(
-                i + 1, len(individuals_with_cost), individual.accuracy))
-        qmodel.bit_widths = individual.bits
-        full_accuracy = accuracy_function(qmodel.model,
+                i + 1, len(individuals), individual.accuracy))
+        model_update_func(explorable_model, individual.parameter)
+        full_accuracy = accuracy_function(explorable_model.base_model,
                                           reevaluate_dataloader,
                                           progress=progress,
                                           title="Reevaluating {}/{}".format(
                                               i + 1,
-                                              len(individuals_with_cost)))
+                                              len(individuals)))
 
         logger.info(
-            "Done with ind {} / {}, accuracy is {:.4f}, was before {:.4f} at cost {:.4f} ({} bit)"
-            .format(i + 1, len(individuals_with_cost), full_accuracy,
-                    individual.accuracy, cost, individual.weighted_bits))
+            "Done with ind {} / {}, accuracy is {:.4f}, was before {:.4f}, fo={}"
+            .format(i + 1, len(individuals), full_accuracy,
+                    individual.accuracy, individual.further_objectives))
 
-        loc_dict = individual.to_dict_without_bits()
-        loc_dict['acc_full'] = full_accuracy.float()
-        loc_dict['bits'] = individual.bits
-        loc_dict['cost'] = cost
+        loc_dict = individual.to_dict_without_parameters()
+        loc_dict['acc_full'] = full_accuracy.item()
+        # loc_dict['bits'] = individual.bits
+        # loc_dict['cost'] = cost
         results.loc[i] = loc_dict
 
     return results
@@ -118,7 +101,6 @@ def reevaluate_individuals(workload: Workload, calibration_file: str,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("calibration_file")
     parser.add_argument("workload", help="The path to the workload yaml file.")
     parser.add_argument(
         "results_path",
@@ -142,15 +124,15 @@ if __name__ == "__main__":
     workload_file = opt.workload
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
-        results = reevaluate_individuals(workload, opt.calibration_file,
+        results = reevaluate_individuals(workload,
                                          opt.results_path, opt.top_elements,
                                          opt.progress, opt.verbose)
         save_results(
-            results, workload['model']['type'],
+            results, workload['problem']['problem_function'], workload['model']['type'],
             workload['reevaluation']['datasets']['reevaluate']['type'])
 
     else:
         logger.warning("Declared workload file could not be found.")
         raise Exception(f"No file {opt.workload} found.")
 
-    logger.info("Quantization GA Sweep Exploration Finished")
+    logger.info("Reevaluation of individuals finished")
