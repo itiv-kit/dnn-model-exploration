@@ -38,7 +38,7 @@ def reevaluate_individuals(workload: Workload, results_path: str,
         len(results_collection.individuals)))
 
     # select individuals with limit and cost function
-    individuals = results_collection.get_better_than_individuals(0.72)
+    individuals = results_collection.get_accuracy_sorted_individuals()  # get_better_than_individuals(0.72)
 
     results = pd.DataFrame(columns=[
         'generation', 'individual', 'accuracy', 'acc_full', 'F_0',

@@ -5,6 +5,8 @@ setup(
     install_requires=[
         'pymoo',
         'torch',
+        'torchvision',
+        'webdataset'
         'matplotlib',
         'tqdm',
         'pandas'

@@ -3,7 +3,7 @@ import logging
 
 LOGGER_NAME = "exploration_logger"
 LOG_DIR = "results"
-LOG_FILE = "exploration_run.log"
+LOG_FILE = "exploration_run_16.log"
 
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)

@@ -10,7 +10,7 @@ workload:
 
   calibration:
     samples: null # null sets samples to all
-    file: './results/resnet50_quant_calib.pkl'
+    file: './results/resnet18_quant_calib.pkl'
     datasets:
       calibrate:
         type: imagenet
@@ -26,16 +26,16 @@ workload:
       generations: 10
       mutation_eta: 100
       mutation_prob: 0.9
-      crossover_eta: 10
+      crossover_eta: 30
       crossover_prob: 0.7
-    minimum_accuracy: 0.76 # accuracy constraint
+    minimum_accuracy: 0.75 # accuracy constraint
     datasets:
       exploration:
         type: imagenet
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
         sample_limit: 2048 # number of validation dataset samples to test for each individual
-        batch_size: 512
+        batch_size: 256
       baseline:
         type: imagenet
         kind: 'imagefolder'
@@ -50,8 +50,8 @@ workload:
       # for sparsity
       discrete_threshold_steps: 100
       discrete_threshold_method: linear
-      threshold_limit: 0.8
-      block_size: [8,8]
+      threshold_limit: 0.1
+      block_size: [16,16]
 
   retraining:
     epochs: 4

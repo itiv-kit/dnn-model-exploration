@@ -115,7 +115,7 @@ class SparsityThresholdProblem(CustomExplorationProblem):
         )
         # f2 is the mean of created sparse blocks
         f2_sparsity_objective = self.model.get_total_created_sparse_blocks()
-        f2_sparsity_objective /= 100_000_000
+        f2_sparsity_objective /= (1_000_000 * len(self.dataloader_generator))
 
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
 
@@ -142,16 +142,16 @@ class FloatRandomSamplingWithDefinedIndividual(FloatRandomSampling):
 
     def _do(self, problem, n_samples, **kwargs):
         pop = super()._do(problem, n_samples, **kwargs)
-        pop = pop[:-len(self.predefined)]
+        pop = pop[len(self.predefined):]
 
         for predef in self.predefined:
             predef_ind = np.full((1, problem.n_var), predef)
-            pop = np.concatenate((pop, predef_ind))
+            pop = np.concatenate((predef_ind, pop))
         return pop
 
 
 prepare_exploration_function = prepare_sparsity_problem
 repair_method = None
-sampling_method = FloatRandomSamplingWithDefinedIndividual(predefined=[0.04])
+sampling_method = FloatRandomSamplingWithDefinedIndividual(predefined=[0.15])
 init_function = init_sparse_model
 update_params_function = update_sparse_model_params
