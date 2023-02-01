@@ -38,7 +38,7 @@ class ResultsCollection():
 
     def merge(self, other):
         assert self.accuracy_limit == other.accuracy_limit
-        assert self.explorable_module_names == other.quantizer_names
+        assert self.explorable_module_names == other.explorable_module_names
         self.individuals.extend(other.individuals)
 
     def drop_duplicate_parameters(self):
