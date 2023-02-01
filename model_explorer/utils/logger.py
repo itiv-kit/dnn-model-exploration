@@ -1,9 +1,14 @@
 import os
 import logging
 
+
+
 LOGGER_NAME = "exploration_logger"
 LOG_DIR = "results"
-LOG_FILE = "exploration_run_16.log"
+if 'SLURM_ARRAY_TASK_ID' in os.environ:
+    LOG_FILE = f"exploration_run_slurmid_{os.environ['SLURM_ARRAY_TASK_ID']}.log"
+else:
+    LOG_FILE = "exploration_run.log"
 
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)

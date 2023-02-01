@@ -9,8 +9,10 @@ Usage:
                                          lenet5.yaml            # Custom: LeNet5
 """
 import os
+import sys
 import argparse
 import numpy as np
+import socket
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.operators.crossover.sbx import SBX
@@ -23,6 +25,19 @@ from model_explorer.utils.setup import build_dataloader_generators, setup_torch_
         setup_workload, get_prepare_exploration_function
 from model_explorer.utils.workload import Workload
 from model_explorer.result_handling.save_results import save_result_pickle
+
+
+slurm_id_settings = [
+    # mutation eta, crossover eta
+    (100, 50),
+    (100, 30),
+    (100, 10),
+    (50, 50),
+    (50, 30),
+    (50, 10),
+    (20, 50),
+    (20, 30)
+]
 
 
 def explore_model(workload: Workload,
@@ -50,6 +65,10 @@ def explore_model(workload: Workload,
                                accuracy_function, min_accuracy,
                                verbose, progress, **kwargs)
 
+    if 'SLURM_ARRAY_TASK_ID' in os.environ:
+        workload['exploration']['nsga']['mutation_eta'] = slurm_id_settings[int(os.environ['SLURM_ARRAY_TASK_ID'])][0]
+        workload['exploration']['nsga']['crossover_eta'] = slurm_id_settings[int(os.environ['SLURM_ARRAY_TASK_ID'])][1]
+
     crossover = SBX(prob_var=workload['exploration']['nsga']['crossover_prob'],
                     eta=workload['exploration']['nsga']['crossover_eta'],
                     repair=repair_method,
@@ -68,6 +87,13 @@ def explore_model(workload: Workload,
     )
 
     termination = get_termination("n_gen", workload['exploration']['nsga']['generations'])
+
+    logger.info("Some info:")
+    logger.info(f"\tcomputer name: {socket.gethostname()}")
+    logger.info(f"\tnsga crossover eta: {workload['exploration']['nsga']['crossover_eta']} prob: {workload['exploration']['nsga']['crossover_prob']}")
+    logger.info(f"\tnsga mutation eta: {workload['exploration']['nsga']['mutation_eta']} prob: {workload['exploration']['nsga']['mutation_prob']}")
+    logger.info(f"\tnsga gens: {workload['exploration']['nsga']['generations']}")
+    logger.info(f"\tnsga pop: {workload['exploration']['nsga']['pop_size']} offsprings: {workload['exploration']['nsga']['offsprings']}")
 
     logger.info("Starting problem minimization.")
 
