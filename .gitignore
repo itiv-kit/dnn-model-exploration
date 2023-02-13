@@ -5,9 +5,6 @@ results*/
 *.pt
 test/
 *.pkl
-<<<<<<< HEAD
 *.vscode
-=======
 *.err
 *.out
->>>>>>> origin/slurm
