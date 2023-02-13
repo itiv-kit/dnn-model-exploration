@@ -3,15 +3,11 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pytorch_quantization import nn as quant_nn
 
 # mainly taken from: https://pymoo.org/getting_started/part_4.html
-
-
 class ExplorationVisualizer:
 
     def __init__(self, output_dir, res):
-
         self.output_dir = output_dir
         self.res = res
 
@@ -40,9 +36,7 @@ class ExplorationVisualizer:
         self._preprocess_hist(self.res)
 
     def _preprocess_hist(self, res):
-
         for algo in res.history:
-
             # store the number of function evaluations
             self.n_evals.append(algo.evaluator.n_eval)
 
@@ -68,22 +62,17 @@ class ExplorationVisualizer:
         self.hist_F = np.abs(self.hist_F)
 
     def plot_layer_bit_resolution(self):
-
         plt.figure(figsize=(10, 5))
 
-        layernames = []
-        for name, module in self.res.problem.qmodel.model.named_modules():
-            if isinstance(module, quant_nn.TensorQuantizer):
-                layernames.append(name)
+        layernames = self.res.problem.model.explorable_module_names
 
-        for i, num_bits in enumerate(self.global_opt_X):
-
+        for i, x in enumerate(self.global_opt_X):
             plt.plot(
                 layernames,
-                num_bits,
+                x,
                 color="#808080",
                 lw=0.5,
-                label=f"Quantization resolution for acc: {self.global_opt_F[i][0]}",
+                label=f"F_1 objectives for limit acc: {self.global_opt_F[i][0]}",
             )
 
         plt.plot(
@@ -91,16 +80,16 @@ class ExplorationVisualizer:
             np.mean(self.global_opt_X, axis=0),
             color="r",
             lw=0.7,
-            label="Mean quantization resolution",
+            label="Mean resolution",
             linestyle="--",
         )
 
         plt.xticks(rotation=90)
-        plt.title("Layer quantizations")
+        plt.title("Layer dependent F_1")
         plt.xlabel("Layer name")
-        plt.ylabel("Num bits")
+        plt.ylabel("F_1")
         # plt.legend() # produces too many values
-        self._save("layer_bits", plt)
+        self._save("layers", plt)
 
     def plot_objective_space(self):
         plt.figure(figsize=(7, 5))
@@ -113,7 +102,7 @@ class ExplorationVisualizer:
         )
         plt.title("Objective Space")
         plt.xlabel("Accuracy (1-acc)")
-        plt.ylabel("Sum of num_bits")
+        plt.ylabel("F_1 objective")
         self._save("objective_space", plt)
 
     def set_fontsize(self, fsize=14):
@@ -126,7 +115,6 @@ class ExplorationVisualizer:
         )
 
     def plot_constraint_violation_over_n_gen(self):
-
         # replace this line by `hist_cv` if you like to analyze the least
         # feasible optimal solution and not the population
         vals = self.hist_cv_avg
@@ -164,7 +152,6 @@ class ExplorationVisualizer:
         self._save("cv_n_gen", plt)
 
     def plot_2d_pareto(self, acc_bound=0):
-
         fig, ax = plt.subplots(figsize=(10, 4))
 
         all_pts_flattened = self.hist_F.reshape(-1, self.hist_F.shape[-1])
@@ -194,7 +181,7 @@ class ExplorationVisualizer:
             label="Non-Dominated",
         )
         ax.set_xlabel("Mean accuracy")
-        ax.set_ylabel("Sum num_bits")
+        ax.set_ylabel("F_1 objective")
         if acc_bound > 0:
             ax.set_xlim(left=acc_bound)
         ax.xaxis.set_tick_params(length=7)
@@ -208,7 +195,6 @@ class ExplorationVisualizer:
         plt.clf()
 
     def _save(self, name, figure, extensions=["svg", "png"]):
-
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 

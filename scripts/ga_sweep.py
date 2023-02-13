@@ -1,46 +1,16 @@
 import os
 import argparse
 from datetime import datetime
-import pickle
-
-# import troch quantization and activate the replacement of modules
-from pytorch_quantization import quant_modules
-quant_modules.initialize()
 
 from model_explorer.utils.logger import logger
 from model_explorer.utils.workload import Workload
-from model_explorer.scripts.explore import explore_model
+from model_explorer.exploration.explore_model import explore_model
+from model_explorer.result_handling.save_results import save_result_pickle
 
 
 
-RESULTS_DIR = "./results"
 
-
-def save_result(res, model_name, dataset_name):
-    """Save the result object from the exploration as a pickle file.
-
-    Args:
-        res (obj):
-            The result object to save.
-        model_name (str):
-            The name of the model this result object belongs to.
-            This is used as a prefix for the saved file.
-    """
-    if not os.path.exists(RESULTS_DIR):
-        os.makedirs(RESULTS_DIR)
-
-    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-    filename = 'exploration_{}_{}_{}.pkl'.format(
-        model_name, dataset_name, date_str)
-
-    with open(os.path.join(RESULTS_DIR, filename), "wb") as res_file:
-        pickle.dump(res, res_file)
-
-    logger.info(f"Saved result object to: {filename}")
-
-
-def sweep_ga_parameters(workload, calibration_file):
+def sweep_ga_parameters(workload):
     skip_baseline = False
 
     result_dir = 'results/exploration_sweep_{}'.format(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
@@ -56,12 +26,10 @@ def sweep_ga_parameters(workload, calibration_file):
             logger.info("Running Sweep point with mut_eta={}, crossover_eta={}".format(mutation_eta, crossover_eta))
             logger.info("#"*80)
 
-            result = explore_model(workload, calibration_file,
-                                          skip_baseline, progress=False, verbose=False)
+            result = explore_model(workload, skip_baseline, progress=False, verbose=False)
 
             filename = os.path.join(result_dir, 'result_muteta_{}_croeta_{}.pkl'.format(mutation_eta, crossover_eta))
-            with open(filename, 'wb') as res_file:
-                pickle.dump(result, res_file)
+            save_result_pickle(result, overwrite_filename=filename)
 
             logger.info("Done saved at {}".format(filename))
             logger.info("#"*80)
@@ -72,7 +40,6 @@ def sweep_ga_parameters(workload, calibration_file):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("calibration_file")
     parser.add_argument(
         "workload",
         help="The path to the workload yaml file.")
@@ -83,7 +50,7 @@ if __name__ == "__main__":
     workload_file = opt.workload
     if os.path.isfile(workload_file):
         workload = Workload(workload_file)
-        sweep_ga_parameters(workload, opt.calibration_file)
+        sweep_ga_parameters(workload)
 
     else:
         logger.warning("Declared workload file could not be found.")

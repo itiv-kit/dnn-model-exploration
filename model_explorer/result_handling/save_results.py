@@ -10,7 +10,7 @@ from model_explorer.utils.logger import logger
 RESULTS_DIR = "./results"
 
 
-def save_result_pickle(res, problem_name, model_name, dataset_name):
+def save_result_pickle(res, problem_name, model_name, dataset_name, overwrite_filename=""):
     """Save the result object from the exploration as a pickle file.
 
     Args:
@@ -33,6 +33,9 @@ def save_result_pickle(res, problem_name, model_name, dataset_name):
         filename = 'expl_{}_{}_{}_{}.pkl'.format(
             problem_name, model_name, dataset_name, date_str
         )
+
+    if overwrite_filename != "":
+        filename = overwrite_filename
 
     filename = os.path.join(RESULTS_DIR, filename)
 

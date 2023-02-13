@@ -37,11 +37,6 @@ if __name__ == "__main__":
 
     parser.add_argument("results_file")
     parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Show verbose information.")
-    parser.add_argument(
         "-o",
         "--output_dir",
         help="override predefined output dir")
