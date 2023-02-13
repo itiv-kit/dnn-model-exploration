@@ -1,8 +1,7 @@
 *.egg-info
 data
-results
+results*/
 *.pyc
 *.pt
 test/
 *.pkl
-
