@@ -5,14 +5,13 @@ from torch import nn
 
 from model_explorer.models.sparse_convolution import SparseConv2d
 from model_explorer.models.custom_model import CustomModel
-from model_explorer.utils.logger import logger
 
 
 class SparseModel(CustomModel):
     """The base model for our custom sparse models.
     """
 
-    def __init__(self, model: nn.Module, block_size: int, device: torch.device, verbose: bool = False) -> None:
+    def __init__(self, model: nn.Module, block_size: list, device: torch.device, verbose: bool = False) -> None:
         """Initilizes a sparse model with the provided arguments.
         """
         super().__init__(model, device, verbose)
@@ -35,6 +34,9 @@ class SparseModel(CustomModel):
 
     def get_total_created_sparse_blocks(self) -> int:
         return sum([module.sparse_created for module in self.explorable_modules])
+
+    def get_total_present_sparse_blocks(self) -> int:
+        return sum([module.sparse_present for module in self.explorable_modules])
 
     def reset_model_stats(self):
         [module.reset_stats() for module in self.explorable_modules]

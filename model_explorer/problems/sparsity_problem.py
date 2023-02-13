@@ -89,17 +89,6 @@ class SparsityThresholdProblem(CustomExplorationProblem):
     def _evaluate(self, index, thresholds, out, *args, **kwargs):
         algorithm: NSGA2 = kwargs.get('algorithm')
 
-        # if self.discrete_threshold_method is not None:
-        #     if self.discrete_threshold_method == 'linear':
-        #         discrete_thresholds = [
-        #             (t / self.discrete_threshold_steps) * self.threshold_limit
-        #             for t in thresholds
-        #         ]
-        #     elif self.discrete_threshold_method == 'log':
-        #         pass
-        # else:
-        #     discrete_thresholds = thresholds
-
         logger.debug("Evaluating individual #{} of {} in Generation {}".format(
             index + 1, algorithm.pop_size, algorithm.n_iter))
         threshold_strs = ['{:.3f}'.format(x) for x in thresholds]
@@ -115,7 +104,6 @@ class SparsityThresholdProblem(CustomExplorationProblem):
         )
         # f2 is the mean of created sparse blocks
         f2_sparsity_objective = self.model.get_total_created_sparse_blocks()
-        f2_sparsity_objective /= (1_000_000 * len(self.dataloader_generator))
 
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
 
@@ -152,6 +140,6 @@ class FloatRandomSamplingWithDefinedIndividual(FloatRandomSampling):
 
 prepare_exploration_function = prepare_sparsity_problem
 repair_method = None
-sampling_method = FloatRandomSamplingWithDefinedIndividual(predefined=[0.15])
+sampling_method = FloatRandomSamplingWithDefinedIndividual(predefined=[0.15, 0.25])
 init_function = init_sparse_model
 update_params_function = update_sparse_model_params

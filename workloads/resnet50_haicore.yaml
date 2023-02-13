@@ -21,27 +21,27 @@ workload:
 
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
-      pop_size: 10
-      offsprings: 15
-      generations: 10
-      mutation_eta: 100
+      pop_size: 2
+      offsprings: 2
+      generations: 5
+      mutation_eta: 20
       mutation_prob: 0.9
-      crossover_eta: 10
+      crossover_eta: 30
       crossover_prob: 0.7
-    minimum_accuracy: 0.75 # accuracy constraint
+    minimum_accuracy: 0.80 # accuracy constraint
     datasets:
       exploration:
         type: imagenet
         kind: 'imagefolder'
         path: '/hkfs/work/workspace_haic/scratch/oq4116-datasets/val_images'
-        sample_limit: 4096 # number of validation dataset samples to test for each individual
-        batch_size: 128
+        sample_limit: null # number of validation dataset samples to test for each individual
+        batch_size: 512
       baseline:
         type: imagenet
         kind: 'imagefolder'
         path: '/hkfs/work/workspace_haic/scratch/oq4116-datasets/val_images'
         sample_limit: null
-        batch_size: 128
+        batch_size: 512
     extra_args:
       # for quantization
       num_bits_upper_limit: 16
@@ -51,7 +51,7 @@ workload:
       discrete_threshold_steps: 100
       discrete_threshold_method: linear
       threshold_limit: 0.8
-      block_size: [8,8]
+      block_size: [1,16]
 
   retraining:
     epochs: 4
@@ -78,6 +78,6 @@ workload:
         kind: 'imagefolder'
         path: '/hkfs/work/workspace_haic/scratch/oq4116-datasets/val_images'
         sample_limit: null
-        batch_size: 256
+        batch_size: 512
 
 

@@ -28,17 +28,22 @@ class ResultsCollection():
         for generation_idx, h in enumerate(d.history):
             assert isinstance(h, pymoo.algorithms.moo.nsga2.NSGA2)
             for individual_idx, ind in enumerate(h.pop):
+                further_args = {}
+                if hasattr(d.problem.model, '_block_size'):
+                    further_args['block_size'] = d.problem.model._block_size
+
                 self.individuals.append(
                     ResultEntry(accuracy=-(ind.get("F")[0]),
                                 further_objectives=ind.get("F")[1:],
                                 parameter=ind.get("X").tolist(),
                                 generation=generation_idx,
                                 individual_idx=individual_idx,
-                                pymoo_mating=h.mating))
+                                pymoo_mating=h.mating,
+                                further_args=further_args))
 
     def merge(self, other):
         assert self.accuracy_limit == other.accuracy_limit
-        assert self.explorable_module_names == other.quantizer_names
+        assert self.explorable_module_names == other.explorable_module_names
         self.individuals.extend(other.individuals)
 
     def drop_duplicate_parameters(self):

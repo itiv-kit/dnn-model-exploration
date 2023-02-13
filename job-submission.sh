@@ -1,19 +1,20 @@
 #!/bin/bash
 #SBATCH --job-name=model_exploration
-#SBATCH --output=exploration.out
-#SBATCH --error=exploration.err
+#SBATCH --output=results/exploration_%A_%a.out
+#SBATCH --error=results/exploration_%A_%a.err
 #SBATCH --nodes=1
-#SBATCH --ntasks=8
+#SBATCH --ntasks=16
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=2048mb
 #SBATCH --partition=normal
-#SBATCH --gres=gpu:1g.5gb:1
+#SBATCH --gres=gpu:4g.20gb:1
 #SBATCH --time=08:00:00
-#SBATCH --array=0-7
+#SBATCH --array=0-2
 
 RUNPATH=$HOME/projekte/mixed-precision-dnns
 cd $RUNPATH
 source $HOME/venvs/torch_exploration/bin/activate
-python model_explorer/scripts/explore.py workloads/resnet50_haicore.yaml --progress -v
+# python model_explorer/scripts/evaluate_individuals.py workloads/resnet50_haicore.yaml --progress --skip-baseline
+python model_explorer/scripts/evaluate_individual.py workloads/resnet50_haicore.yaml dummy --progress -n 20
 
 

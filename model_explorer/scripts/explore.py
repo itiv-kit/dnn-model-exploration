@@ -29,14 +29,18 @@ from model_explorer.result_handling.save_results import save_result_pickle
 
 slurm_id_settings = [
     # mutation eta, crossover eta
-    (100, 50),
-    (100, 30),
-    (100, 10),
-    (50, 50),
-    (50, 30),
-    (50, 10),
-    (20, 50),
-    (20, 30)
+    # (100, 50),
+    # (100, 30),
+    # (100, 10),
+    # (50, 50),
+    # (50, 30),
+    # (50, 10),
+    # (20, 50),
+    # (20, 30)
+    # block size
+    [8, 8],
+    [16, 16],
+    [1, 16]
 ]
 
 
@@ -58,6 +62,11 @@ def explore_model(workload: Workload,
     prepare_function, repair_method, sampling_method = \
         get_prepare_exploration_function(workload['problem']['problem_function'])
     kwargs: dict = workload['exploration']['extra_args']
+    if 'SLURM_ARRAY_TASK_ID' in os.environ:
+        kwargs['block_size'] = slurm_id_settings[int(os.environ['SLURM_ARRAY_TASK_ID'])]
+        # workload['exploration']['nsga']['mutation_eta'] = slurm_id_settings[int(os.environ['SLURM_ARRAY_TASK_ID'])][0]
+        # workload['exploration']['nsga']['crossover_eta'] = slurm_id_settings[int(os.environ['SLURM_ARRAY_TASK_ID'])][1]
+
     if 'calibration' in workload.yaml_data:
         kwargs['calibration_file'] = workload['calibration']['file']
     min_accuracy = workload['exploration']['minimum_accuracy']
@@ -65,9 +74,6 @@ def explore_model(workload: Workload,
                                accuracy_function, min_accuracy,
                                verbose, progress, **kwargs)
 
-    if 'SLURM_ARRAY_TASK_ID' in os.environ:
-        workload['exploration']['nsga']['mutation_eta'] = slurm_id_settings[int(os.environ['SLURM_ARRAY_TASK_ID'])][0]
-        workload['exploration']['nsga']['crossover_eta'] = slurm_id_settings[int(os.environ['SLURM_ARRAY_TASK_ID'])][1]
 
     crossover = SBX(prob_var=workload['exploration']['nsga']['crossover_prob'],
                     eta=workload['exploration']['nsga']['crossover_eta'],

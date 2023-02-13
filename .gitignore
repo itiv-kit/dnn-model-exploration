@@ -5,5 +5,5 @@ results
 *.pt
 test/
 *.pkl
-exploration.err
-exploration.out
+*.err
+*.out
