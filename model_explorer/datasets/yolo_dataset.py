@@ -326,11 +326,10 @@ class LoadImagesAndLabels(Dataset):
         return torch.stack(im, 0), torch.cat(label, 0), path, shapes
 
 
-def prepare_yolo_dataset(path, groundtruth, **kwargs):
+def prepare_yolo_dataset(path, **kwargs):
     dataset = LoadImagesAndLabels(path)
     return dataset
 
 
+dataset_creator = prepare_yolo_dataset
 collate_fn = LoadImagesAndLabels.collate_fn
-get_validation_dataset = prepare_yolo_dataset
-get_train_dataset = None

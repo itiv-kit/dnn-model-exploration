@@ -14,6 +14,7 @@ class ResultEntry:
     individual_idx: int
     further_objectives: List[int]
     pymoo_mating: pymoo.core.mating.Mating
+    further_args: dict
 
     def parameters_sum(self):
         return sum(self.parameter)
@@ -35,6 +36,7 @@ class ResultEntry:
 
         for i, v in enumerate(self.further_objectives):
             rdict[f'F_{i}'] = v
+        rdict.update(self.further_args)
 
         return rdict
 

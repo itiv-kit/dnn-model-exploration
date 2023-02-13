@@ -9,7 +9,10 @@ setup(
         'webdataset'
         'matplotlib',
         'tqdm',
-        'pandas'
+        'pandas',
+        'seaborn',
+        'gitpython',
+        'opencv-python'
     ],
     version='0.3',
     packages=find_packages(),

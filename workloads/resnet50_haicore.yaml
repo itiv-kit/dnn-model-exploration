@@ -4,8 +4,8 @@ workload:
     # problem_function: quantization_problem
 
   model:
-    type: yolov5s
-    accuracy_function: detection_accuracy
+    type: resnet50
+    accuracy_function: classification_accuracy
     weights: null
 
   calibration:
@@ -13,18 +13,17 @@ workload:
     file: './results/resnet50_quant_calib.pkl'
     datasets:
       calibrate:
-        type: yolo_dataset
+        type: imagenet
         kind: 'imagefolder'
-        path: '/hkfs/work/workspace_haic/scratch/oq4116-datasets/coco/images/val2017'
-        groundtruth: '/hkfs/work/workspace_haic/scratch/oq4116-datasets/coco/annotations/instances_val2017.json'
+        path: '/hkfs/work/workspace_haic/scratch/oq4116-datasets/val_images'
         sample_limit: null # number of validation dataset samples to test for each individual
         batch_size: 512
 
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
-      pop_size: 10
-      offsprings: 10
-      generations: 20
+      pop_size: 2
+      offsprings: 2
+      generations: 5
       mutation_eta: 20
       mutation_prob: 0.9
       crossover_eta: 30
@@ -35,7 +34,7 @@ workload:
         type: imagenet
         kind: 'imagefolder'
         path: '/hkfs/work/workspace_haic/scratch/oq4116-datasets/val_images'
-        sample_limit: 4096 # number of validation dataset samples to test for each individual
+        sample_limit: null # number of validation dataset samples to test for each individual
         batch_size: 512
       baseline:
         type: imagenet
@@ -52,7 +51,7 @@ workload:
       discrete_threshold_steps: 100
       discrete_threshold_method: linear
       threshold_limit: 0.8
-      block_size: [8,8]
+      block_size: [1,16]
 
   retraining:
     epochs: 4

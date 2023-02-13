@@ -9,8 +9,10 @@ Usage:
                                          lenet5.yaml            # Custom: LeNet5
 """
 import os
+import sys
 import argparse
 import numpy as np
+import socket
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.operators.crossover.sbx import SBX
@@ -23,6 +25,23 @@ from model_explorer.utils.setup import build_dataloader_generators, setup_torch_
         setup_workload, get_prepare_exploration_function
 from model_explorer.utils.workload import Workload
 from model_explorer.result_handling.save_results import save_result_pickle
+
+
+slurm_id_settings = [
+    # mutation eta, crossover eta
+    # (100, 50),
+    # (100, 30),
+    # (100, 10),
+    # (50, 50),
+    # (50, 30),
+    # (50, 10),
+    # (20, 50),
+    # (20, 30)
+    # block size
+    [8, 8],
+    [16, 16],
+    [1, 16]
+]
 
 
 def explore_model(workload: Workload,
@@ -43,12 +62,18 @@ def explore_model(workload: Workload,
     prepare_function, repair_method, sampling_method = \
         get_prepare_exploration_function(workload['problem']['problem_function'])
     kwargs: dict = workload['exploration']['extra_args']
+    if 'SLURM_ARRAY_TASK_ID' in os.environ:
+        kwargs['block_size'] = slurm_id_settings[int(os.environ['SLURM_ARRAY_TASK_ID'])]
+        # workload['exploration']['nsga']['mutation_eta'] = slurm_id_settings[int(os.environ['SLURM_ARRAY_TASK_ID'])][0]
+        # workload['exploration']['nsga']['crossover_eta'] = slurm_id_settings[int(os.environ['SLURM_ARRAY_TASK_ID'])][1]
+
     if 'calibration' in workload.yaml_data:
         kwargs['calibration_file'] = workload['calibration']['file']
     min_accuracy = workload['exploration']['minimum_accuracy']
     problem = prepare_function(model, device, dataloaders['exploration'],
                                accuracy_function, min_accuracy,
                                verbose, progress, **kwargs)
+
 
     crossover = SBX(prob_var=workload['exploration']['nsga']['crossover_prob'],
                     eta=workload['exploration']['nsga']['crossover_eta'],
@@ -68,6 +93,13 @@ def explore_model(workload: Workload,
     )
 
     termination = get_termination("n_gen", workload['exploration']['nsga']['generations'])
+
+    logger.info("Some info:")
+    logger.info(f"\tcomputer name: {socket.gethostname()}")
+    logger.info(f"\tnsga crossover eta: {workload['exploration']['nsga']['crossover_eta']} prob: {workload['exploration']['nsga']['crossover_prob']}")
+    logger.info(f"\tnsga mutation eta: {workload['exploration']['nsga']['mutation_eta']} prob: {workload['exploration']['nsga']['mutation_prob']}")
+    logger.info(f"\tnsga gens: {workload['exploration']['nsga']['generations']}")
+    logger.info(f"\tnsga pop: {workload['exploration']['nsga']['pop_size']} offsprings: {workload['exploration']['nsga']['offsprings']}")
 
     logger.info("Starting problem minimization.")
 

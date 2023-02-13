@@ -25,9 +25,15 @@ def save_result_pickle(res, problem_name, model_name, dataset_name):
 
     date_str = datetime.now().strftime("%Y-%m-%d_%H-%M")
 
-    filename = 'expl_{}_{}_{}_{}.pkl'.format(
-        problem_name, model_name, dataset_name, date_str
-    )
+    if 'SLURM_ARRAY_TASK_ID' in os.environ:
+        filename = 'expl_{}_{}_{}_{}_slurmid_{}.pkl'.format(
+            problem_name, model_name, dataset_name, date_str, os.environ['SLURM_ARRAY_TASK_ID']
+        )
+    else:
+        filename = 'expl_{}_{}_{}_{}.pkl'.format(
+            problem_name, model_name, dataset_name, date_str
+        )
+
     filename = os.path.join(RESULTS_DIR, filename)
 
     with open(filename, "wb") as res_file:
@@ -45,9 +51,14 @@ def save_results_df_to_csv(name: str, result_df: pd.DataFrame,
 
     date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    filename = '{}_{}_{}_{}_{}.csv'.format(
-        name, problem_name, model_name, dataset_name, date_str
-    )
+    if 'SLURM_ARRAY_TASK_ID' in os.environ:
+        filename = '{}_{}_{}_{}_{}_slurmid_{}.csv'.format(
+            name, problem_name, model_name, dataset_name, date_str, os.environ['SLURM_ARRAY_TASK_ID']
+        )
+    else:
+        filename = '{}_{}_{}_{}_{}.csv'.format(
+            name, problem_name, model_name, dataset_name, date_str
+        )
     filename = os.path.join(RESULTS_DIR, filename)
 
     result_df.to_csv(filename)

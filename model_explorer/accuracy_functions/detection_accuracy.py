@@ -366,7 +366,7 @@ def compute_detection_accuracy(base_model,
     dataloader = dataloader_generator.get_dataloader()
 
     if progress:
-        progress_bar = tqdm.tqdm(total=dataset_size, ncols=80, desc=title)
+        progress_bar = tqdm.tqdm(total=dataset_size, ascii=True, ncols=80, desc=title)
 
     model = base_model
     model.to(device)
