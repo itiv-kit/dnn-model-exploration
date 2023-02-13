@@ -71,7 +71,7 @@ class ResultsCollection():
 
     def to_dataframe(self):
         return pd.DataFrame.from_records(
-            [r.to_dict(self.explorable_module_names) for r in self.individuals])
+            [r.to_dict() for r in self.individuals])
 
     def __len__(self) -> int:
         return len(self.individuals)

@@ -33,7 +33,7 @@ def evaluate_full_model(workload: Workload, model_configurations: pd.DataFrame,
     for i, row in model_configurations.iterrows():
         logger.debug(f"Evaluating {i+1} / {tot_eval} models with optimization accuracy: {row['accuracy']}")
 
-        thresholds = row[10:63].tolist()
+        thresholds = row['parameters']
         model_update_func(explorable_model, thresholds)
         full_accuracy = accuracy_function(explorable_model.base_model,
                                           reevaluate_dataloader,

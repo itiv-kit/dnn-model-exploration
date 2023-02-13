@@ -34,16 +34,16 @@ def retrain_model(workload: Workload, model_configurations: pd.DataFrame,
     for i, row in model_configurations.iterrows():
         logger.debug(f"Retraining model {i+1} / {tot_eval} with accuracy: {row['accuracy']:.4f}")
 
-        thresholds = row[10:63].tolist()
+        thresholds = row['parameters']
         model_update_func(explorable_model, thresholds)
 
-        epoch_accs = model.retrain(
+        epoch_accs = explorable_model.retrain(
             train_dataloader_generator=train_dataloaders['train'],
             test_dataloader_generator=train_dataloaders['validation'],
             accuracy_function=accuracy_function,
             num_epochs=workload['retraining']['epochs'],
             progress=progress)
-        model.save_parameters(os.path.join(result_dir, f'retrained_model_{i}.pkl'))
+        explorable_model.save_parameters(os.path.join(result_dir, f'retrained_model_{i}.pkl'))
 
         acc_after_training = accuracy_function(explorable_model.base_model,
                                                reevaluate_dataloader,

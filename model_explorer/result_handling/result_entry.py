@@ -40,15 +40,9 @@ class ResultEntry:
 
         return rdict
 
-    def to_dict(self, layer_names=[]):
+    def to_dict(self):
         rdict = self.to_dict_without_parameters()
 
-        if layer_names == []:
-            for idx, param in enumerate(self.parameter):
-                rdict['param_{}'.format(idx)] = param
-        else:
-            for name, param in zip(layer_names, self.parameter):
-                rdict[name] = param
+        rdict['parameters'] = self.parameter
 
         return rdict
-

@@ -35,13 +35,12 @@ if __name__ == "__main__":
 
     parser.add_argument("workload_file")
     parser.add_argument("results_path")
+    parser.add_argument("output_dir",
+                        help="Folder where to place the retrained model parameters")
     parser.add_argument('-n',
                         "--top_elements",
                         help="Select n individuals with the lowest bits",
                         type=int)
-    parser.add_argument('-o',
-                        "--output_dir",
-                        help="Folder where to place the retrained model parameters")
     parser.add_argument("-v",
                         "--verbose",
                         action="store_true",
