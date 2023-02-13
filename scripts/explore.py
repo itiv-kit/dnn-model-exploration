@@ -1,6 +1,5 @@
 import os
 import argparse
-import collections.abc
 
 from model_explorer.utils.logger import logger
 from model_explorer.utils.workload import Workload
@@ -11,16 +10,6 @@ from model_explorer.result_handling.save_results import save_result_pickle
 extra_slurm_args = {
     1: {'exploration': {'nsga': {'mutation_eta': 10}}}
 }
-
-
-# https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
-def deep_dict_update(d, u):
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = deep_dict_update(d.get(k, {}), v)
-        else:
-            d[k] = v
-    return d
 
 
 if __name__ == "__main__":
@@ -56,7 +45,7 @@ if __name__ == "__main__":
         if 'SLURM_ARRAY_TASK_ID' in os.environ:
             job_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
             if job_id in extra_slurm_args:
-                workload.update(extra_slurm_args[job_id])
+                workload.merge(extra_slurm_args[job_id])
 
         results = explore_model(workload, opt.skip_baseline, opt.progress, opt.verbose)
 

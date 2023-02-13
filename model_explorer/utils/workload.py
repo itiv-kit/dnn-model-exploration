@@ -16,6 +16,7 @@ Raises:
 """
 import os
 import yaml
+import collections.abc
 
 
 class Workload:
@@ -44,6 +45,18 @@ class Workload:
         if item in self.yaml_data:
             return self.yaml_data[item]
         return None
+
+    def merge(self, update_dict):
+        # https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
+        def dict_update(d, u):
+            for k, v in u.items():
+                if isinstance(v, collections.abc.Mapping):
+                    d[k] = dict_update(d.get(k, {}), v)
+                else:
+                    d[k] = v
+            return d
+
+        self.yaml_data = dict_update(self.yaml_data, update_dict)
 
 
     def get(self, item, default=None):
