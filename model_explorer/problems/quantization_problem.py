@@ -19,6 +19,16 @@ def update_quant_model_params(qmodel: QuantizedModel, bits: list):
 
 def init_quant_model(model: nn.Module, device: torch.device,
                      verbose: bool, **kwargs: dict) -> QuantizedModel:
+    """This function generates a quantized model
+
+    Args:
+        model (nn.Module): Base model
+        device (torch.device): torch device
+        verbose (bool): print verbose info?
+
+    Raises:
+        FileNotFoundError: when there is no calibration file in kwargs
+    """
     weighting_function_name = kwargs.get('bit_weighting_function')
     calibration_file = kwargs.get('calibration_file')
 
@@ -32,6 +42,7 @@ def init_quant_model(model: nn.Module, device: torch.device,
                             device,
                             weighting_function=weighting_function,
                             verbose=verbose)
+    qmodel.enable_quantization()
 
     logger.debug("Added {} Quantizer modules to the model".format(
         len(qmodel.explorable_modules)))
@@ -52,6 +63,17 @@ def prepare_quantization_problem(model: nn.Module, device: torch.device,
                                  accuracy_function: callable, min_accuracy: float,
                                  verbose: bool, progress: bool,
                                  **kwargs: dict):
+    """Generate the quanization exploration problem
+
+    Args:
+        model (nn.Module): base model, which will be turned into a quant_model
+        device (torch.device): torch device
+        dataloader_generator (DataLoaderGenerator): Dataloader for exploration
+        accuracy_function (callable): given accuracy function
+        min_accuracy (float): minimum accuracy constraint
+        verbose (bool): print verbose info?
+        progress (bool): print progress?
+    """
     num_bits_upper_limit = kwargs.get('num_bits_upper_limit')
     num_bits_lower_limit = kwargs.get('num_bits_lower_limit')
 
@@ -70,7 +92,7 @@ def prepare_quantization_problem(model: nn.Module, device: torch.device,
 
 class LayerwiseQuantizationProblem(CustomExplorationProblem):
     """
-    A pymoo problem defenition for the quantization exploration.
+    A pymoo problem definition for the quantization exploration.
     """
 
     def __init__(
@@ -139,6 +161,7 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
         out["G"] = [g1_accuracy_constraint]
 
 
+# Expected parameters
 prepare_exploration_function = prepare_quantization_problem
 repair_method = RoundingRepair()
 sampling_method = IntegerRandomSampling()

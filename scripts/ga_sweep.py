@@ -8,10 +8,8 @@ from model_explorer.exploration.explore_model import explore_model
 from model_explorer.result_handling.save_results import save_result_pickle
 
 
-
-
 def sweep_ga_parameters(workload):
-    skip_baseline = False
+    skip_baseline = True
 
     result_dir = 'results/exploration_sweep_{}'.format(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     if not os.path.exists(result_dir):
@@ -45,7 +43,7 @@ if __name__ == "__main__":
         help="The path to the workload yaml file.")
     opt = parser.parse_args()
 
-    logger.info("Quantization Exploration Started")
+    logger.info("Exploration sweep over GA parameters started")
 
     workload_file = opt.workload
     if os.path.isfile(workload_file):
@@ -56,4 +54,4 @@ if __name__ == "__main__":
         logger.warning("Declared workload file could not be found.")
         raise Exception(f"No file {opt.workload} found.")
 
-    logger.info("Quantization GA Sweep Exploration Finished")
+    logger.info("GA sweep exploration finished")

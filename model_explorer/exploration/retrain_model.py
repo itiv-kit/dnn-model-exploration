@@ -8,7 +8,19 @@ from model_explorer.utils.setup import get_model_init_function, get_model_update
 
 
 def retrain_model(workload: Workload, model_configurations: pd.DataFrame,
-                  result_dir: str, progress: bool, verbose: bool):
+                  result_dir: str, progress: bool, verbose: bool) -> pd.DataFrame:
+    """Function that start the retraining of models with the parameters set in the workload description
+
+    Args:
+        workload (Workload): Workload description
+        model_configurations (pd.DataFrame): Dataframe with the selected model configurations for retraining
+        result_dir (str): output directory for the retrained models
+        progress (bool): Show retrain progress?
+        verbose (bool): Show verbose information?
+
+    Returns:
+        pd.DataFrame: Dataframe with the accuracies of the retrained models
+    """
 
     train_dataloaders = build_dataloader_generators(workload['retraining']['datasets'])
     reeval_dataloader = build_dataloader_generators(workload['reevaluation']['datasets'])

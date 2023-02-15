@@ -6,14 +6,15 @@ from pymoo.core.problem import ElementwiseProblem
 
 
 class CustomExplorationProblem(ElementwiseProblem):
+    """This class inherits the ElementwiseProblem from pymoo and holds 4 global
+    parameters, which should apply to all exploration problems. They are
+    required for easy extension of the framework: a new kind of problem can
+    simply inherit from this class and can be explored seamlessly.
+    """
 
-    def __init__(self,
-                 model: CustomModel,
-                 accuracy_function: callable,
-                 progress: bool,
-                 min_accuracy: float,
-                 elementwise: bool = True,
-                 **kwargs):
+    def __init__(self, model: CustomModel, accuracy_function: callable,
+                 progress: bool, min_accuracy: float, elementwise: bool = True,
+                 **kwargs: dict):
         super().__init__(
             elementwise,
             elementwise_func=ElementwiseEvaluationFunctionWithIndex,

@@ -8,7 +8,18 @@ from model_explorer.utils.setup import get_model_init_function, get_model_update
 
 
 def evaluate_full_model(workload: Workload, model_configurations: pd.DataFrame,
-                        progress: bool, verbose: bool):
+                        progress: bool, verbose: bool) -> pd.DataFrame:
+    """Function to evaluate a list of model configurations with the entire dataset
+
+    Args:
+        workload (Workload): Workload description
+        model_configurations (pd.DataFrame): Input dataframe with the selected model configurations.
+        progress (bool): Show evaluation progress?
+        verbose (bool): Show verbose information?
+
+    Returns:
+        pd.DataFrame: Dataframe with new column showing the full accuarcy
+    """
 
     dataloaders = build_dataloader_generators(
         workload['reevaluation']['datasets'])

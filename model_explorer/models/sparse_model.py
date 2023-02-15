@@ -8,15 +8,18 @@ from model_explorer.models.custom_model import CustomModel
 
 
 class SparseModel(CustomModel):
-    """The base model for our custom sparse models.
+    """A sparse model automatically replaces all convolutions with SparseConv2d
+    modules and applies a set of thresholds and the given block size
     """
 
-    def __init__(self, model: nn.Module, block_size: list, device: torch.device, verbose: bool = False) -> None:
-        """Initilizes a sparse model with the provided arguments.
-        """
-        super().__init__(model, device, verbose)
+    def __init__(self, base_model: nn.Module, block_size: list, device: torch.device,
+                 collect_sparsity_details: bool = True, verbose: bool = False):
+        super().__init__(base_model, device, verbose)
 
         self._thresholds = {}
+        self._collect_sparsity_details = collect_sparsity_details
+        # For now, block size cannot be changed dynamically
+        assert len(block_size) == 2, "block size parameter has to be a list with 2 elements: width and height"
         self._block_size = block_size
         self._create_sparse_model()
 
@@ -42,12 +45,10 @@ class SparseModel(CustomModel):
         [module.reset_stats() for module in self.explorable_modules]
 
     def _create_sparse_model(self):
-        # TODO: Do we need a copy of the model to make it sparse?
-
         for name, module in self.base_model.named_modules():
             if isinstance(module, nn.Conv2d):
                 self.thresholds[name] = 0.0
-                sparse_conv = SparseConv2d(module, self._block_size)
+                sparse_conv = SparseConv2d(module, self._block_size, self._collect_sparsity_details)
                 self.explorable_modules.append(sparse_conv)
                 self.explorable_module_names.append(name)
 

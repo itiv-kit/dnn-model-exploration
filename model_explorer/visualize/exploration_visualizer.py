@@ -6,6 +6,8 @@ import numpy as np
 
 # mainly taken from: https://pymoo.org/getting_started/part_4.html
 class ExplorationVisualizer:
+    """Tools to visualize the found solutions during exploration
+    """
 
     def __init__(self, output_dir, res):
         self.output_dir = output_dir

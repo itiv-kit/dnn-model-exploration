@@ -8,6 +8,9 @@ import pymoo.operators.selection.tournament
 
 @dataclass
 class ResultEntry:
+    """A dataclass to store results found during the exploration of an explorable model
+    """
+
     accuracy: float
     parameter: list
     generation: int
@@ -16,10 +19,10 @@ class ResultEntry:
     pymoo_mating: pymoo.core.mating.Mating
     further_args: dict
 
-    def parameters_sum(self):
+    def parameters_sum(self) -> float:
         return sum(self.parameter)
 
-    def to_dict_without_parameters(self):
+    def to_dict_without_parameters(self) -> dict:
         rdict = {
             "generation": self.generation,
             "individual": self.individual_idx,
@@ -40,7 +43,7 @@ class ResultEntry:
 
         return rdict
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         rdict = self.to_dict_without_parameters()
 
         rdict['parameters'] = self.parameter

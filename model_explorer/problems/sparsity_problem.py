@@ -17,10 +17,17 @@ def update_sparse_model_params(model: SparseModel, thresholds: list):
 
 def init_sparse_model(model: nn.Module, device: torch.device,
                       verbose: bool, **kwargs: dict) -> SparseModel:
+    """Create sparse model
+
+    Args:
+        model (nn.Module): base model, which is replaced with Sparse Modules
+        device (torch.device): torch device
+        verbose (bool): print verbose info?
+    """
     block_size = kwargs.get('block_size')
-    smodel = SparseModel(model, block_size, device, verbose)
-    logger.debug("Initalized sparse model with {} sparse modules".format(smodel.get_explorable_parameter_count()))
-    return smodel
+    sparse_model = SparseModel(model, block_size, device, verbose)
+    logger.debug("Initialized sparse model with {} sparse modules".format(sparse_model.get_explorable_parameter_count()))
+    return sparse_model
 
 
 def prepare_sparsity_problem(model: nn.Module, device: torch.device,
@@ -28,16 +35,27 @@ def prepare_sparsity_problem(model: nn.Module, device: torch.device,
                              accuracy_function: callable, min_accuracy: float,
                              verbose: bool, progress: bool,
                              **kwargs: dict):
+    """Generate sparsity exploration problem for NSGA2
+
+    Args:
+        model (nn.Module): base model to explore
+        device (torch.device): torch device
+        dataloader_generator (DataLoaderGenerator): Dataset used for exploration
+        accuracy_function (callable): accuracy function that gets evaluated
+        min_accuracy (float): minimum accuracy constraint
+        verbose (bool): print verbose info?
+        progress (bool): show progress?
+    """
     discrete_threshold_steps = kwargs.get('discrete_threshold_steps')
     discrete_threshold_method = kwargs.get('discrete_threshold_method')
     threshold_limit = kwargs.get('threshold_limit')
 
-    smodel = init_sparse_model(model, device, verbose, **kwargs)
+    sparse_model = init_sparse_model(model, device, verbose, **kwargs)
 
     logger.info("Sparsity problem and model initialized")
 
     return SparsityThresholdProblem(
-        sparse_model=smodel,
+        sparse_model=sparse_model,
         dataloader_generator=dataloader_generator,
         accuracy_function=accuracy_function,
         min_accuracy=min_accuracy,
@@ -49,7 +67,7 @@ def prepare_sparsity_problem(model: nn.Module, device: torch.device,
 
 
 class SparsityThresholdProblem(CustomExplorationProblem):
-    """A pymoo problem defenition for the sparsity exploration.
+    """A pymoo problem definition for the sparsity exploration.
     """
 
     def __init__(
@@ -89,21 +107,10 @@ class SparsityThresholdProblem(CustomExplorationProblem):
     def _evaluate(self, index, thresholds, out, *args, **kwargs):
         algorithm: NSGA2 = kwargs.get('algorithm')
 
-        # if self.discrete_threshold_method is not None:
-        #     if self.discrete_threshold_method == 'linear':
-        #         discrete_thresholds = [
-        #             (t / self.discrete_threshold_steps) * self.threshold_limit
-        #             for t in thresholds
-        #         ]
-        #     elif self.discrete_threshold_method == 'log':
-        #         pass
-        # else:
-        #     discrete_thresholds = thresholds
-
         logger.debug("Evaluating individual #{} of {} in Generation {}".format(
             index + 1, algorithm.pop_size, algorithm.n_iter))
         threshold_strs = ['{:.3f}'.format(x) for x in thresholds]
-        logger.debug(f"\tThesholds: {threshold_strs}")
+        logger.debug(f"\tThresholds: {threshold_strs}")
 
         self.model.thresholds = thresholds
 
@@ -113,15 +120,15 @@ class SparsityThresholdProblem(CustomExplorationProblem):
             progress=self.progress,
             title="Evaluating {}/{}".format(index + 1, algorithm.pop_size)
         )
-        # f2 is the mean of created sparse blocks
+        # get total created returns all created for a given batch, therefore div by batch size
         f2_sparsity_objective = self.model.get_total_created_sparse_blocks()
-        f2_sparsity_objective /= (1_000_000 * len(self.dataloader_generator))
+        f2_sparsity_objective /= len(self.dataloader_generator)
 
         g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
 
         logger.debug(
             f"\tEvaluated, acc: {f1_accuracy_objective:.4f}, " +
-            f"sparse blks created: {f2_sparsity_objective}"
+            f"sparse blocks created: {f2_sparsity_objective}"
         )
 
         # NOTE: In pymoo, each objective function is supposed to be minimized,
@@ -133,6 +140,8 @@ class SparsityThresholdProblem(CustomExplorationProblem):
 
 
 class FloatRandomSamplingWithDefinedIndividual(FloatRandomSampling):
+    """A modified version of FloatRandomSampling, which is able to add predefined individuals to the population
+    """
 
     def __init__(self, var_type=np.float64, predefined: list = []) -> None:
         super().__init__()

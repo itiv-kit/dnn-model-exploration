@@ -1,3 +1,4 @@
+# ResNet-9 model taken from https://github.com/matthias-wright/cifar10-resnet
 import os
 import torch
 

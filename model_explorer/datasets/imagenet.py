@@ -4,7 +4,7 @@ from torchvision import datasets, transforms
 import webdataset as wds
 
 
-def get_imagenet_label_map(json_file):
+def get_imagenet_label_map(json_file: str):
     """Load the label map from the provided json_file.
 
     Args:
@@ -24,16 +24,19 @@ def get_imagenet_label_map(json_file):
     return ret_dict
 
 
-def prepare_imagenet_dataset(path, kind, **kwargs):
+def prepare_imagenet_dataset(path: str, kind: str, **kwargs):
     """Load an imagenet dataset.
 
     Args:
         path (str): Root directory for the images.
+        kind (str): Either webdataset or imagefolder for the according format
         and returns a transformed version.
 
     Returns:
         datasets: The loaded dataset.
     """
+
+    assert kind in ['webdataset', 'imagefolder'], "Kind has to be either webdataset or imagefolder"
 
     def identity(d):
         return d

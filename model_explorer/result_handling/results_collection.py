@@ -1,20 +1,25 @@
+from __future__ import annotations
+
 from model_explorer.utils.pickeling import CPUUnpickler
 from model_explorer.result_handling.result_entry import ResultEntry
 from pymoo.core.result import Result
+
 import pymoo.algorithms.moo.nsga2
 import pandas as pd
 
 
 class ResultsCollection():
+    """Holds result entrys in a list and adds some supportive function to, e.g., drop duplicates
+    """
 
-    def __init__(self, pickle_file=None) -> None:
+    def __init__(self, pickle_file: str = None) -> None:
         self.accuracy_limit = 0.0
         self.explorable_module_names = []
         self.individuals = []
         if pickle_file:
             self._load(pickle_file)
 
-    def _load(self, pickle_file):
+    def _load(self, pickle_file: str):
         with open(pickle_file, 'rb') as f:
             d: Result = CPUUnpickler(f).load()
 
@@ -41,7 +46,7 @@ class ResultsCollection():
                                 pymoo_mating=h.mating,
                                 further_args=further_args))
 
-    def merge(self, other):
+    def merge(self, other: ResultsCollection):
         assert self.accuracy_limit == other.accuracy_limit
         assert self.explorable_module_names == other.explorable_module_names
         self.individuals.extend(other.individuals)
@@ -56,20 +61,26 @@ class ResultsCollection():
                 new_individuals.append(ind)
         self.individuals = new_individuals
 
-    def get_weighted_params_sorted_individuals(self, index=0):
+    def get_weighted_params_sorted_individuals(self, index: int = 0) -> list:
+        """Get all individuals sorted by a given objective index
+
+        Args:
+            index (int, optional): index of the objective to be sorted. Defaults to 0.
+
+        Returns:
+            list: List of individuals, not a ResultCollection
+        """
         return sorted(self.individuals, key=lambda ind: ind.further_objectives[index])
 
-    def get_accuracy_sorted_individuals(self):
+    def get_accuracy_sorted_individuals(self) -> list:
         return sorted(self.individuals,
                       reverse=True,
                       key=lambda ind: ind.accuracy)
 
-    def get_better_than_individuals(self, acc_threshold):
-        return [
-            ind for ind in self.individuals if ind.accuracy >= acc_threshold
-        ]
+    def get_better_than_individuals(self, acc_threshold: float) -> list:
+        return [ind for ind in self.individuals if ind.accuracy >= acc_threshold]
 
-    def to_dataframe(self):
+    def to_dataframe(self) -> pd.DataFrame:
         return pd.DataFrame.from_records(
             [r.to_dict() for r in self.individuals])
 

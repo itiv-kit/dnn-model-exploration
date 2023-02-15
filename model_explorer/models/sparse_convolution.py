@@ -1,4 +1,3 @@
-import os
 import torch
 
 from torch import nn
@@ -13,7 +12,8 @@ class SparseConv2d(nn.Conv2d):
 
     def __init__(self,
                  old_module: nn.Conv2d,
-                 block_size: list):
+                 block_size: list,
+                 **kwargs: dict):
         super(SparseConv2d, self).__init__(in_channels=old_module.in_channels,
                                            out_channels=old_module.out_channels,
                                            kernel_size=old_module.kernel_size,
@@ -29,7 +29,7 @@ class SparseConv2d(nn.Conv2d):
         self.block_width = block_size[0]
         self.block_height = block_size[1]
 
-        self.collect_details = True
+        self.collect_details = kwargs.get('collect_details', True)
 
         # Metrics and evaluation stats
         self.sparse_present: torch.Tensor = 0.0
@@ -55,23 +55,23 @@ class SparseConv2d(nn.Conv2d):
         self.number_of_blocks_w: int = 0
         self.number_of_blocks_h: int = 0
 
-    def extra_repr(self):
+    def extra_repr(self) -> str:
         s = super().extra_repr()
         s += ", block_size={block_width}x{block_height}, threshold={_threshold}"
         return s.format(**self.__dict__)
 
-    def forward(self, x):
+    def forward(self, x) -> torch.Tensor:
         return self._custom_conv(x)
 
-    def _tensor_to_blocks(self, tensor):
+    def _tensor_to_blocks(self, tensor) -> torch.Tensor:
         return tensor.unfold(0, self.block_height,
                              self.block_height).unfold(1, self.block_width,
                                                        self.block_width)
 
-    def _blocks_to_tensor(self, blocks, padded_width, padded_height):
+    def _blocks_to_tensor(self, blocks, padded_width, padded_height) -> torch.Tensor:
         return blocks.permute(0, 2, 1, 3).view(padded_height, padded_width)
 
-    def _apply_sparsity(self, blocks):
+    def _apply_sparsity(self, blocks) -> torch.Tensor:
         num_sparse_before = 0
         num_sparse_produced = 0
 
@@ -112,7 +112,7 @@ class SparseConv2d(nn.Conv2d):
 
         return blocks
 
-    def _custom_conv(self, inp):
+    def _custom_conv(self, inp) -> torch.Tensor:
 
         batch_size = inp.shape[0]
         # 0 is batch size and 1 is channel size
@@ -146,7 +146,7 @@ class SparseConv2d(nn.Conv2d):
 
         return out
 
-    def transform_transposed_unfolded_input(self, inp_unf):
+    def transform_transposed_unfolded_input(self, inp_unf) -> torch.Tensor:
         """Splits the im2col representation of the forwarded input
         into blocks of the modules pre-set block sizes. The mean of each block is then compared to a
         pre-set threshold. If the mean is smaller than the threshold the block is set to zero.

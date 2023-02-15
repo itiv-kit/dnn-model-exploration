@@ -1,22 +1,8 @@
-"""
-This module contains the functionality to
-load and handle workload .yaml files.
-
-Raises:
-    FileNotFoundError:
-        When the workload file could not be found.
-    ValueError:
-        When the dataset setting is not present in the workload yaml.
-    ValueError:
-        When the model setting is not present in the workload yaml.
-    ValueError:
-        When no exploration setting is present in the workload yaml.
-    ValueError:
-        When no type is specified in the model setting inside the workload yaml.
-"""
 import os
 import yaml
 import collections.abc
+
+from typing import Any
 
 
 class Workload:
@@ -25,7 +11,7 @@ class Workload:
     containing all relevant settings for the project.
     """
 
-    def __init__(self, filename) -> None:
+    def __init__(self, filename: str) -> None:
         self.filename = filename
 
         if not os.path.exists(filename):
@@ -41,12 +27,14 @@ class Workload:
         assert "problem" in self.yaml_data, "No problem entry in yaml file given"
 
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str):
         if item in self.yaml_data:
             return self.yaml_data[item]
         return None
 
-    def merge(self, update_dict):
+    def merge(self, update_dict: dict):
+        """Updates the loaded yaml configuration with other settings in the update dict
+        """
         # https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
         def dict_update(d, u):
             for k, v in u.items():
@@ -59,7 +47,7 @@ class Workload:
         self.yaml_data = dict_update(self.yaml_data, update_dict)
 
 
-    def get(self, item, default=None):
+    def get(self, item: str, default: Any = None):
         """Gets the item from the workload.
 
         Args:

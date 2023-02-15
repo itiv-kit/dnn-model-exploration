@@ -6,6 +6,7 @@ from pymoo.operators.crossover.sbx import SBX
 from pymoo.operators.mutation.pm import PolynomialMutation
 from pymoo.optimize import minimize
 from pymoo.termination import get_termination
+import pymoo.core.result
 
 from model_explorer.utils.logger import logger
 from model_explorer.utils.setup import build_dataloader_generators, setup_torch_device, \
@@ -17,7 +18,21 @@ from model_explorer.utils.workload import Workload
 def explore_model(workload: Workload,
                   skip_baseline: bool,
                   progress: bool,
-                  verbose: bool) -> None:
+                  verbose: bool) -> pymoo.core.result.Result:
+    """Function to explore the influence of model parameter to the accuracy. It
+    instanciates an NSGA algorithm to automatically explore different model
+    parameter sets.
+
+    Args:
+        workload (Workload): Workload description
+        skip_baseline (bool): Skip the initial base line accuracy computation?
+        progress (bool): Show evaluation progress?
+        verbose (bool): Show verbose information?
+
+    Returns:
+        pymoo.core.result.Result: pymoo result object with the found
+        configurations, can be evaluated with the result_collection tools
+    """
     dataloaders = build_dataloader_generators(workload['exploration']['datasets'])
     model, accuracy_function = setup_workload(workload['model'])
     device = setup_torch_device()

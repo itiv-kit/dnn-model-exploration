@@ -8,14 +8,16 @@ from model_explorer.utils.logger import logger
 
 
 class CustomModel():
+    """Base Class for models in which modules can be replaced with explorable modules.
+    """
 
     def __init__(self,
-                 model: nn.Module,
+                 base_model: nn.Module,
                  device: torch.device,
                  verbose: bool = False) -> None:
         super().__init__()
 
-        self.base_model = model
+        self.base_model = base_model
         self._bit_widths = {}
         self.device = device
         self.verbose = verbose
@@ -33,7 +35,6 @@ class CustomModel():
     def get_explorable_parameter_count(self) -> int:
         return len(self.explorable_modules)
 
-    # LOADING and STORING
     def load_parameters(self, filename: str):
         self.base_model.load_state_dict(
             torch.load(filename, map_location=self.device))
@@ -41,13 +42,12 @@ class CustomModel():
     def save_parameters(self, filename: str):
         torch.save(self.base_model.state_dict(), filename)
 
-    # Retraining
     def retrain(self,
                 train_dataloader_generator: DataLoaderGenerator,
                 test_dataloader_generator: DataLoaderGenerator,
                 accuracy_function: callable,
-                num_epochs=10,
-                progress=False) -> list:
+                num_epochs: int = 10,
+                progress: bool = False) -> list:
         self.base_model.to(self.device)
 
         epoch_accs = []
@@ -55,13 +55,11 @@ class CustomModel():
         for epoch_idx in range(num_epochs):
             self.base_model.train()
 
-            logger.info("Starting Epoch {} / {}".format(
-                epoch_idx + 1, num_epochs))
+            logger.info("Starting Epoch {} / {}".format(epoch_idx + 1, num_epochs))
 
             if progress:
                 pbar = tqdm(total=len(train_dataloader_generator),
-                            desc="Epoch {} / {}".format(
-                                epoch_idx + 1, num_epochs),
+                            desc="Epoch {} / {}".format(epoch_idx + 1, num_epochs),
                             position=1)
 
             running_loss = 0.0
@@ -89,18 +87,15 @@ class CustomModel():
                 pbar.close()
 
             epoch_loss = running_loss / len(train_dataloader_generator)
-            logger.info("Ran Epoch {} / {} with loss of: {}".format(
-                epoch_idx + 1, num_epochs, epoch_loss))
+            logger.info("Ran Epoch {} / {} with loss of: {}".format(epoch_idx + 1, num_epochs, epoch_loss))
 
             self.base_model.eval()
             # FIXME!
             acc = accuracy_function(self.base_model,
                                     test_dataloader_generator,
                                     progress,
-                                    title="Eval {} / {}".format(
-                                        epoch_idx + 1, num_epochs))
+                                    title="Eval {} / {}".format(epoch_idx + 1, num_epochs))
             epoch_accs.append(acc)
-            logger.info("Inference Accuracy after Epoch {}: {}".format(
-                epoch_idx + 1, acc))
+            logger.info("Inference Accuracy after Epoch {}: {}".format(epoch_idx + 1, acc))
 
         return epoch_accs

@@ -2,6 +2,9 @@ import os
 import logging
 
 
+"""Setup logging for the entire module at once. Logging goes both to a file and
+to console. The latter can be changed with the verbose flag
+"""
 
 LOGGER_NAME = "exploration_logger"
 LOG_DIR = "results"
@@ -38,3 +41,8 @@ ch.setFormatter(formatter_console)
 
 logger.addHandler(fh)
 logger.addHandler(ch)
+
+
+def set_console_logger_level(level: int):
+    lg = logging.getLogger(LOGGER_NAME)
+    lg.handlers[1].setLevel(level)

@@ -208,7 +208,6 @@ def init_model():
 
 
 def leNet5_init():
-
     model = LeNet5(N_CLASSES)
 
     state_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),

@@ -1,8 +1,6 @@
 import torch
 import sys
 
-# sys.exit("YoloV5 is not yet traceable with this implementation of the sparse exploration.")
-
 # The following code is needed to prevent package conflicts
 # This is referenced in this issue:
 # https://github.com/pytorch/hub/issues/243
@@ -30,6 +28,7 @@ def _add_modules(modules: dict) -> None:
 
 restore_modules = _remove_modules(CONFLIC_MODULES)
 
+# Simply load yolov5s from trochhub, only minor changes have to be added ...
 model = torch.hub.load("ultralytics/yolov5", "yolov5s", verbose=False)
 
 _remove_modules(CONFLIC_MODULES)
