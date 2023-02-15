@@ -1,7 +1,8 @@
-from datetime import datetime
 import argparse
 import pymoo
 import os
+
+from datetime import datetime
 
 from model_explorer.visualize.exploration_visualizer import ExplorationVisualizer
 from model_explorer.utils.pickeling import CPUUnpickler
@@ -46,4 +47,3 @@ if __name__ == "__main__":
     output_dir = opt.output_dir if opt.output_dir else './results/viz_{}/'.format(date_str)
 
     render_results(opt.results_file, output_dir)
-

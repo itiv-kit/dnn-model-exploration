@@ -8,14 +8,13 @@ from model_explorer.utils.setup import get_model_init_function, get_model_update
 
 
 def evaluate_full_model(workload: Workload, model_configurations: pd.DataFrame,
-                        progress: bool, verbose: bool) -> pd.DataFrame:
+                        progress: bool) -> pd.DataFrame:
     """Function to evaluate a list of model configurations with the entire dataset
 
     Args:
         workload (Workload): Workload description
         model_configurations (pd.DataFrame): Input dataframe with the selected model configurations.
         progress (bool): Show evaluation progress?
-        verbose (bool): Show verbose information?
 
     Returns:
         pd.DataFrame: Dataframe with new column showing the full accuarcy
@@ -32,7 +31,7 @@ def evaluate_full_model(workload: Workload, model_configurations: pd.DataFrame,
     kwargs: dict = workload['exploration']['extra_args']
     if 'calibration' in workload.yaml_data:
         kwargs['calibration_file'] = workload['calibration']['file']
-    explorable_model = model_init_func(model, device, verbose, **kwargs)
+    explorable_model = model_init_func(model, device, **kwargs)
 
     # Copy individuals and add full_accuracy column
     evaluated_configs = model_configurations.copy(deep=True)

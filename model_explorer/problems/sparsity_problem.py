@@ -16,16 +16,15 @@ def update_sparse_model_params(model: SparseModel, thresholds: list):
 
 
 def init_sparse_model(model: nn.Module, device: torch.device,
-                      verbose: bool, **kwargs: dict) -> SparseModel:
+                      **kwargs: dict) -> SparseModel:
     """Create sparse model
 
     Args:
         model (nn.Module): base model, which is replaced with Sparse Modules
         device (torch.device): torch device
-        verbose (bool): print verbose info?
     """
     block_size = kwargs.get('block_size')
-    sparse_model = SparseModel(model, block_size, device, verbose)
+    sparse_model = SparseModel(model, block_size, device)
     logger.debug("Initialized sparse model with {} sparse modules".format(sparse_model.get_explorable_parameter_count()))
     return sparse_model
 
@@ -33,8 +32,7 @@ def init_sparse_model(model: nn.Module, device: torch.device,
 def prepare_sparsity_problem(model: nn.Module, device: torch.device,
                              dataloader_generator: DataLoaderGenerator,
                              accuracy_function: callable, min_accuracy: float,
-                             verbose: bool, progress: bool,
-                             **kwargs: dict):
+                             progress: bool, **kwargs: dict):
     """Generate sparsity exploration problem for NSGA2
 
     Args:
@@ -43,14 +41,13 @@ def prepare_sparsity_problem(model: nn.Module, device: torch.device,
         dataloader_generator (DataLoaderGenerator): Dataset used for exploration
         accuracy_function (callable): accuracy function that gets evaluated
         min_accuracy (float): minimum accuracy constraint
-        verbose (bool): print verbose info?
         progress (bool): show progress?
     """
     discrete_threshold_steps = kwargs.get('discrete_threshold_steps')
     discrete_threshold_method = kwargs.get('discrete_threshold_method')
     threshold_limit = kwargs.get('threshold_limit')
 
-    sparse_model = init_sparse_model(model, device, verbose, **kwargs)
+    sparse_model = init_sparse_model(model, device, **kwargs)
 
     logger.info("Sparsity problem and model initialized")
 

@@ -1,8 +1,9 @@
 import os
 import argparse
 import pandas as pd
+import logging
 
-from model_explorer.utils.logger import logger
+from model_explorer.utils.logger import logger, set_console_logger_level
 from model_explorer.exploration.retrain_model import retrain_model
 from model_explorer.utils.workload import Workload
 from model_explorer.result_handling.collect_results import collect_results
@@ -51,6 +52,9 @@ if __name__ == "__main__":
                         help="Show the current inference progress.")
     opt = parser.parse_args()
 
+    if opt.verbose:
+        set_console_logger_level(level=logging.DEBUG)
+
     logger.info("Retraining of {} individuals started".format(
         opt.top_elements))
 
@@ -60,16 +64,15 @@ if __name__ == "__main__":
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    if os.path.isfile(workload_file):
-        workload = Workload(workload_file)
-        individuals = select_individuals(opt.results_path, opt.top_elements)
-        results = retrain_model(workload, individuals, output_dir,
-                                opt.progress, opt.verbose)
-        save_results_df_to_csv('retrain', results, workload['problem']['problem_function'],
-                               workload['model']['type'], workload['reevaluation']['datasets']['reevaluate']['type'])
-
-    else:
+    if not os.path.isfile(workload_file):
         logger.warning("Declared workload file could not be found.")
         raise Exception(f"No file {opt.workload} found.")
+
+    workload = Workload(workload_file)
+    individuals = select_individuals(opt.results_path, opt.top_elements)
+    results = retrain_model(workload, individuals, output_dir,
+                            opt.progress)
+    save_results_df_to_csv('retrain', results, workload['problem']['problem_function'],
+                            workload['model']['type'], workload['reevaluation']['datasets']['reevaluate']['type'])
 
     logger.info("Retraining Process Finished")

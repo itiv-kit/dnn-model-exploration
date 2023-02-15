@@ -25,9 +25,8 @@ class QuantizedModel(CustomModel):
                  base_model: torch_nn.Module,
                  device: torch.device,
                  weighting_function: callable = bits_weighted_linear,
-                 quantization_descriptor: QuantDescriptor = tensor_quant.QUANT_DESC_8BIT_PER_TENSOR,
-                 verbose: bool = False) -> None:
-        super().__init__(base_model, device, verbose)
+                 quantization_descriptor: QuantDescriptor = tensor_quant.QUANT_DESC_8BIT_PER_TENSOR) -> None:
+        super().__init__(base_model, device)
 
         self._bit_widths = {}
         self.weighting_function = weighting_function

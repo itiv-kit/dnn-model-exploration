@@ -17,8 +17,7 @@ from model_explorer.utils.workload import Workload
 
 def explore_model(workload: Workload,
                   skip_baseline: bool,
-                  progress: bool,
-                  verbose: bool) -> pymoo.core.result.Result:
+                  progress: bool) -> pymoo.core.result.Result:
     """Function to explore the influence of model parameter to the accuracy. It
     instanciates an NSGA algorithm to automatically explore different model
     parameter sets.
@@ -27,7 +26,6 @@ def explore_model(workload: Workload,
         workload (Workload): Workload description
         skip_baseline (bool): Skip the initial base line accuracy computation?
         progress (bool): Show evaluation progress?
-        verbose (bool): Show verbose information?
 
     Returns:
         pymoo.core.result.Result: pymoo result object with the found
@@ -52,8 +50,7 @@ def explore_model(workload: Workload,
         kwargs['calibration_file'] = workload['calibration']['file']
     min_accuracy = workload['exploration']['minimum_accuracy']
     problem = prepare_function(model, device, dataloaders['exploration'],
-                               accuracy_function, min_accuracy,
-                               verbose, progress, **kwargs)
+                               accuracy_function, min_accuracy, progress, **kwargs)
 
 
     crossover = SBX(prob_var=workload['exploration']['nsga']['crossover_prob'],
@@ -92,8 +89,7 @@ def explore_model(workload: Workload,
         algorithm,
         termination,
         seed=1,
-        save_history=True,
-        verbose=True
+        save_history=True
     )
 
     logger.info("Finished problem minimization.")

@@ -1,8 +1,10 @@
 import os
 import argparse
+import logging
+
 from datetime import datetime
 
-from model_explorer.utils.logger import logger
+from model_explorer.utils.logger import logger, set_console_logger_level
 from model_explorer.utils.workload import Workload
 from model_explorer.exploration.explore_model import explore_model
 from model_explorer.result_handling.save_results import save_result_pickle
@@ -41,17 +43,24 @@ if __name__ == "__main__":
     parser.add_argument(
         "workload",
         help="The path to the workload yaml file.")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Show verbose information.")
     opt = parser.parse_args()
+
+    if opt.verbose:
+        set_console_logger_level(level=logging.DEBUG)
 
     logger.info("Exploration sweep over GA parameters started")
 
     workload_file = opt.workload
-    if os.path.isfile(workload_file):
-        workload = Workload(workload_file)
-        sweep_ga_parameters(workload)
-
-    else:
+    if not os.path.isfile(workload_file):
         logger.warning("Declared workload file could not be found.")
         raise Exception(f"No file {opt.workload} found.")
+
+    workload = Workload(workload_file)
+    sweep_ga_parameters(workload)
 
     logger.info("GA sweep exploration finished")

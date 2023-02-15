@@ -8,7 +8,7 @@ from model_explorer.utils.setup import get_model_init_function, get_model_update
 
 
 def retrain_model(workload: Workload, model_configurations: pd.DataFrame,
-                  result_dir: str, progress: bool, verbose: bool) -> pd.DataFrame:
+                  result_dir: str, progress: bool) -> pd.DataFrame:
     """Function that start the retraining of models with the parameters set in the workload description
 
     Args:
@@ -16,7 +16,6 @@ def retrain_model(workload: Workload, model_configurations: pd.DataFrame,
         model_configurations (pd.DataFrame): Dataframe with the selected model configurations for retraining
         result_dir (str): output directory for the retrained models
         progress (bool): Show retrain progress?
-        verbose (bool): Show verbose information?
 
     Returns:
         pd.DataFrame: Dataframe with the accuracies of the retrained models
@@ -33,7 +32,7 @@ def retrain_model(workload: Workload, model_configurations: pd.DataFrame,
     kwargs: dict = workload['exploration']['extra_args']
     if 'calibration' in workload.yaml_data:
         kwargs['calibration_file'] = workload['calibration']['file']
-    explorable_model = model_init_func(model, device, verbose, **kwargs)
+    explorable_model = model_init_func(model, device, **kwargs)
 
     # Copy individuals and add full_accuracy column
     evaluated_configs = model_configurations.copy(deep=True)

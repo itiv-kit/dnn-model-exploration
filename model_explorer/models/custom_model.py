@@ -13,14 +13,12 @@ class CustomModel():
 
     def __init__(self,
                  base_model: nn.Module,
-                 device: torch.device,
-                 verbose: bool = False) -> None:
+                 device: torch.device) -> None:
         super().__init__()
 
         self.base_model = base_model
         self._bit_widths = {}
         self.device = device
-        self.verbose = verbose
 
         self.explorable_modules = []
         self.explorable_module_names = []

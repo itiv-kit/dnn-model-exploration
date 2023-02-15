@@ -1,8 +1,9 @@
 import os
 import sys
 import argparse
-from model_explorer.utils.logger import logger
+import logging
 
+from model_explorer.utils.logger import logger, set_console_logger_level
 from model_explorer.utils.setup import build_dataloader_generators, setup_workload, setup_torch_device
 from model_explorer.utils.workload import Workload
 from model_explorer.models.quantized_model import QuantizedModel
@@ -10,7 +11,7 @@ from model_explorer.models.quantized_model import QuantizedModel
 from pytorch_quantization.tensor_quant import QuantDescriptor
 
 
-def generate_calibration(workload: Workload, verbose: bool, progress: bool, filename: str):
+def generate_calibration(workload: Workload, progress: bool, filename: str):
 
     dataloaders = build_dataloader_generators(workload['calibration']['datasets'])
     model, _ = setup_workload(workload['model'])
@@ -19,7 +20,7 @@ def generate_calibration(workload: Workload, verbose: bool, progress: bool, file
     dataset_gen = dataloaders['calibrate']
 
     quant_descriptor = QuantDescriptor(calib_method='histogram')
-    qmodel = QuantizedModel(model, device, quantization_descriptor=quant_descriptor, verbose=verbose)
+    qmodel = QuantizedModel(model, device, quantization_descriptor=quant_descriptor)
 
     qmodel.generate_calibration_file(dataset_gen.get_dataloader(), progress, calib_method='histogram',
                                      method='percentile', percentile=99.99)
@@ -51,24 +52,27 @@ if __name__ == "__main__":
 
     opt = parser.parse_args()
 
+    if opt.verbose:
+        set_console_logger_level(level=logging.DEBUG)
+
     logger.info("Calibration Started")
 
     workload_file = opt.workload
-    if os.path.isfile(workload_file):
-        workload = Workload(workload_file)
-
-        if workload['problem']['problem_function'] != "quantization_problem":
-            logger.warning("The selected workload is not a quantization workload!")
-
-        filename = workload['calibration']['file']
-        if os.path.exists(filename) and opt.force is False:
-            logger.warning("Calibration file already exists, stopping")
-            sys.exit(0)
-
-        generate_calibration(workload, opt.verbose, opt.progress, filename)
-    else:
+    if not os.path.isfile(workload_file):
         logger.warning("Declared workload file could not be found.")
         raise Exception(f"No file {opt.workload} found.")
+
+    workload = Workload(workload_file)
+
+    if workload['problem']['problem_function'] != "quantization_problem":
+        logger.warning("The selected workload is not a quantization workload!")
+
+    filename = workload['calibration']['file']
+    if os.path.exists(filename) and opt.force is False:
+        logger.warning("Calibration file already exists, stopping")
+        sys.exit(0)
+
+    generate_calibration(workload, opt.progress, filename)
 
     logger.info("Calibtration Finished")
 

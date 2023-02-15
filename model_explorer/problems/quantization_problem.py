@@ -18,13 +18,12 @@ def update_quant_model_params(qmodel: QuantizedModel, bits: list):
 
 
 def init_quant_model(model: nn.Module, device: torch.device,
-                     verbose: bool, **kwargs: dict) -> QuantizedModel:
+                     **kwargs: dict) -> QuantizedModel:
     """This function generates a quantized model
 
     Args:
         model (nn.Module): Base model
         device (torch.device): torch device
-        verbose (bool): print verbose info?
 
     Raises:
         FileNotFoundError: when there is no calibration file in kwargs
@@ -40,8 +39,7 @@ def init_quant_model(model: nn.Module, device: torch.device,
 
     qmodel = QuantizedModel(model,
                             device,
-                            weighting_function=weighting_function,
-                            verbose=verbose)
+                            weighting_function=weighting_function)
     qmodel.enable_quantization()
 
     logger.debug("Added {} Quantizer modules to the model".format(
@@ -61,8 +59,7 @@ def init_quant_model(model: nn.Module, device: torch.device,
 def prepare_quantization_problem(model: nn.Module, device: torch.device,
                                  dataloader_generator: DataLoaderGenerator,
                                  accuracy_function: callable, min_accuracy: float,
-                                 verbose: bool, progress: bool,
-                                 **kwargs: dict):
+                                 progress: bool, **kwargs: dict):
     """Generate the quanization exploration problem
 
     Args:
@@ -71,13 +68,12 @@ def prepare_quantization_problem(model: nn.Module, device: torch.device,
         dataloader_generator (DataLoaderGenerator): Dataloader for exploration
         accuracy_function (callable): given accuracy function
         min_accuracy (float): minimum accuracy constraint
-        verbose (bool): print verbose info?
         progress (bool): print progress?
     """
     num_bits_upper_limit = kwargs.get('num_bits_upper_limit')
     num_bits_lower_limit = kwargs.get('num_bits_lower_limit')
 
-    qmodel = init_quant_model(model, device, verbose, **kwargs)
+    qmodel = init_quant_model(model, device, **kwargs)
     logger.info("Quantization problem and model initialized")
 
     return LayerwiseQuantizationProblem(

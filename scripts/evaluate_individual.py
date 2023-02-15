@@ -1,8 +1,9 @@
 import os
 import argparse
 import pandas as pd
+import logging
 
-from model_explorer.utils.logger import logger
+from model_explorer.utils.logger import logger, set_console_logger_level
 from model_explorer.utils.workload import Workload
 from model_explorer.result_handling.collect_results import collect_results
 from model_explorer.result_handling.save_results import save_results_df_to_csv
@@ -53,20 +54,22 @@ if __name__ == "__main__":
 
     logger.info("Reevaluation of individuals started")
 
+    if opt.verbose:
+        set_console_logger_level(level=logging.DEBUG)
+
     workload_file = opt.workload
-    if os.path.isfile(workload_file):
-        workload = Workload(workload_file)
-        individuals = select_individuals(opt.results_path, opt.top_elements)
-        results = evaluate_full_model(workload, individuals, opt.progress, opt.verbose)
-
-        save_results_df_to_csv(
-            'reeval', results,
-            workload['problem']['problem_function'], workload['model']['type'],
-            workload['reevaluation']['datasets']['reevaluate']['type']
-        )
-
-    else:
+    if not os.path.isfile(workload_file):
         logger.warning("Declared workload file could not be found.")
         raise Exception(f"No file {opt.workload} found.")
+
+    workload = Workload(workload_file)
+    individuals = select_individuals(opt.results_path, opt.top_elements)
+    results = evaluate_full_model(workload, individuals, opt.progress)
+
+    save_results_df_to_csv(
+        'reeval', results,
+        workload['problem']['problem_function'], workload['model']['type'],
+        workload['reevaluation']['datasets']['reevaluate']['type']
+    )
 
     logger.info("Reevaluation of individuals finished")

@@ -13,8 +13,8 @@ class SparseModel(CustomModel):
     """
 
     def __init__(self, base_model: nn.Module, block_size: list, device: torch.device,
-                 collect_sparsity_details: bool = True, verbose: bool = False):
-        super().__init__(base_model, device, verbose)
+                 collect_sparsity_details: bool = True):
+        super().__init__(base_model, device)
 
         self._thresholds = {}
         self._collect_sparsity_details = collect_sparsity_details
