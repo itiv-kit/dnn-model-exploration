@@ -17,21 +17,24 @@ from model_explorer.models.custom_model import CustomModel
 
 
 class QuantizedModel(CustomModel):
+    """The quantized model automatically replaces all Conv2d modules with
+    quantizeable counterparts from the nvidia-quantization library.
+    """
 
     def __init__(self,
-                 model: torch_nn.Module,
+                 base_model: torch_nn.Module,
                  device: torch.device,
                  weighting_function: callable = bits_weighted_linear,
-                 verbose=False) -> None:
-        super().__init__(model, device, verbose)
+                 quantization_descriptor: QuantDescriptor = tensor_quant.QUANT_DESC_8BIT_PER_TENSOR,
+                 verbose: bool = False) -> None:
+        super().__init__(base_model, device, verbose)
 
         self._bit_widths = {}
         self.weighting_function = weighting_function
+        self.quantization_descriptor = quantization_descriptor
 
         # supposingly this is not going to change
-        self.explorable_modules = []
-        self.explorable_module_names = []
-        self._create_quant_model()
+        self._create_quantized_model()
 
     @property
     def bit_widths(self):
@@ -65,10 +68,13 @@ class QuantizedModel(CustomModel):
     def disable_quantization(self):
         [module.disable_quant() for module in self.explorable_modules]
 
-    def _create_quant_model(self) -> None:
+    def _create_quantized_model(self) -> None:
         for name, module in self.base_model.named_modules():
-            if isinstance(module, torch_nn.modules.conv.Conv2d):
-                # quant_conv = quant_nn.QuantConv2d(**module.__dict__)
+            if isinstance(module, torch_nn.Conv2d):
+                # The file /pytorch_quantization/nn/modules/_utils.py:L161 has
+                # some very strange kwargs check, therefore this simple solution
+                # is not possible and we had to make it explicit :/
+                # quant_conv = quant_nn.QuantConv2d(**module.__dict__, quant_desc...=...)
                 quant_conv = quant_nn.QuantConv2d(
                     in_channels=module.in_channels,
                     out_channels=module.out_channels,
@@ -79,9 +85,13 @@ class QuantizedModel(CustomModel):
                     groups=module.groups,
                     bias=module.bias,
                     padding_mode=module.padding_mode,
-                    quant_desc_input=tensor_quant.QUANT_DESC_8BIT_PER_TENSOR,
-                    quant_desc_weight=tensor_quant.QUANT_DESC_8BIT_PER_TENSOR
+                    quant_desc_input=self.quantization_descriptor,
+                    quant_desc_weight=self.quantization_descriptor
                 )
+
+                # copy weights and biases
+                quant_conv.weight = module.weight
+                quant_conv.bias = module.bias
 
                 # FIXME: is this save for all networks?
                 module_name = name.split('.')[-1]
@@ -94,26 +104,11 @@ class QuantizedModel(CustomModel):
                 self.explorable_module_names.append(name)
                 self.explorable_modules.append(module)
 
+    def generate_calibration_file(self, dataloader: DataLoader, progress=True,
+                                  calib_method='histogram', **kwargs):
+        assert calib_method in ['max', 'histogram'], "method has to be either max or histogram"
+        assert 'method' in kwargs, "you have to specify a method for quantization calibration"
 
-    # CALIBRATION PART
-    def run_calibration(self,
-                        dataloader: DataLoader,
-                        progress=True,
-                        calib_method='histogram',
-                        **kwargs):
-        assert calib_method in ['max', 'histogram'
-                                ], "method has to be either max or histogram"
-
-        quant_desc_input = QuantDescriptor(calib_method=calib_method)
-        quant_nn.QuantConv2d.set_default_quant_desc_input(quant_desc_input)
-        quant_nn.QuantLinear.set_default_quant_desc_input(quant_desc_input)
-        quant_nn.QuantLSTMCell.set_default_quant_desc_input(quant_desc_input)
-
-        self._collect_stats(dataloader=dataloader,
-                            progress=progress,
-                            kwargs=kwargs)
-
-    def _collect_stats(self, dataloader, progress, kwargs):
         self.base_model.to(self.device)
 
         # Enable Calibrators
@@ -127,7 +122,8 @@ class QuantizedModel(CustomModel):
         # Run the dataset ...
         for data, *_ in tqdm(dataloader,
                              desc="Calibrating",
-                             disable=not progress):
+                             disable=not progress,
+                             ascii=True):
             # no need for actual accuracy function ...
             self.base_model(data.to(self.device))
 
