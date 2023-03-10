@@ -32,10 +32,10 @@ class SparseConv2d(nn.Conv2d):
         self.collect_details = kwargs.get('collect_details', True)
 
         # Metrics and evaluation stats
-        self.sparse_present: torch.Tensor = 0.0
-        self.sparse_created: torch.Tensor = 0.0
-        self.min_of_blocks: torch.Tensor = -torch.inf
-        self.max_of_blocks: torch.Tensor = torch.inf
+        self.sparse_present: float = 0.0
+        self.sparse_created: float = 0.0
+        self.min_of_blocks: float = -torch.inf
+        self.max_of_blocks: float = torch.inf
         self.number_of_blocks_w: int = 0
         self.number_of_blocks_h: int = 0
 
@@ -48,10 +48,10 @@ class SparseConv2d(nn.Conv2d):
         self._threshold = new_threshold
 
     def reset_stats(self):
-        self.sparse_present: float = 0.0
-        self.sparse_created: float = 0.0
-        self.min_of_blocks: float = -torch.inf
-        self.max_of_blocks: float = torch.inf
+        self.sparse_present = 0.0
+        self.sparse_created = 0.0
+        self.min_of_blocks = -torch.inf
+        self.max_of_blocks = torch.inf
         self.number_of_blocks_w: int = 0
         self.number_of_blocks_h: int = 0
 

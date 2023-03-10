@@ -73,6 +73,6 @@ if __name__ == "__main__":
     results = retrain_model(workload, individuals, output_dir,
                             opt.progress)
     save_results_df_to_csv('retrain', results, workload['problem']['problem_function'],
-                            workload['model']['type'], workload['reevaluation']['datasets']['reevaluate']['type'])
+                           workload['model']['type'], workload['reevaluation']['datasets']['reevaluate']['type'])
 
     logger.info("Retraining Process Finished")

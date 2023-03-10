@@ -5,13 +5,41 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Exploration file",
+            "name": "Python test_isvlsi",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "program": "doodle_scripts/test_isvlsi.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "Exploration ResNet18",
+            "type": "python",
+            "request": "launch",
+            "program": "scripts/explore.py",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "cwd": "${workspaceFolder}/simple_resnet/exploration"
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "workloads/resnet18.yaml",
+                "-s",
+                "-v"
+            ]
+        },
+        {
+            "name": "Calibration ResNet18",
+            "type": "python",
+            "request": "launch",
+            "program": "scripts/calibrate_quantization.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "workloads/resnet18.yaml",
+                "-f",
+                "-p",
+                "-v"
+            ]
         }
     ]
 }

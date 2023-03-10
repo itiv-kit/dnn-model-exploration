@@ -32,6 +32,9 @@ class QuantizedModel(CustomModel):
         self.weighting_function = weighting_function
         self.quantization_descriptor = quantization_descriptor
 
+        self.input_quantizers = []
+        self.weight_quantizers = []
+
         # supposingly this is not going to change
         self._create_quantized_model()
 
@@ -103,6 +106,12 @@ class QuantizedModel(CustomModel):
                 self.explorable_module_names.append(name)
                 self.explorable_modules.append(module)
 
+                if name.endswith('_input_quantizer'):
+                    self.input_quantizers.append(module)
+                elif name.endswith('_weight_quantizer'):
+                    self.weight_quantizers.append(module)
+
+
     def generate_calibration_file(self, dataloader: DataLoader, progress=True,
                                   calib_method='histogram', **kwargs):
         assert calib_method in ['max', 'histogram'], "method has to be either max or histogram"
@@ -111,7 +120,7 @@ class QuantizedModel(CustomModel):
         self.base_model.to(self.device)
 
         # Enable Calibrators
-        for module in self.explorable_modules:
+        for module in self.input_quantizers:
             if module._calibrator is not None:
                 module.disable_quant()
                 module.enable_calib()
@@ -127,7 +136,7 @@ class QuantizedModel(CustomModel):
             self.base_model(data.to(self.device))
 
         # Disable Calibrators
-        for module in self.explorable_modules:
+        for module in self.input_quantizers:
             if module._calibrator is not None:
                 module.enable_quant()
                 module.disable_calib()
@@ -135,7 +144,7 @@ class QuantizedModel(CustomModel):
                 module.enable()
 
         # Collect amax statistics
-        for module in self.explorable_modules:
+        for module in self.input_quantizers:
             if module._calibrator is not None:
                 if isinstance(module._calibrator, calib.MaxCalibrator):
                     module.load_calib_amax()

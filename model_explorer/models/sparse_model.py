@@ -48,7 +48,7 @@ class SparseModel(CustomModel):
         for name, module in self.base_model.named_modules():
             if isinstance(module, nn.Conv2d):
                 self.thresholds[name] = 0.0
-                sparse_conv = SparseConv2d(module, self._block_size, self._collect_sparsity_details)
+                sparse_conv = SparseConv2d(module, self._block_size) #, self._collect_sparsity_details)
                 self.explorable_modules.append(sparse_conv)
                 self.explorable_module_names.append(name)
 
