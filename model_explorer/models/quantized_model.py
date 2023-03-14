@@ -77,6 +77,8 @@ class QuantizedModel(CustomModel):
                 # some very strange kwargs check, therefore this simple solution
                 # is not possible and we had to make it explicit :/
                 # quant_conv = quant_nn.QuantConv2d(**module.__dict__, quant_desc...=...)
+                bias_bool = not module.bias is None
+
                 quant_conv = quant_nn.QuantConv2d(
                     in_channels=module.in_channels,
                     out_channels=module.out_channels,
@@ -85,7 +87,7 @@ class QuantizedModel(CustomModel):
                     padding=module.padding,
                     dilation=module.dilation,
                     groups=module.groups,
-                    bias=module.bias,
+                    bias=bias_bool,
                     padding_mode=module.padding_mode,
                     quant_desc_input=self.quantization_descriptor,
                     quant_desc_weight=self.quantization_descriptor
