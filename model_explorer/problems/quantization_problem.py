@@ -111,7 +111,7 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
             min_accuracy=min_accuracy,
             n_var=qmodel.get_explorable_parameter_count(),
             n_constr=1,  # accuracy constraint
-            n_obj=2,  # accuracy and low bit num
+            n_obj=1,  # accuracy and low bit num
             xl=num_bits_lower_limit,
             xu=num_bits_upper_limit,
             vtype=int,
@@ -153,7 +153,8 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
 
         # NOTE: In pymoo, each objective function is supposed to be minimized,
         # and each constraint needs to be provided in the form of <= 0
-        out["F"] = [-f1_accuracy_objective, f2_quant_objective]
+        # out["F"] = [-f1_accuracy_objective, f2_quant_objective]
+        out["F"] = [f2_quant_objective]
         out["G"] = [g1_accuracy_constraint]
 
 

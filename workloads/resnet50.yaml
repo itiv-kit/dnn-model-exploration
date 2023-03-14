@@ -1,7 +1,7 @@
 workload:
   problem:
-    problem_function: sparsity_problem
-    # problem_function: quantization_problem
+    # problem_function: sparsity_problem
+    problem_function: quantization_problem
 
   model:
     type: resnet50
@@ -17,35 +17,38 @@ workload:
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
         sample_limit: null # number of validation dataset samples to test for each individual
-        batch_size: 512
+        batch_size: 64
+        randomize: True
 
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
-      pop_size: 20
-      offsprings: 20
-      generations: 10
-      mutation_eta: 100
-      mutation_prob: 0.9
-      crossover_eta: 10
-      crossover_prob: 0.7
-    minimum_accuracy: 0.76 # accuracy constraint
+      pop_size: 15
+      offsprings: 15
+      generations: 30
+      mutation_eta: 10
+      mutation_prob: 1.0
+      crossover_eta: 5
+      crossover_prob: 1.0
+    minimum_accuracy: 0.75 # baseline is 0.80858, accuracy constraint
     datasets:
       exploration:
         type: imagenet
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
-        sample_limit: 2048 # number of validation dataset samples to test for each individual
-        batch_size: 512
+        sample_limit: 4096 # number of validation dataset samples to test for each individual
+        batch_size: 128
+        randomize: True
       baseline:
         type: imagenet
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
         sample_limit: null
         batch_size: 512
+        randomize: True
     extra_args:
       # for quantization
-      num_bits_upper_limit: 16
-      num_bits_lower_limit: 2
+      num_bits_upper_limit: 14
+      num_bits_lower_limit: 4
       bit_weighting_function: 'bits_weighted_per_layer'
       # for sparsity
       discrete_threshold_steps: 100
@@ -60,14 +63,15 @@ workload:
         type: imagenet
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet/val_images'
-        sample_limit: 8192 # number of validation dataset samples to test for each individual
-        batch_size: 256
+        sample_limit: 25000 # number of validation dataset samples to test for each individual
+        batch_size: 64
+        randomize: True
       train:
         type: imagenet
         kind: 'webdataset'
         path: '/tools/datasets/imagenet/train/imagenet-train-{0000..0136}.tar'
         total_samples: 1281167
-        batch_size: 256
+        batch_size: 64
         sample_limit: null
 
   reevaluation:
@@ -79,5 +83,6 @@ workload:
         path: '/tools/datasets/imagenet/val_images'
         sample_limit: null
         batch_size: 256
+        randomize: True
 
 

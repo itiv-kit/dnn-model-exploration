@@ -38,8 +38,8 @@ class ResultsCollection():
                     further_args['block_size'] = d.problem.model._block_size
 
                 self.individuals.append(
-                    ResultEntry(accuracy=-(ind.get("F")[0]),
-                                further_objectives=ind.get("F")[1:],
+                    ResultEntry(accuracy=(ind.get("G")[0]),
+                                further_objectives=ind.get("F"),
                                 parameter=ind.get("X").tolist(),
                                 generation=generation_idx,
                                 individual_idx=individual_idx,

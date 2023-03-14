@@ -71,6 +71,7 @@ def explore_model(workload: Workload,
     )
 
     termination = get_termination("n_gen", workload['exploration']['nsga']['generations'])
+    # termination = get_termination("moo")
 
     logger.info("Prepared Run, run infomation:")
     logger.info(f"\tComputer name: {socket.gethostname()}")

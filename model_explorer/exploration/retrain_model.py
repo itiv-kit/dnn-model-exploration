@@ -35,18 +35,20 @@ def retrain_model(workload: Workload, model_configurations: pd.DataFrame,
     explorable_model = model_init_func(model, device, **kwargs)
 
     # Copy individuals and add full_accuracy column
-    evaluated_configs = model_configurations.copy(deep=True)
-    evaluated_configs['accuracy_after_training'] = -1
-    evaluated_configs['accuracies_over_epochs'] = -1
+    configs_to_evaluate = model_configurations.copy(deep=True)
+    configs_to_evaluate['accuracy_after_training'] = -1
+    configs_to_evaluate['accuracies_over_epochs'] = [-1] * len(configs_to_evaluate)
+    configs_to_evaluate['accuracies_over_epochs'] = configs_to_evaluate['accuracies_over_epochs'].astype('object')
 
     tot_eval = len(model_configurations)
     logger.info(f"Starting to retrain {tot_eval} individuals")
 
+    index = 1
     for i, row in model_configurations.iterrows():
-        logger.debug(f"Retraining model {i+1} / {tot_eval} with accuracy: {row['accuracy']:.4f}")
+        logger.debug(f"Retraining model {i} ({index} / {tot_eval}) with accuracy: {row['accuracy']:.4f} and F_0 at {row['F_0']}")
 
-        thresholds = row['parameters']
-        model_update_func(explorable_model, thresholds)
+        parameters = row['parameters']
+        model_update_func(explorable_model, parameters)
 
         epoch_accs = explorable_model.retrain(
             train_dataloader_generator=train_dataloaders['train'],
@@ -59,13 +61,15 @@ def retrain_model(workload: Workload, model_configurations: pd.DataFrame,
         acc_after_training = accuracy_function(explorable_model.base_model,
                                                reevaluate_dataloader,
                                                progress=progress,
-                                               title=f"Reevaluating {i+1}/{tot_eval}")
+                                               title=f"Reevaluating {i}/{tot_eval}")
 
-        logger.info(f"Retrained model {i+1} / {tot_eval}, accuracy is {acc_after_training:.4f}")
+        logger.info(f"Retrained model {i} ({index} / {tot_eval}), accuracy is {acc_after_training:.4f}")
 
-        # add full accuary to dataframe
-        evaluated_configs.loc[i, 'accuracy_after_training'] = acc_after_training.item()
-        evaluated_configs.loc[i, 'accuracies_over_epochs'] = epoch_accs
+        # add full accuracy to dataframe
+        configs_to_evaluate.loc[i, 'accuracy_after_training'] = acc_after_training.item()
+        configs_to_evaluate.at[i, 'accuracies_over_epochs'] = epoch_accs
 
-    return evaluated_configs
+        index += 1
+
+    return configs_to_evaluate
 

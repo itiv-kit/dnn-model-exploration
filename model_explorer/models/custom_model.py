@@ -56,7 +56,7 @@ class CustomModel():
             logger.info("Starting Epoch {} / {}".format(epoch_idx + 1, num_epochs))
 
             if progress:
-                pbar = tqdm(total=len(train_dataloader_generator),
+                pbar = tqdm(total=len(train_dataloader_generator), ascii=True,
                             desc="Epoch {} / {}".format(epoch_idx + 1, num_epochs),
                             position=1)
 

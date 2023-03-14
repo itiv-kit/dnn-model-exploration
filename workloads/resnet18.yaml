@@ -47,6 +47,7 @@ workload:
         path: '/tools/datasets/imagenet/val_images'
         sample_limit: null
         batch_size: 16
+        randomize: True
     extra_args:
       # for quantization
       num_bits_upper_limit: 16
