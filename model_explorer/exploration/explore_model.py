@@ -101,6 +101,7 @@ def explore_model(workload: Workload,
 
     # since we inverted our objective functions we have to invert the result back
     res.F = np.abs(res.F)
+    res.problem = None
 
     return res
 
