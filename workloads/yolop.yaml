@@ -5,7 +5,7 @@ workload:
 
   model:
     type: yolop
-    accuracy_function: yolop_iou_lane
+    accuracy_function: yolop_combined_accuracy
     weights: null
 
   calibration:
