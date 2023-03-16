@@ -13,7 +13,7 @@ class ResultsCollection():
     """
 
     def __init__(self, pickle_file: str = None) -> None:
-        self.accuracy_limit = 0.0
+        self.accuracy_limit = None
         self.explorable_module_names = []
         self.individuals = []
         if pickle_file:
@@ -37,8 +37,15 @@ class ResultsCollection():
                 if hasattr(d.problem.model, '_block_size'):
                     further_args['block_size'] = d.problem.model._block_size
 
+                # Compute Constraint - Acc Limit for each available Accuracy
+                accuracies = None
+                if isinstance(self.accuracy_limit, list):
+                    accuracies = [acc - limit for acc, limit in zip(ind.get("G"), self.accuracy_limit)]
+                elif isinstance(self.accuracy_limit, float):
+                    accuracies = [ind.get("G") - self.accuracy_limit]
+
                 self.individuals.append(
-                    ResultEntry(accuracy=(ind.get("G")[0]),
+                    ResultEntry(accuracies=accuracies,
                                 further_objectives=ind.get("F"),
                                 parameter=ind.get("X").tolist(),
                                 generation=generation_idx,

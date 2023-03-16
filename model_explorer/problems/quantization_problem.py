@@ -106,13 +106,15 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
     ):
         """Inits a quantization exploration problem.
         """
+        n_constr = len(min_accuracy) if isinstance(min_accuracy, list) else 1
+
         super().__init__(
             model=qmodel,
             accuracy_function=accuracy_function,
             progress=progress,
             min_accuracy=min_accuracy,
             n_var=qmodel.get_explorable_parameter_count(),
-            n_constr=1,  # accuracy constraint
+            n_constr=n_constr,  # accuracy constraint
             n_obj=1,  # accuracy and low bit num
             xl=num_bits_lower_limit,
             xu=num_bits_upper_limit,
