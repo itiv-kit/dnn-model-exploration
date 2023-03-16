@@ -1,3 +1,6 @@
 [submodule "model_explorer/third_party/yolop_det_seg"]
 	path = model_explorer/third_party/yolop_det_seg
 	url = git@gitlab.itiv.kit.edu:ai-algorithms/yolop-detection-segementation.git
+[submodule "model_explorer/third_party/timeloop"]
+	path = model_explorer/third_party/timeloop
+	url = https://github.com/NVlabs/timeloop
