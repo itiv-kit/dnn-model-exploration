@@ -6,7 +6,7 @@ setup(
         'pymoo',
         'torch',
         'torchvision',
-        'webdataset'
+        'webdataset',
         'matplotlib',
         'tqdm',
         'pandas',
