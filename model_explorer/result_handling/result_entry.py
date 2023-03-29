@@ -1,5 +1,6 @@
 from typing import List
 from dataclasses import dataclass
+
 import pymoo.core.mating
 import pymoo.operators.mutation.pm
 import pymoo.operators.crossover.sbx
@@ -11,7 +12,7 @@ class ResultEntry:
     """A dataclass to store results found during the exploration of an explorable model
     """
 
-    accuracy: float
+    accuracies: list
     parameter: list
     generation: int
     individual_idx: int
@@ -26,7 +27,7 @@ class ResultEntry:
         rdict = {
             "generation": self.generation,
             "individual": self.individual_idx,
-            "accuracy": self.accuracy,
+            "accuracies": self.accuracies,
         }
         if isinstance(self.pymoo_mating.mutation, pymoo.operators.mutation.pm.PolynomialMutation):
             rdict['mutation_eta'] = self.pymoo_mating.mutation.eta.value

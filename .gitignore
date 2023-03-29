@@ -8,3 +8,5 @@ test/
 *.vscode
 *.err
 *.out
+timeloop_eval/*
+!timeloop_eval/workload.yaml

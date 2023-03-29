@@ -40,7 +40,11 @@ def explore_model(workload: Workload,
         baseline_dataloader = dataloaders['baseline']
         logger.info("Collecting baseline...")
         baseline = accuracy_function(model, baseline_dataloader, title="Baseline Generation")
-        logger.info(f"Done. Baseline accuracy: {baseline:.3f}")
+        if isinstance(baseline, list):
+            acc_str = ", ".join([f"{x:.3f}" for x in baseline])
+            logger.info(f"Done. Baseline accuracy: {acc_str}")
+        elif isinstance(baseline, float):
+            logger.info(f"Done. Baseline accuracy: {baseline:.3f}")
 
     prepare_function, repair_method, sampling_method = \
         get_prepare_exploration_function(workload['problem']['problem_function'])

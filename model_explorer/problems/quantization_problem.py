@@ -2,6 +2,8 @@ import torch
 import os
 import importlib
 
+from typing import Union
+
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.operators.repair.rounding import RoundingRepair
 from pymoo.operators.sampling.rnd import IntegerRandomSampling
@@ -96,7 +98,7 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
         qmodel: QuantizedModel,
         dataloader_generator: DataLoaderGenerator,
         accuracy_function: callable,
-        min_accuracy: float,
+        min_accuracy: Union[list, float],
         progress: bool,
         num_bits_upper_limit: int,
         num_bits_lower_limit: int,
@@ -104,13 +106,15 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
     ):
         """Inits a quantization exploration problem.
         """
+        n_constr = len(min_accuracy) if isinstance(min_accuracy, list) else 1
+
         super().__init__(
             model=qmodel,
             accuracy_function=accuracy_function,
             progress=progress,
             min_accuracy=min_accuracy,
             n_var=qmodel.get_explorable_parameter_count(),
-            n_constr=1,  # accuracy constraint
+            n_constr=n_constr,  # accuracy constraint
             n_obj=1,  # accuracy and low bit num
             xl=num_bits_lower_limit,
             xu=num_bits_upper_limit,
@@ -137,25 +141,30 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
 
         self.model.bit_widths = layer_bit_nums
 
-        f1_accuracy_objective = self.accuracy_function(
+        accuracy_result = self.accuracy_function(
             self.model.base_model,
             self.dataloader_generator,
             progress=self.progress,
             title="Evaluating {}/{}".format(index + 1, algorithm.pop_size)
         )
         f2_quant_objective = self.model.get_bit_weighted()
+        
+        out["F"] = [f2_quant_objective]
 
-        logger.debug(
-            f"\t Evaluated, acc: {f1_accuracy_objective:.4f}, weighted bits: {f2_quant_objective}"
-        )
-
-        g1_accuracy_constraint = self.min_accuracy - f1_accuracy_objective
+        g1_accuracy_constraint = 0
+        if isinstance(self.min_accuracy, list):
+            g1_accuracy_constraint = [(constr - acc_result) for (constr, acc_result) in zip(self.min_accuracy, accuracy_result)]
+            acc_str = ", ".join([f"{x:.4f}" for x in accuracy_result])
+            logger.debug(f"\t Evaluated, acc: {acc_str}, weighted bits: {f2_quant_objective}")
+            out["G"] = g1_accuracy_constraint
+        elif isinstance(self.min_accuracy, float):
+            g1_accuracy_constraint = self.min_accuracy - accuracy_result
+            logger.debug(f"\t Evaluated, acc: {accuracy_result:.4f}, weighted bits: {f2_quant_objective}")
+            out["G"] = [g1_accuracy_constraint]
 
         # NOTE: In pymoo, each objective function is supposed to be minimized,
         # and each constraint needs to be provided in the form of <= 0
         # out["F"] = [-f1_accuracy_objective, f2_quant_objective]
-        out["F"] = [f2_quant_objective]
-        out["G"] = [g1_accuracy_constraint]
 
 
 # Expected parameters

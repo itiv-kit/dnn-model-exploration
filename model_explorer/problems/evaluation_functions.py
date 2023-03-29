@@ -32,7 +32,7 @@ class LoopedElementwiseEvaluationWithIndex(LoopedElementwiseEvaluation):
 
         # do some info generation
         accuracy_string = ", ".join(format(-result['G'][0], ".3f") for result in results)
-        logger.info("Finished Generation {} \n Accuracies: [{}]".format(algorithm.n_iter, accuracy_string))
+        logger.info("Finished Generation {} \n Accuracies[0]: [{}]".format(algorithm.n_iter, accuracy_string))
 
         return results
 

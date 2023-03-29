@@ -1,3 +1,5 @@
+from typing import Union
+
 from model_explorer.problems.evaluation_functions import ElementwiseEvaluationFunctionWithIndex, \
         LoopedElementwiseEvaluationWithIndex
 from model_explorer.models.custom_model import CustomModel
@@ -13,7 +15,7 @@ class CustomExplorationProblem(ElementwiseProblem):
     """
 
     def __init__(self, model: CustomModel, accuracy_function: callable,
-                 progress: bool, min_accuracy: float, elementwise: bool = True,
+                 progress: bool, min_accuracy: Union[list, float], elementwise: bool = True,
                  **kwargs: dict):
         super().__init__(
             elementwise,
