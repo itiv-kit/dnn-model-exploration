@@ -304,7 +304,7 @@ def resnet9_init():
     model = ResNet9()
 
     state_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                              "./resnet9_state_dict.pt")
+                              "param_checkpoints", "./resnet9_state_dict.pt")
 
     if not os.path.isfile(state_file):
         logger.info("No ResNet9 state dict found at {}, training from scratch".format(state_file))

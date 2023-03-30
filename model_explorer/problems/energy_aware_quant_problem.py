@@ -52,10 +52,10 @@ def init_quant_model(model: nn.Module, device: torch.device,
     # Load the previously generated calibration file
     if not os.path.exists(calibration_file):
         logger.error("Calibtraion file not found")
-        raise FileNotFoundError("Calibration file not found")
-
-    logger.debug(f"Loading calibration file: {calibration_file}")
-    qmodel.load_parameters(calibration_file)
+        # raise FileNotFoundError("Calibration file not found")
+    else:
+        logger.debug(f"Loading calibration file: {calibration_file}")
+        qmodel.load_parameters(calibration_file)
 
     return qmodel
 

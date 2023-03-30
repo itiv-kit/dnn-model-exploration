@@ -1,15 +1,14 @@
 import torch
+import timm
+import os
+
 from torch import nn
 import torch.nn.functional as F
-from torchvision import models
-
-import timm
 
 
 class Encoder(nn.Module):
     def __init__(self):
         super().__init__()
-        # self.encoder = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
         self.encoder = timm.create_model('resnet18', features_only=True, pretrained=True)
 
     def forward(self, x):
@@ -19,7 +18,7 @@ class Encoder(nn.Module):
 class ConvBlock(nn.Sequential):
     def __init__(self, ni, nf) -> None:
         layers = [
-            nn.Conv2d(in_channels=ni, out_channels=nf, kernel_size=3, padding=(1,1), bias=False),
+            nn.Conv2d(in_channels=ni, out_channels=nf, kernel_size=3, padding=(1, 1), bias=False),
             nn.BatchNorm2d(num_features=nf),
             nn.ReLU()
         ]
@@ -103,6 +102,14 @@ class UNet(nn.Module):
         out = self.decoder(feats)
         return out
 
-model = UNet(fs=32, expansion=1, n_out=13)
-state_dict = torch.load(fn)
-model.load_state_dict(state_dict)
+
+def init_unet_model():
+    model = UNet(fs=32, expansion=1, n_out=13)
+    fn = os.path.join(os.path.dirname(__file__), 'param_checkpoints', 'resnet18_unet.pth')
+    state_dict = torch.load(fn)
+    model.load_state_dict(state_dict)
+
+    return model
+
+
+model = init_unet_model()
