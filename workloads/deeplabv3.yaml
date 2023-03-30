@@ -1,0 +1,91 @@
+workload:
+  problem:
+    # problem_function: sparsity_problem
+    # problem_function: quantization_problem
+    problem_function: energy_aware_quant_problem
+
+  model:
+    type: deeplabv3
+    accuracy_function: classification_accuracy
+    weights: null
+
+  calibration:
+    samples: null # null sets samples to all
+    file: './results/deeplabv3_quant_calib.pkl'
+    datasets:
+      calibrate:
+        type: 'david'
+        kind: null
+        path: 'fixme'
+        sample_limit: 512 # number of validation dataset samples to test for each individual
+        batch_size: 32
+        randomize: True
+
+  exploration:
+    nsga: # Setup the parameters for your nsga algorithm
+      pop_size: 12
+      offsprings: 12
+      generations: 25
+      mutation_eta: 10
+      mutation_prob: 1.0
+      crossover_eta: 5
+      crossover_prob: 1.0
+    minimum_accuracy: 0.9
+    datasets:
+      exploration:  
+        type: 'david'
+        kind: null
+        path: '/tools/datasets/DAVID'
+        sample_limit: 1024 # number of validation dataset samples to test for each individual
+        batch_size: 32
+        randomize: True
+      baseline:
+        type: 'david'
+        kind: null
+        path: '/tools/datasets/DAVID'
+        sample_limit: null # number of validation dataset samples to test for each individual
+        batch_size: 32
+        randomize: True
+    energy_evaluation:
+      dram_analysis_file: 'results/dram_accesses_deeplabv3.csv'
+    extra_args:
+      # for quantization
+      num_bits_upper_limit: 14
+      num_bits_lower_limit: 4
+      bit_weighting_function: 'bits_weighted_per_layer'
+      # for sparsity
+      discrete_threshold_steps: 100
+      discrete_threshold_method: linear
+      threshold_limit: 0.8
+      block_size: [8,8]
+
+  retraining:
+    epochs: 4
+    datasets:
+      validation:
+        type: imagenet
+        kind: 'imagefolder'
+        path: '/tools/datasets/imagenet/val_images'
+        sample_limit: 25000 # number of validation dataset samples to test for each individual
+        batch_size: 64
+        randomize: True
+      train:
+        type: imagenet
+        kind: 'webdataset'
+        path: '/tools/datasets/imagenet/train/imagenet-train-{0000..0136}.tar'
+        total_samples: 1281167
+        batch_size: 64
+        sample_limit: null
+
+  reevaluation:
+    bit_weighting_function: 'bits_weighted_per_layer'
+    datasets:
+      reevaluate:
+        type: imagenet
+        kind: 'imagefolder'
+        path: '/tools/datasets/imagenet/val_images'
+        sample_limit: null
+        batch_size: 256
+        randomize: True
+
+
