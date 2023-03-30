@@ -12,7 +12,8 @@ setup(
         'pandas',
         'seaborn',
         'gitpython',
-        'opencv-python'
+        'opencv-python',
+        'timm'
     ],
     version='0.3',
     packages=find_packages(),
