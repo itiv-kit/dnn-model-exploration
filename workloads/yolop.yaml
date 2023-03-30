@@ -1,7 +1,8 @@
 workload:
   problem:
     # problem_function: sparsity_problem
-    problem_function: quantization_problem
+    # problem_function: quantization_problem
+    problem_function: energy_aware_quant_problem
 
   model:
     type: yolop

@@ -52,11 +52,13 @@ def explore_model(workload: Workload,
 
     if 'calibration' in workload.yaml_data:
         kwargs['calibration_file'] = workload['calibration']['file']
+    if 'energy_evaluation' in workload['exploration']:
+        kwargs['dram_analysis_file'] = workload['exploration']['energy_evaluation']['dram_analysis_file']
     min_accuracy = workload['exploration']['minimum_accuracy']
     problem = prepare_function(model, device, dataloaders['exploration'],
                                accuracy_function, min_accuracy, progress, **kwargs)
 
-
+    # Setup algorithm
     crossover = SBX(prob_var=workload['exploration']['nsga']['crossover_prob'],
                     eta=workload['exploration']['nsga']['crossover_eta'],
                     repair=repair_method,

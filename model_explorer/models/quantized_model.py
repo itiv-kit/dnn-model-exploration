@@ -1,6 +1,7 @@
 import torch
 import functools
 import numpy as np
+import pandas as pd
 
 from tqdm import tqdm
 from torch import nn as torch_nn
@@ -25,7 +26,8 @@ class QuantizedModel(CustomModel):
                  base_model: torch_nn.Module,
                  device: torch.device,
                  weighting_function: callable = bits_weighted_linear,
-                 quantization_descriptor: QuantDescriptor = tensor_quant.QUANT_DESC_8BIT_PER_TENSOR) -> None:
+                 quantization_descriptor: QuantDescriptor = tensor_quant.QUANT_DESC_8BIT_PER_TENSOR,
+                 dram_analysis_file: str = "") -> None:
         super().__init__(base_model, device)
 
         self._bit_widths = {}
@@ -37,6 +39,10 @@ class QuantizedModel(CustomModel):
 
         # supposingly this is not going to change
         self._create_quantized_model()
+
+        # Energy Model ...
+        if dram_analysis_file != "":
+            self._build_energy_model(dram_analysis_file)
 
     @property
     def bit_widths(self):
@@ -64,14 +70,48 @@ class QuantizedModel(CustomModel):
         return self.weighting_function(self.explorable_modules,
                                        self.explorable_module_names)
 
-    def get_forward_pass_energy(self) -> float:
-        pass
+    def get_forward_pass_dram_energy(self) -> float:
+        dram_energy_sum = 0.0
+        i = 0
+
+        for name, module in self.base_model.named_modules():
+            if isinstance(module, quant_nn.QuantConv2d):
+                w_bits = module._weight_quantizer.num_bits
+                i_bits = module._input_quantizer.num_bits
+
+                if i > 0:
+                    dram_energy_sum += self.dram_data[i-1]['o_energy'] * (i_bits / 16)
+
+                dram_energy_sum += self.dram_data[i]['i_energy'] * (i_bits / 16)
+                dram_energy_sum += self.dram_data[i]['w_energy'] * (w_bits / 16)
+
+                # Last layer has always 16 bit
+                if i == len(self.dram_data) - 1:
+                    dram_energy_sum += self.dram_data[i]['o_energy'] * 1
+
+                i += 1
+
+        # Timeloop works with pJ as unit, for convenience we use uJ from here on
+        return dram_energy_sum / 1_000_000
 
     def enable_quantization(self):
         [module.enable_quant() for module in self.explorable_modules]
 
     def disable_quantization(self):
         [module.disable_quant() for module in self.explorable_modules]
+
+    def _build_energy_model(self, fn) -> None:
+        dram_data_df = pd.read_csv(fn)
+        self.dram_data = {}
+        for i, row in dram_data_df.iterrows():
+            # realign values to 16 bit
+            scale_factor = 16 / row['bitwidth']
+
+            self.dram_data[i] = {
+                'w_energy': (row['w_reads'] + row['w_updates'] + row['w_fills']) * row['w_energy'] * scale_factor,
+                'i_energy': (row['i_reads'] + row['i_updates'] + row['i_fills']) * row['i_energy'] * scale_factor,
+                'o_energy': (row['o_reads'] + row['o_updates'] + row['o_fills']) * row['o_energy'] * scale_factor
+            }
 
     def _create_quantized_model(self) -> None:
         for name, module in self.base_model.named_modules():
@@ -80,7 +120,7 @@ class QuantizedModel(CustomModel):
                 # some very strange kwargs check, therefore this simple solution
                 # is not possible and we had to make it explicit :/
                 # quant_conv = quant_nn.QuantConv2d(**module.__dict__, quant_desc...=...)
-                bias_bool = not module.bias is None
+                bias_bool = module.bias is not None
 
                 quant_conv = quant_nn.QuantConv2d(
                     in_channels=module.in_channels,
