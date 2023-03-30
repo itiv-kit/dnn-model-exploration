@@ -26,7 +26,7 @@ class ConvBlock(nn.Sequential):
 
 
 class UnetBlock(nn.Module):
-    def __init__(self, in_channels, channels, out_channels, attn=None):
+    def __init__(self, in_channels, channels, out_channels):
         super().__init__()
 
         def noop(x):
@@ -34,13 +34,11 @@ class UnetBlock(nn.Module):
 
         self.conv1 = ConvBlock(in_channels, channels)
         self.conv2 = ConvBlock(channels, out_channels)
-        self.attn_layer = attn(out_channels) if attn else noop
 
     def forward(self, x):
         x = F.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
         x = self.conv1(x)
         x = self.conv2(x)
-        x = self.attn_layer(x)
         return x
 
 
@@ -55,7 +53,7 @@ def calc_hyperfeats(d1, d2, d3, d4, d5):
 
 
 class UnetDecoder(nn.Module):
-    def __init__(self, fs=32, expansion=4, n_out=1, hypercol=False, attn=None):
+    def __init__(self, fs=32, expansion=4, n_out=1, hypercol=False):
         super().__init__()
 
         center_ch = 512*expansion
@@ -65,11 +63,11 @@ class UnetDecoder(nn.Module):
         self.hypercol = hypercol
         self.center = nn.Sequential(ConvBlock(center_ch, center_ch),
                                     ConvBlock(center_ch, center_ch//2))
-        self.decoder5 = UnetBlock(decoder5_ch, channels, fs, attn)
-        self.decoder4 = UnetBlock(256*expansion+fs, 256, fs, attn)
-        self.decoder3 = UnetBlock(128*expansion+fs, 128, fs, attn)
-        self.decoder2 = UnetBlock(64*expansion+fs, 64, fs, attn)
-        self.decoder1 = UnetBlock(fs, fs, fs, attn)
+        self.decoder5 = UnetBlock(decoder5_ch, channels, fs)
+        self.decoder4 = UnetBlock(256*expansion+fs, 256, fs)
+        self.decoder3 = UnetBlock(128*expansion+fs, 128, fs)
+        self.decoder2 = UnetBlock(64*expansion+fs, 64, fs)
+        self.decoder1 = UnetBlock(fs, fs, fs)
         if hypercol:
             self.logit = nn.Sequential(ConvBlock(fs*5, fs*2),
                                        ConvBlock(fs*2, fs),
@@ -92,10 +90,10 @@ class UnetDecoder(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, fs=32, expansion=4, n_out=1, hypercol=False, attn=None):
+    def __init__(self, fs=32, expansion=4, n_out=1, hypercol=False):
         super().__init__()
         self.encoder = Encoder()
-        self.decoder = UnetDecoder(fs=fs, expansion=expansion, n_out=n_out, hypercol=hypercol, attn=attn)
+        self.decoder = UnetDecoder(fs=fs, expansion=expansion, n_out=n_out, hypercol=hypercol)
 
     def forward(self, x):
         feats = self.encoder(x)  # '64 256 512 1024 2048'

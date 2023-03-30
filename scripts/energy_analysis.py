@@ -46,7 +46,7 @@ def compute_memory_saving(workload: Workload, progress: bool = True):
     explorable_model = model_init_func(model, device, **kwargs)
 
     # FIXME: input size parametrizable
-    layer_list = summary(explorable_model.base_model, input_size=(1, 3, 640, 640), verbose=0, depth=100)
+    layer_list = summary(explorable_model.base_model, input_size=(1, 3, 608, 800), verbose=0, depth=100)
 
     timeloop_layers: List[LayerInfo] = []
     for layer_info in layer_list.summary_list:

@@ -23,7 +23,7 @@ def compute_pixelwise_segmentation_accuracy(base_model, dataloader_generator, pr
             target = target.to(device)
 
             y_prob = model(x)
-            y_pred = y_prob.argmax(1)[4:-4, :]
+            y_pred = y_prob.argmax(1)[:, 4:-4, :]
 
             pixel_acc = (target == y_pred).float().mean()
             running_pixel_acc.append(pixel_acc)
