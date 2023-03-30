@@ -64,6 +64,9 @@ class QuantizedModel(CustomModel):
         return self.weighting_function(self.explorable_modules,
                                        self.explorable_module_names)
 
+    def get_forward_pass_energy(self) -> float:
+        pass
+
     def enable_quantization(self):
         [module.enable_quant() for module in self.explorable_modules]
 

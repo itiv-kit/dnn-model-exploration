@@ -50,8 +50,7 @@
             "cwd": "${workspaceFolder}",
             "args": [
                 "workloads/yolop.yaml",
-                "results/yolop_precise/expl_quantization_problem_yolop_bdd100k_2023-03-15_12-59.pkl",
-                "-n 1"
+                "-p"
             ],
             "env": {
                 "LD_LIBRARY_PATH": "/home/oq4116/temp/timeloop/lib"

@@ -57,6 +57,8 @@ workload:
         label_root: 'data2/zwt/bdd/bdd100k/labels/100k'
         mask_root: 'bdd_seg_gt'
         lane_root: 'bdd_lane_gt'
+    energy_evaluation:
+      dram_analysis_file: 'results/dram_accesses_yolop.csv'
     extra_args:
       # for quantization
       num_bits_upper_limit: 14
