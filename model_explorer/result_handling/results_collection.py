@@ -40,9 +40,9 @@ class ResultsCollection():
                 # Compute Constraint - Acc Limit for each available Accuracy
                 accuracies = None
                 if isinstance(self.accuracy_limit, list):
-                    accuracies = [acc - limit for acc, limit in zip(ind.get("G"), self.accuracy_limit)]
+                    accuracies = [limit - acc for acc, limit in zip(ind.get("G"), self.accuracy_limit)]
                 elif isinstance(self.accuracy_limit, float):
-                    accuracies = [ind.get("G") - self.accuracy_limit]
+                    accuracies = self.accuracy_limit - ind.get("G")
 
                 self.individuals.append(
                     ResultEntry(accuracies=accuracies,

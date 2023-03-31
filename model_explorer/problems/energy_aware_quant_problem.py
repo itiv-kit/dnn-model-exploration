@@ -32,6 +32,7 @@ def init_quant_model(model: nn.Module, device: torch.device,
     """
     weighting_function_name = kwargs.get('bit_weighting_function')
     calibration_file = kwargs.get('calibration_file')
+    dram_analysis_file = kwargs.get('dram_analysis_file', "")
 
     weighting_function = getattr(
         importlib.import_module('model_explorer.exploration.weighting_functions'),
@@ -41,7 +42,8 @@ def init_quant_model(model: nn.Module, device: torch.device,
 
     qmodel = QuantizedModel(model,
                             device,
-                            weighting_function=weighting_function)
+                            weighting_function=weighting_function,
+                            dram_analysis_file=dram_analysis_file)
     qmodel.enable_quantization()
 
     logger.debug("Added {} Quantizer modules to the model".format(
@@ -50,10 +52,10 @@ def init_quant_model(model: nn.Module, device: torch.device,
     # Load the previously generated calibration file
     if not os.path.exists(calibration_file):
         logger.error("Calibtraion file not found")
-        raise FileNotFoundError("Calibration file not found")
-
-    logger.debug(f"Loading calibration file: {calibration_file}")
-    qmodel.load_parameters(calibration_file)
+        # raise FileNotFoundError("Calibration file not found")
+    else:
+        logger.debug(f"Loading calibration file: {calibration_file}")
+        qmodel.load_parameters(calibration_file)
 
     return qmodel
 
@@ -139,6 +141,7 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
         bits_str = [str(x) for x in layer_bit_nums]
         logger.debug(f"\tBit widths: {bits_str}")
 
+        # assign new bit widths
         self.model.bit_widths = layer_bit_nums
 
         accuracy_result = self.accuracy_function(
@@ -147,21 +150,23 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
             progress=self.progress,
             title="Evaluating {}/{}".format(index + 1, algorithm.pop_size)
         )
-        f2_quant_objective = self.model.get_bit_weighted()
+        f1_dram_energy_objective = self.model.get_forward_pass_dram_energy()
+        f2_bits_objective = self.model.get_bit_weighted()
 
         # NOTE: In pymoo, each objective function is supposed to be minimized,
         # and each constraint needs to be provided in the form of <= 0
-        out["F"] = [f2_quant_objective]
+        out["F"] = [f1_dram_energy_objective]
 
         g1_accuracy_constraint = 0
         if isinstance(self.min_accuracy, list):
-            g1_accuracy_constraint = [(constr - acc_result) for (constr, acc_result) in zip(self.min_accuracy, accuracy_result)]
+            g1_accuracy_constraint = [(constr - acc_result)
+                                      for (constr, acc_result) in zip(self.min_accuracy, accuracy_result)]
             acc_str = ", ".join([f"{x:.4f}" for x in accuracy_result])
-            logger.debug(f"\t Evaluated, acc: {acc_str}, weighted bits: {f2_quant_objective}")
+            logger.debug(f"\t Evaluated, acc: {acc_str}, DRAM energy: {f1_dram_energy_objective:,.1f}mJ, Bits: {f2_bits_objective}")
             out["G"] = g1_accuracy_constraint
         elif isinstance(self.min_accuracy, float):
             g1_accuracy_constraint = self.min_accuracy - accuracy_result
-            logger.debug(f"\t Evaluated, acc: {accuracy_result:.4f}, weighted bits: {f2_quant_objective}")
+            logger.debug(f"\t Evaluated, acc: {accuracy_result:.4f}, DRAM Energy: {f1_dram_energy_objective:,.1f}mJ, Bits: {f2_bits_objective}")
             out["G"] = [g1_accuracy_constraint]
 
 

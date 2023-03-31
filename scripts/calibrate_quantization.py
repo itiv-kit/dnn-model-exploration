@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     workload = Workload(workload_file)
 
-    if workload['problem']['problem_function'] != "quantization_problem":
+    if "quant" not in workload['problem']['problem_function']:
         logger.warning("The selected workload is not a quantization workload!")
 
     filename = workload['calibration']['file']

@@ -1,4 +1,4 @@
-# Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2018, NVIDIA CORPORATION. All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -24,99 +24,134 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+mapspace:
+  constraints_rowstationary:
+  - type: datatype
+    target: PsumRegFile
+    bypass:
+    - Inputs
+    - Weights
+    keep:
+    - Outputs
+  - type: datatype
+    target: WeightRegFile
+    bypass:
+    - Inputs
+    - Outputs
+    keep:
+    - Weights
+  - type: datatype
+    target: InputRegFile
+    bypass:
+    - Weights
+    - Outputs
+    keep:
+    - Inputs
+  - type: datatype
+    target: DummyBuffer
+    bypass:
+    - Inputs
+    - Outputs
+    - Weights
+  - type: datatype
+    target: GlobalBuffer
+    bypass:
+    - Weights
+    keep:
+    - Inputs
+    - Outputs
+  - split: 4
+    permutation: NPQR SCK
+    type: spatial
+    target: DummyBuffer
+    factors: N1 P1 Q1 R1 S0
+  - split: 7
+    permutation: NCPRS QK
+    type: spatial
+    target: GlobalBuffer
+    factors: N1 C1 P1 R1 S1
+  - permutation: NCPQRS K
+    type: temporal
+    target: PsumRegFile
+    factors: N1 C1 P1 Q1 R1 S1
+  - permutation: NKPQS CR
+    type: temporal
+    target: WeightRegFile
+    factors: N1 K1 P1 Q1 S1 R0
+  - permutation: NKCPQRS
+    type: temporal
+    target: InputRegFile
+    factors: N1 K1 C1 P1 Q1 R1 S1
+  - permutation: NKCPQRS
+    type: temporal
+    target: DummyBuffer
+    factors: N1 K1 C1 P1 Q1 R1 S1
+  - permutation: QRSC PNK
+    type: temporal
+    target: GlobalBuffer
+    factors: Q1 R1 S1 C1 P0
+  - permutation: RSP CKNQ
+    type: temporal
+    target: DRAM
+    factors: R1 S1 P1
+  constraints: rowstationary
 mapper:
-  algorithm: exhaustive
-  optimization-metrics:
-  - energy
-  - delay
-  search-size: 0
-  victory-condition: 100
-  timeout: 1000
-
+  algorithm: linear-pruned
+  timeout: 3000
+  diagnostics: True
+  victory-condition: 1000
+problem:
+  Q: 80
+  P: 60
+  S: 1
+  R: 1
+  Hstride: 1
+  K: 64
+  Wstride: 1
+  C: 128
+  N: 1
 arch:
   arithmetic:
-    instances: 1024
-    meshX: 16
-    word-bits: 8
+    instances: 2304
+    meshX: 48
+    name: MACs
+    word-bits: 16
   storage:
-  - name: Registers
-    entries: 1
-    instances: 1024
-    meshX: 16
-    word-bits: 8
-    cluster-size: 64
-  - name: AccumulationBuffer
-    entries: 128
-    instances: 16
-    meshX: 16
-    word-bits: 24
-    cluster-size: 16
-    network-word-bits: 16
-  - name: WeightInputBuffer
-    sizeKB: 256
+  - entries: 16
+    instances: 2304
+    meshX: 48
+    name: PsumRegFile
+    read_bandwidth: 2
+    word-bits: 16
+    write_bandwidth: 2
+  - entries: 192
+    instances: 2304
+    meshX: 48
+    name: WeightRegFile
+    read_bandwidth: 2
+    word-bits: 16
+    write_bandwidth: 2
+  - entries: 12
+    instances: 2304
+    meshX: 48
+    name: InputRegFile
+    read_bandwidth: 2
+    word-bits: 16
+    write_bandwidth: 2
+  - entries: 0
+    instances: 48
+    meshX: 48
+    name: DummyBuffer
+    word-bits: 16
+  - block-size: 4
     instances: 1
-    word-bits: 8
-    block-size: 64
-  - name: DRAM
+    meshX: 1
+    name: GlobalBuffer
+    read_bandwidth: 16
+    sizeKB: 2976
+    word-bits: 16
+    write_bandwidth: 16
+  - instances: 1
+    name: DRAM
     technology: DRAM
-    instances: 1
-    word-bits: 8
-    block-size: 64
-    bandwidth: 10.0
-
-mapspace:
-  constraints:
-  # Level Bypass
-  - target: AccumulationBuffer
-    type: datatype
-    keep:
-    - Outputs
-    bypass:
-    - Weights
-    - Inputs
-  - target: WeightInputBuffer
-    type: datatype
-    keep:
-    - Weights
-    - Inputs
-    bypass:
-    - Outputs
-  # Spatial
-  - target: AccumulationBuffer
-    type: spatial
-    factors: P1 Q1 R1 S1 C64 K1 N1
-    permutation: KQRSPNC
-  - target: WeightInputBuffer
-    type: spatial
-    factors: P1 Q1 R1 S1 C1 K16 N1
-    permutation: KCQRSPN
-  # Temporal
-  - target: Registers
-    type: temporal
-    factors: R1 S1 C1 K1 N1
-    permutation: PQRSCKN
-  - target: AccumulationBuffer
-    type: temporal
-    factors: P1 Q1 R1 S1 C1 N1
-    permutation: KPQRSCN
-  - target: WeightInputBuffer
-    type: temporal
-    factors: P1 Q1 K1
-  # Parallelism
-  - target: Registers
-    type: utilization
-    min: 0.01
-
-problem:
-  shape: cnn-layer
-  R: 3
-  S: 3
-  P: 48
-  Q: 480
-  C: 1
-  K: 16
-  N: 1
-  Wstride: 1
-  Hstride: 1
-  Wdilation: 1
-  Hdilation: 1
+    word-bits: 16
