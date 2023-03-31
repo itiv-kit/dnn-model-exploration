@@ -76,29 +76,40 @@ workload:
     epochs: 4
     datasets:
       validation:
-        type: imagenet
-        kind: 'imagefolder'
-        path: '/tools/datasets/imagenet/val_images'
-        sample_limit: 25000 # number of validation dataset samples to test for each individual
-        batch_size: 64
+        type: 'bdd100k'
+        kind: null
+        path: '/tools/datasets/bdd100k'
+        sample_limit: null # number of validation dataset samples to test for each individual
+        batch_size: 32
         randomize: True
+        data_root: 'images/100k'
+        label_root: 'data2/zwt/bdd/bdd100k/labels/100k'
+        mask_root: 'bdd_seg_gt'
+        lane_root: 'bdd_lane_gt'
       train:
-        type: imagenet
-        kind: 'webdataset'
-        path: '/tools/datasets/imagenet/train/imagenet-train-{0000..0136}.tar'
-        total_samples: 1281167
-        batch_size: 64
-        sample_limit: null
+        type: 'bdd100k'
+        kind: null
+        path: '/tools/datasets/bdd100k'
+        sample_limit: null # number of validation dataset samples to test for each individual
+        batch_size: 32
+        randomize: True
+        data_root: 'images/100k'
+        label_root: 'data2/zwt/bdd/bdd100k/labels/100k'
+        mask_root: 'bdd_seg_gt'
+        lane_root: 'bdd_lane_gt'
 
   reevaluation:
     bit_weighting_function: 'bits_weighted_per_layer'
     datasets:
       reevaluate:
-        type: imagenet
-        kind: 'imagefolder'
-        path: '/tools/datasets/imagenet/val_images'
-        sample_limit: null
-        batch_size: 256
+        type: 'bdd100k'
+        kind: null
+        path: '/tools/datasets/bdd100k'
+        sample_limit: null # number of validation dataset samples to test for each individual
+        batch_size: 32
         randomize: True
-
+        data_root: 'images/100k'
+        label_root: 'data2/zwt/bdd/bdd100k/labels/100k'
+        mask_root: 'bdd_seg_gt'
+        lane_root: 'bdd_lane_gt'
 

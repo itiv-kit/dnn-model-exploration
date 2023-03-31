@@ -1,24 +1,116 @@
 workload:
-    nsga: # Setup the parameters for your nsga algorithm
-        pop_size: 20
-        offsprings: 20
-        generations: 30
-        mutation_eta: 20
-        mutation_prob: null
-        crossover_eta: 15
-        crossover_prob: 0.9
-    minimum_accuracy: 0.7 # accuracy contraint
-    sample_limit: 1024 # number of validation dataset samples to test for each individual
-    dataset: # settings of the dataset. Parameters are passed a script in ./datasets based on the type parameter
-        path: '/data/oq4116/val'
-        type: imagenet
-        groundtruth: null
+
+ problem:
+    # problem_function: sparsity_problem
+    # problem_function: quantization_problem
+    problem_function: energy_aware_quant_problem
+
+  model:
+    type: yolop
+    accuracy_function: yolop_combined_accuracy
+    weights: null
+
+  calibration: # Calibration phase for quantization
+    samples: null # null sets samples to all
+    file: './results/yolop_quant_calib.pkl'
+    datasets:
+      calibrate:
+        type: 'bdd100k'
+        kind: null
+        path: '/tools/datasets/bdd100k'
+        sample_limit: null # number of validation dataset samples to test for each individual
         batch_size: 32
-    model: # settings of the model. Parameters are passed a script in ./models based on the type parameter
-        type: resnet18
-        transforms: resnet50_transforms
-        accuracy_function: classification_accuracy
-        weights: null
-    parallelization: # set the parallelization method.
-        method: null
-        threads: 4
+        randomize: True
+        data_root: 'images/100k'
+        label_root: 'data2/zwt/bdd/bdd100k/labels/100k'
+        mask_root: 'bdd_seg_gt'
+        lane_root: 'bdd_lane_gt'
+
+  exploration: # model exploration phase
+    nsga: # Setup the parameters for your nsga algorithm
+      pop_size: 12
+      offsprings: 12
+      generations: 25
+      mutation_eta: 10
+      mutation_prob: 1.0
+      crossover_eta: 5
+      crossover_prob: 1.0
+    minimum_accuracy: [0.65, 0.86, 0.71] # accuracy constraint
+    datasets: # Dataset description, Parameters are passed to the script in ./datasets based on the type parameter
+      exploration: 
+        type: 'bdd100k'
+        kind: null
+        path: '/tools/datasets/bdd100k'
+        sample_limit: 1024 # number of validation dataset samples to test for each individual
+        batch_size: 32
+        randomize: True
+        data_root: 'images/100k'
+        label_root: 'data2/zwt/bdd/bdd100k/labels/100k'
+        mask_root: 'bdd_seg_gt'
+        lane_root: 'bdd_lane_gt'
+      baseline:
+        type: 'bdd100k'
+        kind: null
+        path: '/tools/datasets/bdd100k'
+        sample_limit: null # number of validation dataset samples to test for each individual
+        batch_size: 32
+        randomize: True
+        data_root: 'images/100k'
+        label_root: 'data2/zwt/bdd/bdd100k/labels/100k'
+        mask_root: 'bdd_seg_gt'
+        lane_root: 'bdd_lane_gt'
+    energy_evaluation:
+      dram_analysis_file: 'results/dram_accesses_yolop.csv'
+      input_shape: [1, 3, 640, 480]
+    extra_args:
+      # for quantization
+      num_bits_upper_limit: 14
+      num_bits_lower_limit: 4
+      bit_weighting_function: 'bits_weighted_per_layer'
+      # for sparsity
+      discrete_threshold_steps: 100
+      discrete_threshold_method: linear
+      threshold_limit: 0.8
+      block_size: [8,8]
+
+  retraining: # retraining phase for QAT
+    epochs: 4
+    datasets:
+      validation:
+        type: 'bdd100k'
+        kind: null
+        path: '/tools/datasets/bdd100k'
+        sample_limit: null # number of validation dataset samples to test for each individual
+        batch_size: 32
+        randomize: True
+        data_root: 'images/100k'
+        label_root: 'data2/zwt/bdd/bdd100k/labels/100k'
+        mask_root: 'bdd_seg_gt'
+        lane_root: 'bdd_lane_gt'
+      train:
+        type: 'bdd100k'
+        kind: null
+        path: '/tools/datasets/bdd100k'
+        sample_limit: null # number of validation dataset samples to test for each individual
+        batch_size: 32
+        randomize: True
+        data_root: 'images/100k'
+        label_root: 'data2/zwt/bdd/bdd100k/labels/100k'
+        mask_root: 'bdd_seg_gt'
+        lane_root: 'bdd_lane_gt'
+
+  reevaluation: # reevaluate the best individuals if required
+    bit_weighting_function: 'bits_weighted_per_layer'
+    datasets:
+      reevaluate:
+        type: 'bdd100k'
+        kind: null
+        path: '/tools/datasets/bdd100k'
+        sample_limit: null # number of validation dataset samples to test for each individual
+        batch_size: 32
+        randomize: True
+        data_root: 'images/100k'
+        label_root: 'data2/zwt/bdd/bdd100k/labels/100k'
+        mask_root: 'bdd_seg_gt'
+        lane_root: 'bdd_lane_gt'
+
