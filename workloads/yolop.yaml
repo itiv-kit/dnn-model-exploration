@@ -60,6 +60,7 @@ workload:
         lane_root: 'bdd_lane_gt'
     energy_evaluation:
       dram_analysis_file: 'results/dram_accesses_yolop.csv'
+      input_shape: [1, 3, 640, 480]
     extra_args:
       # for quantization
       num_bits_upper_limit: 14

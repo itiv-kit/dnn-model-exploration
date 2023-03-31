@@ -48,6 +48,7 @@ workload:
         randomize: True
     energy_evaluation:
       dram_analysis_file: 'results/dram_accesses_unet.csv'
+      input_shape: [1, 3, 608, 800]
     extra_args:
       # for quantization
       num_bits_upper_limit: 14

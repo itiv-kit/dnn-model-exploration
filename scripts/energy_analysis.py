@@ -45,8 +45,10 @@ def compute_memory_saving(workload: Workload, progress: bool = True):
         kwargs['calibration_file'] = workload['calibration']['file']
     explorable_model = model_init_func(model, device, **kwargs)
 
-    # FIXME: input size parametrizable
-    layer_list = summary(explorable_model.base_model, input_size=(1, 3, 608, 800), verbose=0, depth=100)
+    input_shape = workload['exploration']['energy_evaluation']['input_shape']
+    assert len(input_shape) == 4, "Input shape has to be N, C, W, H"
+
+    layer_list = summary(explorable_model.base_model, input_size=input_shape, verbose=0, depth=100)
 
     timeloop_layers: List[LayerInfo] = []
     for layer_info in layer_list.summary_list:
@@ -57,6 +59,8 @@ def compute_memory_saving(workload: Workload, progress: bool = True):
 
     layer: LayerInfo
     results = {}
+    total_inference_energy = 0.0
+
     for i, layer in enumerate(tqdm(timeloop_layers, ascii=True, disable=not progress)):
         # Gather information about layer
         w = layer.input_size[2]
@@ -103,12 +107,12 @@ def compute_memory_saving(workload: Workload, progress: bool = True):
             for hierarchy_level in config['arch']['storage']:
                 if hierarchy_level['name'] == 'DRAM':
                     hierarchy_level['word-bits'] = TIMELOOP_BITS
-        if layer.output_size[1] % 16 != 0:
-            for constraint in config['mapspace']['constraints']:
-                if constraint['type'] == 'spatial':
-                    start_k = constraint['factors'].find('K')
-                    end_k = constraint['factors'].find(' ', start_k)
-                    constraint['factors'] = constraint['factors'][:start_k] + "K1" + constraint['factors'][end_k:]
+        # if layer.output_size[1] % 16 != 0:
+        #     for constraint in config['mapspace']['constraints']:
+        #         if constraint['type'] == 'spatial':
+        #             start_k = constraint['factors'].find('K')
+        #             end_k = constraint['factors'].find(' ', start_k)
+        #             constraint['factors'] = constraint['factors'][:start_k] + "K1" + constraint['factors'][end_k:]
 
         with open(altered_config_file, "w") as f:
             f.write(yaml.dump(config))
@@ -126,44 +130,48 @@ def compute_memory_saving(workload: Workload, progress: bool = True):
 
         if not os.path.exists(projected_results_file):
             # Rerun with lower utilization target?
-            with open(config_file, "r") as f:
-                config = yaml.load(f, Loader=yaml.SafeLoader)
-            for constraint in config['mapspace']['constraints']:
-                if constraint['type'] == 'utilization':
-                    constraint['min'] = '0.001'
-            with open(altered_config_file, "w") as f:
-                f.write(yaml.dump(config))
+            # with open(config_file, "r") as f:
+            #     config = yaml.load(f, Loader=yaml.SafeLoader)
+            # for constraint in config['mapspace']['constraints']:
+            #     if constraint['type'] == 'utilization':
+            #         constraint['min'] = '0.001'
+            # with open(altered_config_file, "w") as f:
+            #     f.write(yaml.dump(config))
 
-            with open(timeloop_log_file, "w") as outfile:
-                subprocess.call([timeloop_binary, altered_config_file],
-                                cwd=timeloop_wd,
-                                stdout=outfile,
-                                stderr=outfile,
-                                env=timeloop_env)
+            # with open(timeloop_log_file, "w") as outfile:
+            #     subprocess.call([timeloop_binary, altered_config_file],
+            #                     cwd=timeloop_wd,
+            #                     stdout=outfile,
+            #                     stderr=outfile,
+            #                     env=timeloop_env)
+            print(f"WARNING: Skipping Layer {i}")
 
+        else:
+            timeloop_result = parse_timeloop_stats(projected_results_file)
 
-        timeloop_result = parse_timeloop_stats(projected_results_file)
-
-        # Store results
-        results[i] = {'layer_idx': i,
-                      'layer_type': layer.class_name,
-                      'w_reads': timeloop_result['energy_breakdown_pJ']['DRAM']['reads_per_instance'][0],
-                      'i_reads': timeloop_result['energy_breakdown_pJ']['DRAM']['reads_per_instance'][1],
-                      'o_reads': timeloop_result['energy_breakdown_pJ']['DRAM']['reads_per_instance'][2],
-                      'w_updates': timeloop_result['energy_breakdown_pJ']['DRAM']['updates_per_instance'][0],
-                      'i_updates': timeloop_result['energy_breakdown_pJ']['DRAM']['updates_per_instance'][1],
-                      'o_updates': timeloop_result['energy_breakdown_pJ']['DRAM']['updates_per_instance'][2],
-                      'w_fills': timeloop_result['energy_breakdown_pJ']['DRAM']['fills_per_instance'][0],
-                      'i_fills': timeloop_result['energy_breakdown_pJ']['DRAM']['fills_per_instance'][1],
-                      'o_fills': timeloop_result['energy_breakdown_pJ']['DRAM']['fills_per_instance'][2],
-                      'w_energy': timeloop_result['energy_breakdown_pJ']['DRAM']['energy_per_access_per_instance'][0],
-                      'i_energy': timeloop_result['energy_breakdown_pJ']['DRAM']['energy_per_access_per_instance'][1],
-                      'o_energy': timeloop_result['energy_breakdown_pJ']['DRAM']['energy_per_access_per_instance'][2],
-                      'total_dram_energy': timeloop_result['energy_breakdown_pJ']['DRAM']['energy'],
-                      'bitwidth': TIMELOOP_BITS}
+            # Store results
+            results[i] = {'layer_idx': i,
+                        'layer_type': layer.class_name,
+                        'w_reads': timeloop_result['energy_breakdown_pJ']['DRAM']['reads_per_instance'][0],
+                        'i_reads': timeloop_result['energy_breakdown_pJ']['DRAM']['reads_per_instance'][1],
+                        'o_reads': timeloop_result['energy_breakdown_pJ']['DRAM']['reads_per_instance'][2],
+                        'w_updates': timeloop_result['energy_breakdown_pJ']['DRAM']['updates_per_instance'][0],
+                        'i_updates': timeloop_result['energy_breakdown_pJ']['DRAM']['updates_per_instance'][1],
+                        'o_updates': timeloop_result['energy_breakdown_pJ']['DRAM']['updates_per_instance'][2],
+                        'w_fills': timeloop_result['energy_breakdown_pJ']['DRAM']['fills_per_instance'][0],
+                        'i_fills': timeloop_result['energy_breakdown_pJ']['DRAM']['fills_per_instance'][1],
+                        'o_fills': timeloop_result['energy_breakdown_pJ']['DRAM']['fills_per_instance'][2],
+                        'w_energy': timeloop_result['energy_breakdown_pJ']['DRAM']['energy_per_access_per_instance'][0],
+                        'i_energy': timeloop_result['energy_breakdown_pJ']['DRAM']['energy_per_access_per_instance'][1],
+                        'o_energy': timeloop_result['energy_breakdown_pJ']['DRAM']['energy_per_access_per_instance'][2],
+                        'total_dram_energy': timeloop_result['energy_breakdown_pJ']['DRAM']['energy'],
+                        'bitwidth': TIMELOOP_BITS}
+            total_inference_energy += timeloop_result['energy_pJ']
 
     df = pd.DataFrame.from_dict(results, orient='index')
     df.to_csv(workload['exploration']['energy_evaluation']['dram_analysis_file'])
+
+    print(f"Total Energy per Inference: {total_inference_energy/1_000_000_000:.4f}mJ")
 
 
 if __name__ == "__main__":
