@@ -4,3 +4,6 @@
 [submodule "model_explorer/third_party/timeloop"]
 	path = model_explorer/third_party/timeloop
 	url = https://github.com/NVlabs/timeloop
+[submodule "model_explorer/third_party/deeplab_v3_pytorch"]
+	path = model_explorer/third_party/deeplab_v3_pytorch
+	url = https://github.com/bubbliiiing/DeepLabV3Plus-Pytorch

@@ -30,8 +30,8 @@ def init_quant_model(model: nn.Module, device: torch.device,
     Raises:
         FileNotFoundError: when there is no calibration file in kwargs
     """
-    weighting_function_name = kwargs.get('bit_weighting_function')
-    calibration_file = kwargs.get('calibration_file')
+    weighting_function_name = kwargs.get('bit_weighting_function', 'bits_weighted_linear')
+    calibration_file = kwargs.get('calibration_file', "")
     dram_analysis_file = kwargs.get('dram_analysis_file', "")
 
     weighting_function = getattr(
