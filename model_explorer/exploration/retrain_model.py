@@ -66,6 +66,7 @@ def retrain_model(workload: Workload, model_configurations: pd.DataFrame,
         logger.info(f"Retrained model {i} ({index} / {tot_eval}), accuracy is {acc_after_training:.4f}")
 
         # add full accuracy to dataframe
+        # FIXME: handle mutlidimensional accuracies
         configs_to_evaluate.loc[i, 'accuracy_after_training'] = acc_after_training.item()
         configs_to_evaluate.at[i, 'accuracies_over_epochs'] = epoch_accs
 

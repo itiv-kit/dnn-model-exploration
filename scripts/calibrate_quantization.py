@@ -12,7 +12,6 @@ from pytorch_quantization.tensor_quant import QuantDescriptor
 
 
 def generate_calibration(workload: Workload, progress: bool, filename: str):
-
     dataloaders = build_dataloader_generators(workload['calibration']['datasets'])
     model, _ = setup_workload(workload['model'])
     device = setup_torch_device()

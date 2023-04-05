@@ -7,7 +7,10 @@ from model_explorer.utils.workload import Workload
 from model_explorer.exploration.explore_model import explore_model
 from model_explorer.result_handling.save_results import save_result_pickle
 
-# maps SLURM_JOB_ID to the accoring workload settings
+"""Script to explore a model and to identify a well-fitting bit-width or sparsity threshold configuration.
+"""
+
+# maps SLURM_JOB_ID to the according workload settings
 extra_slurm_args = {
     1: {'exploration': {'nsga': {'mutation_eta': 10}}}
 }

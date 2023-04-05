@@ -8,6 +8,16 @@ from model_explorer.third_party.yolop_det_seg.lib.core.loss import get_loss
 
 
 def compute_yolop_combined_metric(base_model, dataloader_generator) -> list:
+    """Compute all metrics for YOLOP and retrun a given set of them
+
+    Args:
+        base_model (nn.Module): Evaluation model, should be YOLOP model
+        dataloader_generator: Dataset for evaluation
+
+    Returns:
+        list: List of results, currently containing lane line accuracy, drivable
+        area mean IoU and detection MAP50
+    """
     dev_string = "cuda" if torch.cuda.is_available() else "cpu"
     device = torch.device(dev_string)
 

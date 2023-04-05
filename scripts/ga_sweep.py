@@ -11,6 +11,12 @@ from model_explorer.result_handling.save_results import save_result_pickle
 
 
 def sweep_ga_parameters(workload):
+    """Perform a sweep over a set of given mutation and crossover ETAs to get an
+    idea of how they change the network convergence.
+
+    Args:
+        workload (_type_): _description_
+    """
     skip_baseline = True
 
     result_dir = 'results/exploration_sweep_{}'.format(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
@@ -26,7 +32,7 @@ def sweep_ga_parameters(workload):
             logger.info("Running Sweep point with mut_eta={}, crossover_eta={}".format(mutation_eta, crossover_eta))
             logger.info("#"*80)
 
-            result = explore_model(workload, skip_baseline, progress=False, verbose=False)
+            result = explore_model(workload, skip_baseline, progress=False)
 
             filename = os.path.join(result_dir, 'result_muteta_{}_croeta_{}.pkl'.format(mutation_eta, crossover_eta))
             save_result_pickle(result, overwrite_filename=filename)

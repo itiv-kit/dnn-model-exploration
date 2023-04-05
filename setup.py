@@ -4,7 +4,7 @@ setup(
     name="model_explorer",
     install_requires=[
         'pymoo',
-        'torch',
+        'torch>=1.13.1',
         'torchvision',
         'webdataset',
         'matplotlib',
@@ -16,6 +16,8 @@ setup(
         'timm',
         'visdom'
     ],
-    version='0.3',
+    version='1.0',
+    description="A tool to support automatic exploration on how DNN models react to quantization and artifically introduced sparsity",
+    url="https://github.com/itiv-kit/dnn-model-exploration",
     packages=find_packages(),
 )

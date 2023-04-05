@@ -10,7 +10,7 @@ from model_explorer.result_handling.collect_results import collect_results
 from model_explorer.result_handling.save_results import save_results_df_to_csv
 
 
-
+# This function can be adjusted to the needs of the evaluation
 def select_individuals(results_path: str, count: int) -> pd.DataFrame:
     results_collection = collect_results(results_path)
 
@@ -18,18 +18,10 @@ def select_individuals(results_path: str, count: int) -> pd.DataFrame:
     logger.debug("Loaded in total {} distinct individuals".format(
         len(results_collection.individuals)))
 
-    # select individuals based on a prodcut of normed F_0 and accuracy
+    # Select count individuals based on their F_0 score
     ind_df = results_collection.to_dataframe()
-    ind_df['accuracy'] = -ind_df['accuracy'] + results_collection.accuracy_limit
-    ind_df = ind_df[ind_df['accuracy'] > 0.75]
-
-    # ind_df['F_0'] = -ind_df['F_0']
-    # ind_df['norm_f0'] = ind_df['F_0'] / ind_df['F_0'].max()
-    # ind_df['norm_acc'] = ind_df['accuracy'] / ind_df['accuracy'].max()
-    # ind_df['weighted'] = ind_df['norm_f0'] * ind_df['norm_acc']
-
     ind_filtered = ind_df.sort_values(by=['F_0'], ascending=True)
-    ind_filtered = ind_filtered[1:count+1]  # .head(count)
+    ind_filtered = ind_filtered.head(count)
 
     return ind_filtered
 

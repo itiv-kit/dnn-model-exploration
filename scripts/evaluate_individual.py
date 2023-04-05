@@ -10,7 +10,7 @@ from model_explorer.result_handling.save_results import save_results_df_to_csv
 from model_explorer.exploration.evaluate_full_model import evaluate_full_model
 
 
-
+# This function might be changed to whatever individuals might be selected for reevaluation
 def select_individuals(results_path: str, count: int) -> pd.DataFrame:
     results_collection = collect_results(results_path)
 
@@ -20,12 +20,7 @@ def select_individuals(results_path: str, count: int) -> pd.DataFrame:
 
     # select individuals based on a prodcut of normed F_0 and accuracy
     ind_df = results_collection.to_dataframe()
-    ind_df['F_0'] = -ind_df['F_0']
-    ind_df['norm_f0'] = ind_df['F_0'] / ind_df['F_0'].max()
-    ind_df['norm_acc'] = ind_df['accuracy'] / ind_df['accuracy'].max()
-    ind_df['weighted'] = ind_df['norm_f0'] * ind_df['norm_acc']
-
-    ind_filtered = ind_df.sort_values(by=['weighted'], ascending=False)
+    ind_filtered = ind_df.sort_values(by=['F_0'], ascending=False)
     ind_filtered = ind_filtered.head(count)
 
     return ind_filtered

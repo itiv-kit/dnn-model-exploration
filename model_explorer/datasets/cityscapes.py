@@ -4,6 +4,15 @@ from model_explorer.third_party.deeplab_v3_pytorch.datasets.cityscapes import Ci
 
 # see model_explorer/third_party/deeplab_v3_pytorch/main.py
 def prepare_cityscapes_dataset(path: str, kind: str, **kwargs):
+    """Load cityscapes dataset, defaults to 'gtFine' subset
+
+    Args:
+        path (str): Location of the dataset
+        kind (): not used
+
+    Returns:
+        dataset: Loaded dataset
+    """
     transf = et.ExtCompose([
         et.ExtToTensor(),
         et.ExtNormalize(mean=[0.485, 0.456, 0.406],
