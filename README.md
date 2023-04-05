@@ -1,14 +1,14 @@
 # Quantization and Sparsity exploration of DNNs
 
-This project contains a Python library and test scripts to explore the behavior of DNN accuracy when quantization to inputs and weights are applied or when the sparsity of intermediate results are artificially increased.
+This project contains a Python library and test scripts to explore the behavior of a DNN model accuracy when quantization to inputs and weights is applied or when sparsity of intermediate results are artificially increased.
 
 The aim of this project is to analyze the behavior of a model in which layers are replaced with counterparts that model sparse or quantized inference.
 
-This project can also be extended to enable other DNN behavior, if this is preferred. You can have a look into `model_explorer/models` or `model_explorer/problems` to get started.
+This project can also be extended to enable other DNN behavior, if this is preferred. Have a look into the quick guide down below. Otherwise, feel free to open a question or even a pull request.
 
 
 ## Setup & Prerequisities
-The project comes as Python library, which can later be pubished to PyPI. The minimum supported Python version is Python 3.9
+The project comes as Python library, which can later be published to PyPI. We recommend using Python3.9, however, 3.8 or 3.10 are likely to work as well.
 
 Currently, to install the package in an editable mode, run the following command, which installs the package. Pip will automatically install all dependencies. We still recommend to a create a virtual environment first.
 
@@ -17,11 +17,17 @@ python3.9 -m venv torch_exploration
 pip install -e .
 ```
 
+Second, checkout the submodules for YoloP and DeepLabV3
+```sh
+git submodule --init --update
+```
+
+Now you should be set for a model exploration.
+
+
 ## Running a DNN model exploration
 Our tool works entirely with workload description files, that contain all requried information. Just have a look at one of the sample yaml files in `./workloads`.
-
 Key component is the problem definition at the beginning, which determines whether an exploration for increased sparsity or quantization should be started. 
-
 Further down the file, you can adjust the parameters of the exploration algorithm and evaluation.
 
 According scripts to explore, retrain or calibrate are located in the `scripts` directory.
@@ -97,6 +103,28 @@ Some handy scripts are available in the `evaluation_scripts` folder.
 - `sparse_already_present.py` computes how many sparse blocks (for a sparsity problem only) are already present in a DNN workload
 - `total_blocks.py` computes the total amount of NxN blocks in a feature map (for a sparsity problem only) 
 - `visualize_individuals.ipynb` has some functions to plot all individuals found during exploration and exports data to TikZ for scientific papers
+
+
+## Extension of the project
+If you like to add you own problem definition or add new models, feel free to extend this project!
+
+### Adding a new model
+Check out the files in `model_explorer/workloads`.
+Each always have to describe a `model`, which might simply be taken from torchvision or can be defined in place; and an `accuracy_function` which is executed when the model accuracy impact is computed.
+There is a selection of commonly-used accuracy function available in `model_explorer/accuracy_functions`.
+However, you can create your own if you need to.
+Be aware that you might need to add the corresponding dataset as well.
+To do so, have a look into the `datasets` directory.
+
+### Adding a new problem description
+For that see the already provided problems in `model_explorer/problems`.
+Each problem description always has to define the following five things:
+1. `prepare_exploration_function`: this function is called when the problem is constructed. Here you may initialize the model and everything that is needed to run an exploration.
+2. `repair_method`: This mainly depends on PyMoo. The repair method is important when dealing with exploration parameters that are integers rather than continuous numbers.
+3. `sampling_method`: Similar to `repair_method`
+4. `init_function`: This is the function that builds the model and returns the model that matches the exploration problem
+5. `update_params_function`: This function updates the model with a new set of exploration parameters.
+
 
 ## Background
 
