@@ -11,6 +11,7 @@ from tqdm import tqdm
 from PIL import Image
 
 from model_explorer.utils.logger import logger
+from model_explorer.accuracy_functions.classification_accuracy import compute_classification_accuracy
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -317,3 +318,5 @@ def resnet9_init():
 
 
 model = resnet9_init()
+
+accuracy_function = compute_classification_accuracy

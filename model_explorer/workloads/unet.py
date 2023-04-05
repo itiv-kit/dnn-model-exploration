@@ -5,7 +5,7 @@ import os
 from torch import nn
 import torch.nn.functional as F
 
-from model_explorer.accuracy_functions.pixelwise_segmentation_accuracy import compute_sematic_segmentation_accuracy
+from model_explorer.accuracy_functions.segmentation_accuracy import compute_sematic_segmentation_accuracy
 
 
 class Encoder(nn.Module):

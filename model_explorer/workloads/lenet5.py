@@ -3,13 +3,13 @@
 
 from datetime import datetime
 import os
-from progress.bar import Bar
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from datasets import mnist
+from model_explorer.accuracy_functions.classification_accuracy import compute_classification_accuracy
 
 # check device
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -51,42 +51,6 @@ class LeNet5(nn.Module):
         probs = F.softmax(logits, dim=1)
         return probs
 
-
-def get_accuracy(model, data_loader, device, verbose=False):
-    '''
-    Function for computing the accuracy of the predictions over the entire data_loader
-    '''
-
-    dataset_size = dataset_size = len(data_loader.dataset)
-    if verbose:
-        bar = Bar('Processing', max=dataset_size)
-
-    dev = torch.device(device)
-    model.to(dev)
-
-    correct_pred = 0
-    n = 0
-
-    with torch.no_grad():
-        model.eval()
-        for X, y_true in data_loader:
-
-            X = X.to(dev)
-            y_true = y_true.to(dev)
-
-            _, y_prob = model(X)
-            _, predicted_labels = torch.max(y_prob, 1)
-
-            n += y_true.size(0)
-            correct_pred += (predicted_labels == y_true).sum()
-
-            if verbose:
-                bar.goto(n)
-
-    if verbose:
-        bar.finish()
-
-    return correct_pred.float() / n
 
 
 def train(train_loader, model, criterion, optimizer, device):
@@ -172,8 +136,8 @@ def training_loop(model,
 
         if epoch % print_every == (print_every - 1):
 
-            train_acc = get_accuracy(model, train_loader, device=device)
-            valid_acc = get_accuracy(model, valid_loader, device=device)
+            train_acc = compute_classification_accuracy(model, train_loader, progress=True, title="Train")
+            valid_acc = compute_classification_accuracy(model, valid_loader, progress=True, title="Valid")
 
             print(f'{datetime.now().time().replace(microsecond=0)} --- '
                   f'Epoch: {epoch}\t'
@@ -225,7 +189,9 @@ def leNet5_init():
     return model
 
 
-model = leNet5_init()
-
 if __name__ == "main":
     init_model()
+
+model = leNet5_init()
+
+accuracy_function = compute_classification_accuracy

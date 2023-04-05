@@ -3,7 +3,7 @@ import torch
 
 from model_explorer.third_party.deeplab_v3_pytorch.network.modeling import deeplabv3plus_mobilenet
 
-from model_explorer.accuracy_functions.pixelwise_segmentation_accuracy import compute_sematic_segmentation_accuracy
+from model_explorer.accuracy_functions.segmentation_accuracy import compute_sematic_segmentation_accuracy
 
 
 def deeplabv3plus_mobilenet_cityscapes_init():

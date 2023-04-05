@@ -1,6 +1,8 @@
 import torch
 import sys
 
+from model_explorer.accuracy_functions.detection_accuracy import compute_detection_accuracy
+
 # The following code is needed to prevent package conflicts
 # This is referenced in this issue:
 # https://github.com/pytorch/hub/issues/243
@@ -30,6 +32,8 @@ restore_modules = _remove_modules(CONFLIC_MODULES)
 
 # Simply load yolov5s from trochhub, only minor changes have to be added ...
 model = torch.hub.load("ultralytics/yolov5", "yolov5s", verbose=False)
+
+accuracy_function = compute_detection_accuracy
 
 _remove_modules(CONFLIC_MODULES)
 _add_modules(restore_modules)

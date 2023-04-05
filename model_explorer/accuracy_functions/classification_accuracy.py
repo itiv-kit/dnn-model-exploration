@@ -21,8 +21,7 @@ def compute_classification_accuracy(base_model, dataloader_generator, progress=T
     dataset_size = len(dataloader_generator)
     dataloader = dataloader_generator.get_dataloader()
 
-    if progress:
-        progress_bar = tqdm.tqdm(total=dataset_size, ascii=True, desc=title, position=0)
+    progress_bar = tqdm.tqdm(total=dataset_size, ascii=True, desc=title, position=0, disable=not progress)
 
     model = base_model
     model = model.to(device)
@@ -40,11 +39,9 @@ def compute_classification_accuracy(base_model, dataloader_generator, progress=T
 
             correct_pred += (predicted_labels == y_true).sum()
 
-            if progress:
-                progress_bar.update(y_true.size(0))
+            progress_bar.update(y_true.size(0))
 
     correct_pred = correct_pred.to(cpu_device)
     return correct_pred.float() / dataset_size
 
 
-accuracy_function = compute_classification_accuracy

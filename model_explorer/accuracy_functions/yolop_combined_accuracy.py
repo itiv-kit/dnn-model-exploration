@@ -1,6 +1,4 @@
 import torch
-from tqdm import tqdm
-import importlib
 
 from model_explorer.utils.logger import logger
 
@@ -9,7 +7,7 @@ from model_explorer.third_party.yolop_det_seg.lib.config import cfg
 from model_explorer.third_party.yolop_det_seg.lib.core.loss import get_loss
 
 
-def compute_yolop_combined_metric(base_model, dataloader_generator, progress=True, title="") -> list:
+def compute_yolop_combined_metric(base_model, dataloader_generator) -> list:
     dev_string = "cuda" if torch.cuda.is_available() else "cpu"
     device = torch.device(dev_string)
 

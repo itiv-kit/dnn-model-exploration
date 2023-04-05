@@ -365,8 +365,7 @@ def compute_detection_accuracy(base_model,
     dataset_size = len(dataloader_generator)
     dataloader = dataloader_generator.get_dataloader()
 
-    if progress:
-        progress_bar = tqdm.tqdm(total=dataset_size, ascii=True, ncols=80, desc=title)
+    progress_bar = tqdm.tqdm(total=dataset_size, ascii=True, ncols=80, desc=title, disable=not progress)
 
     model = base_model
     model.to(device)
@@ -446,8 +445,7 @@ def compute_detection_accuracy(base_model,
                 # pred[:, 4] (conf)     := confidence
                 stats.append((correct, pred[:, 4], pred[:, 5], labels[:, 0]))
 
-            if progress:
-                progress_bar.update(nb)
+            progress_bar.update(nb)
 
     # Compute metrics
     stats = [torch.cat(x, 0).cpu().numpy() for x in zip(*stats)]  # to numpy
@@ -468,4 +466,3 @@ def compute_detection_accuracy(base_model,
     return map  # confusion_matrix.global_acc()
 
 
-accuracy_function = compute_detection_accuracy
