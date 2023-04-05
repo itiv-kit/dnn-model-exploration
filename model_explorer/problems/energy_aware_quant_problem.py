@@ -1,6 +1,4 @@
 import torch
-import os
-import importlib
 
 from typing import Union
 
@@ -14,56 +12,13 @@ from model_explorer.utils.logger import logger
 from model_explorer.models.quantized_model import QuantizedModel
 from model_explorer.utils.data_loader_generator import DataLoaderGenerator
 
-
-def update_quant_model_params(qmodel: QuantizedModel, bits: list):
-    qmodel.bit_widths = bits
+from model_explorer.problems.quantization_problem import init_quant_model, update_quant_model_params
 
 
-def init_quant_model(model: nn.Module, device: torch.device,
-                     **kwargs: dict) -> QuantizedModel:
-    """This function generates a quantized model
-
-    Args:
-        model (nn.Module): Base model
-        device (torch.device): torch device
-
-    Raises:
-        FileNotFoundError: when there is no calibration file in kwargs
-    """
-    weighting_function_name = kwargs.get('bit_weighting_function', 'bits_weighted_linear')
-    calibration_file = kwargs.get('calibration_file', "")
-    dram_analysis_file = kwargs.get('dram_analysis_file', "")
-
-    weighting_function = getattr(
-        importlib.import_module('model_explorer.exploration.weighting_functions'),
-        weighting_function_name, None)
-    assert weighting_function is not None and callable(
-        weighting_function), "error loading weighting function"
-
-    qmodel = QuantizedModel(model,
-                            device,
-                            weighting_function=weighting_function,
-                            dram_analysis_file=dram_analysis_file)
-    qmodel.enable_quantization()
-
-    logger.debug("Added {} Quantizer modules to the model".format(
-        len(qmodel.explorable_modules)))
-
-    # Load the previously generated calibration file
-    if not os.path.exists(calibration_file):
-        logger.error("Calibtraion file not found")
-        # raise FileNotFoundError("Calibration file not found")
-    else:
-        logger.debug(f"Loading calibration file: {calibration_file}")
-        qmodel.load_parameters(calibration_file)
-
-    return qmodel
-
-
-def prepare_quantization_problem(model: nn.Module, device: torch.device,
-                                 dataloader_generator: DataLoaderGenerator,
-                                 accuracy_function: callable, min_accuracy: float,
-                                 progress: bool, **kwargs: dict):
+def prepare_energy_quantization_problem(model: nn.Module, device: torch.device,
+                                        dataloader_generator: DataLoaderGenerator,
+                                        accuracy_function: callable, min_accuracy: float,
+                                        progress: bool, **kwargs: dict):
     """Generate the quanization exploration problem
 
     Args:
@@ -78,9 +33,9 @@ def prepare_quantization_problem(model: nn.Module, device: torch.device,
     num_bits_lower_limit = kwargs.get('num_bits_lower_limit')
 
     qmodel = init_quant_model(model, device, **kwargs)
-    logger.info("Quantization problem and model initialized")
+    logger.info("Energy aware quantization problem and model initialized")
 
-    return LayerwiseQuantizationProblem(
+    return LayerwiseEnergyQuantizationProblem(
         qmodel=qmodel,
         dataloader_generator=dataloader_generator,
         accuracy_function=accuracy_function,
@@ -90,7 +45,7 @@ def prepare_quantization_problem(model: nn.Module, device: torch.device,
         num_bits_upper_limit=num_bits_upper_limit)
 
 
-class LayerwiseQuantizationProblem(CustomExplorationProblem):
+class LayerwiseEnergyQuantizationProblem(CustomExplorationProblem):
     """
     A pymoo problem definition for the quantization exploration.
     """
@@ -171,7 +126,7 @@ class LayerwiseQuantizationProblem(CustomExplorationProblem):
 
 
 # Expected parameters
-prepare_exploration_function = prepare_quantization_problem
+prepare_exploration_function = prepare_energy_quantization_problem
 repair_method = RoundingRepair()
 sampling_method = IntegerRandomSampling()
 init_function = init_quant_model
