@@ -1,1 +1,2 @@
 model_explorer/workloads/param_checkpoints/resnet18_unet.pth filter=lfs diff=lfs merge=lfs -text
+model_explorer/workloads/param_checkpoints/best_deeplabv3plus_mobilenet_cityscapes_os16.pth filter=lfs diff=lfs merge=lfs -text

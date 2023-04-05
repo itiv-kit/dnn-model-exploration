@@ -6,20 +6,23 @@ workload:
 
   model:
     type: deeplabv3
-    accuracy_function: classification_accuracy
+    accuracy_function: pixelwise_segmentation_accuracy
     weights: null
+    extra_args:
+      n_classes: 19 # cityscapes
 
   calibration:
     samples: null # null sets samples to all
     file: './results/deeplabv3_quant_calib.pkl'
     datasets:
       calibrate:
-        type: 'david'
+        type: 'cityscapes'
         kind: null
-        path: 'fixme'
-        sample_limit: 512 # number of validation dataset samples to test for each individual
-        batch_size: 32
+        path: '/tools/datasets/cityscapes'
+        sample_limit: 128  # number of validation dataset samples to test for each individual
+        batch_size: 8
         randomize: True
+        split: val
 
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
@@ -39,6 +42,7 @@ workload:
         sample_limit: 1024 # number of validation dataset samples to test for each individual
         batch_size: 32
         randomize: True
+        split: val
       baseline:
         type: 'cityscapes'
         kind: null
@@ -46,9 +50,10 @@ workload:
         sample_limit: null # number of validation dataset samples to test for each individual
         batch_size: 32
         randomize: True
+        split: val
     energy_evaluation:
       dram_analysis_file: 'results/dram_accesses_deeplabv3.csv'
-      input_shape: [1, 3, 513, 513]
+      input_shape: [1, 3, 2048, 1024]
     extra_args:
       # for quantization
       num_bits_upper_limit: 14
@@ -70,6 +75,7 @@ workload:
         sample_limit: 25000 # number of validation dataset samples to test for each individual
         batch_size: 64
         randomize: True
+        split: val
       train:
         type: 'cityscapes'
         kind: null
@@ -77,6 +83,7 @@ workload:
         total_samples: 1281167
         batch_size: 64
         sample_limit: null
+        split: train
 
   reevaluation:
     bit_weighting_function: 'bits_weighted_per_layer'
@@ -88,5 +95,6 @@ workload:
         sample_limit: null
         batch_size: 256
         randomize: True
+        split: val
 
 

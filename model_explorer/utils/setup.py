@@ -37,7 +37,7 @@ def setup_workload(model_settings: dict) -> list:
     return model, accuracy_function
 
 
-def get_prepare_exploration_function(problem_name: str) -> list:
+def get_prepare_exploration_function(problem_name: str) -> tuple:
     """This function returns the preparation function which is defined in the
     problem file together the repair and sampling method. Functions are loaded
     form the according problem description file
