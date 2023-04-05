@@ -1,9 +1,8 @@
-import torch
-
-import model_explorer.third_party.deeplab_v3_pytorch.utils.ext_transforms as et 
+import model_explorer.third_party.deeplab_v3_pytorch.utils.ext_transforms as et
 from model_explorer.third_party.deeplab_v3_pytorch.datasets.cityscapes import Cityscapes
 
 
+# see model_explorer/third_party/deeplab_v3_pytorch/main.py
 def prepare_cityscapes_dataset(path: str, kind: str, **kwargs):
     transf = et.ExtCompose([
         et.ExtToTensor(),

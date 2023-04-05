@@ -13,7 +13,8 @@ setup(
         'seaborn',
         'gitpython',
         'opencv-python',
-        'timm'
+        'timm',
+        'visdom'
     ],
     version='0.3',
     packages=find_packages(),
