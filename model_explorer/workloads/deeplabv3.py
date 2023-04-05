@@ -3,12 +3,12 @@ import torch
 
 from model_explorer.third_party.deeplab_v3_pytorch.network.modeling import deeplabv3plus_mobilenet
 
+from model_explorer.accuracy_functions.pixelwise_segmentation_accuracy import compute_sematic_segmentation_accuracy
 
-def deeplabv3plus_mobilenet_init(**kwargs):
-    n_classes = kwargs.get('n_classes', 19)
 
+def deeplabv3plus_mobilenet_cityscapes_init():
     model = deeplabv3plus_mobilenet(
-        num_classes=n_classes,  # 19 for cityscapes
+        num_classes=19,  # 19 for cityscapes
         output_stride=16
     )
 
@@ -20,4 +20,9 @@ def deeplabv3plus_mobilenet_init(**kwargs):
     return model
 
 
-model = deeplabv3plus_mobilenet_init()
+def deeplabv3plus_mobilenet_cityscapes_accuracy(base_model, dataloader_generator, progress=True, title=""):
+    return compute_sematic_segmentation_accuracy(base_model, dataloader_generator, progress, title, n_classes=19)
+
+
+accuracy_function = deeplabv3plus_mobilenet_cityscapes_accuracy
+model = deeplabv3plus_mobilenet_cityscapes_init()

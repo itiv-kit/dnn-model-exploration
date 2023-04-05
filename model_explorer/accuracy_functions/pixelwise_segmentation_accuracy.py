@@ -3,37 +3,37 @@ import tqdm
 import numpy as np
 
 
-def compute_pixelwise_segmentation_accuracy(base_model, dataloader_generator, progress=True, title="") -> float:
-    dev_string = "cuda" if torch.cuda.is_available() else "cpu"
-    device = torch.device(dev_string)
-    cpu_device = torch.device("cpu")
+# def compute_pixelwise_segmentation_accuracy(base_model, dataloader_generator, progress=True, title="") -> float:
+#     dev_string = "cuda" if torch.cuda.is_available() else "cpu"
+#     device = torch.device(dev_string)
+#     cpu_device = torch.device("cpu")
 
-    dataset_size = len(dataloader_generator)
-    dataloader = dataloader_generator.get_dataloader()
+#     dataset_size = len(dataloader_generator)
+#     dataloader = dataloader_generator.get_dataloader()
 
-    progress_bar = tqdm.tqdm(total=dataset_size, ascii=True, desc=title, position=0, disable=not progress)
+#     progress_bar = tqdm.tqdm(total=dataset_size, ascii=True, desc=title, position=0, disable=not progress)
 
-    model = base_model.to(device)
+#     model = base_model.to(device)
 
-    running_pixel_acc = []
+#     running_pixel_acc = []
 
-    model.eval()
-    with torch.no_grad():
-        for x, target in dataloader:
-            x = x.to(device)
-            target = target.to(device)
+#     model.eval()
+#     with torch.no_grad():
+#         for x, target in dataloader:
+#             x = x.to(device)
+#             target = target.to(device)
 
-            y_prob = model(x)
-            y_pred = y_prob.argmax(1)[:, 4:-4, :]
+#             y_prob = model(x)
+#             y_pred = y_prob.argmax(1)[:, 4:-4, :]
 
-            pixel_acc = (target == y_pred).float().mean()
-            running_pixel_acc.append(pixel_acc)
+#             pixel_acc = (target == y_pred).float().mean()
+#             running_pixel_acc.append(pixel_acc)
 
-            progress_bar.update(y_pred.size(0))
+#             progress_bar.update(y_pred.size(0))
 
-    pixel_accs = torch.stack(running_pixel_acc)
+#     pixel_accs = torch.stack(running_pixel_acc)
 
-    return float(pixel_accs.float().mean().to(cpu_device))
+#     return float(pixel_accs.float().mean().to(cpu_device))
 
 
 
@@ -78,7 +78,7 @@ class StreamSegMetrics():
         self.confusion_matrix = np.zeros((self.n_classes, self.n_classes))
 
 
-def compute_sematic_segmentation_accuracy(base_model, dataloader_generator, progress=True, title="") -> float:
+def compute_sematic_segmentation_accuracy(base_model, dataloader_generator, progress=True, title="", **kwargs) -> float:
     dev_string = "cuda" if torch.cuda.is_available() else "cpu"
     device = torch.device(dev_string)
     cpu_device = torch.device("cpu")
@@ -88,7 +88,10 @@ def compute_sematic_segmentation_accuracy(base_model, dataloader_generator, prog
 
     progress_bar = tqdm.tqdm(total=dataset_size, ascii=True, desc=title, position=0, disable=not progress)
 
-    current_metrics = StreamSegMetrics(n_classes=19)  # FIXME, inferrr ...
+    n_classes = kwargs.get('n_classes')
+    crop_range = kwargs.get('crop_range', None)
+
+    current_metrics = StreamSegMetrics(n_classes=n_classes)  # FIXME, inferrr ...
 
     model = base_model.to(device)
 
@@ -99,7 +102,9 @@ def compute_sematic_segmentation_accuracy(base_model, dataloader_generator, prog
             target = target.to(device, dtype=torch.long)
 
             y_prob = model(x)
-            y_pred = y_prob.detach().max(dim=1)[1].cpu().numpy()
+            y_pred = y_prob.detach().max(dim=1)[1].cpu().numpy() # max[1] to get indices
+            if crop_range:
+                y_pred = y_pred[:, crop_range[0]:crop_range[1], :]
             y_true = target.cpu().numpy()
 
             current_metrics.update(y_true, y_pred)
@@ -107,7 +112,3 @@ def compute_sematic_segmentation_accuracy(base_model, dataloader_generator, prog
             progress_bar.update(len(y_pred))
 
     return current_metrics.overall_acc
-
-
-
-accuracy_function = compute_sematic_segmentation_accuracy

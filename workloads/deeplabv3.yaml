@@ -6,10 +6,7 @@ workload:
 
   model:
     type: deeplabv3
-    accuracy_function: pixelwise_segmentation_accuracy
     weights: null
-    extra_args:
-      n_classes: 19 # cityscapes
 
   calibration:
     samples: null # null sets samples to all
@@ -39,8 +36,8 @@ workload:
         type: 'cityscapes'
         kind: null
         path: '/tools/datasets/cityscapes'
-        sample_limit: 1024 # number of validation dataset samples to test for each individual
-        batch_size: 32
+        sample_limit: 128 # number of validation dataset samples to test for each individual
+        batch_size: 8
         randomize: True
         split: val
       baseline:
@@ -48,7 +45,7 @@ workload:
         kind: null
         path: '/tools/datasets/cityscapes'
         sample_limit: null # number of validation dataset samples to test for each individual
-        batch_size: 32
+        batch_size: 8
         randomize: True
         split: val
     energy_evaluation:
@@ -73,7 +70,7 @@ workload:
         kind: null
         path: '/tools/datasets/cityscapes'
         sample_limit: 25000 # number of validation dataset samples to test for each individual
-        batch_size: 64
+        batch_size: 8
         randomize: True
         split: val
       train:
@@ -81,7 +78,7 @@ workload:
         kind: null
         path: '/tools/datasets/cityscapes/gtCoarse/train'
         total_samples: 1281167
-        batch_size: 64
+        batch_size: 8
         sample_limit: null
         split: train
 
@@ -93,7 +90,7 @@ workload:
         kind: null
         path: '/tools/datasets/cityscapes'
         sample_limit: null
-        batch_size: 256
+        batch_size: 8
         randomize: True
         split: val
 

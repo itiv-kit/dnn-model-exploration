@@ -13,7 +13,7 @@ DATASETS_FOLDER = "..datasets"
 PROBLEMS_FOLDER = "..problems"
 
 
-def setup_workload(model_settings: dict) -> list:
+def setup_workload(model_settings: dict) -> tuple:
     """This function sets up the model and returns the model as well as the accuracy function.
 
     Args:
@@ -30,8 +30,7 @@ def setup_workload(model_settings: dict) -> list:
     ).model
 
     accuracy_function = importlib.import_module(
-        f"{ACCURACY_FUNCTIONS_FOLDER}.{model_settings['accuracy_function']}",
-        package=__package__,
+        f"{MODEL_FOLDER}.{model_settings['type']}", package=__package__
     ).accuracy_function
 
     return model, accuracy_function

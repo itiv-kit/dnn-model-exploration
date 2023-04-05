@@ -5,6 +5,8 @@ import os
 from torch import nn
 import torch.nn.functional as F
 
+from model_explorer.accuracy_functions.pixelwise_segmentation_accuracy import compute_sematic_segmentation_accuracy
+
 
 class Encoder(nn.Module):
     def __init__(self):
@@ -110,4 +112,10 @@ def init_unet_model():
     return model
 
 
+def unet_david_accuracy(base_model, dataloader_generator, progress=True, title=""):
+    return compute_sematic_segmentation_accuracy(base_model, dataloader_generator, progress,
+                                                 title, n_classes=13, crop_range=[4, -4])
+
+
+accuracy_function = unet_david_accuracy
 model = init_unet_model()
