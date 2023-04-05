@@ -19,7 +19,7 @@ pip install -e .
 
 Second, checkout the submodules for YoloP and DeepLabV3
 ```sh
-git submodule --init --update
+git submodule update --init
 ```
 
 Now you should be set for a model exploration.
@@ -30,35 +30,7 @@ Our tool works entirely with workload description files, that contain all requri
 Key component is the problem definition at the beginning, which determines whether an exploration for increased sparsity or quantization should be started. 
 Further down the file, you can adjust the parameters of the exploration algorithm and evaluation.
 
-According scripts to explore, retrain or calibrate are located in the `scripts` directory.
-You can always run a script with `--help` as argument to see the options.
-Below, we listed all available scripts and what they are intended for.
-Each script always works with the aforementioned workload description file, hence it is always the first argument.
-After a script has successfully ran, results are always stored in a `results` folder.
-Exploration results are always stored as pickle files containing all information gathered during exploration for later evaluation (these files can easily grow to 10 GB). 
-
-### Available scripts
-
-#### `calibrate_quantization.py`
-This script is required for all quantization problems. 
-It generates a calibration baseline file, uppon the quantization scale factors can be decided.
-Run the following command:
-
-```sh
-python scripts/calibrate_quantization.py WORKLOAD_FILE [--force] [--verbose] [--progress]
-```
-
-#### `energy_analysis.py`
-This script performs a mapping and tiling with the tool Timeloop to get estimates about the required DRAM energy while inference. 
-The results might be used in an energy aware quantization search to minimize required DRAM energy.
-Please note, that Timeloop has to be build first (see model_explorer/third_party/timeloop).
-To generate the according result CSV file, run:
-
-```sh
-python scripts/energy_analysis.py WORKLOAD_FILE [--verbose] [--progress]
-```
-
-#### `explore.py`
+The according scripts to explore, retrain or calibrate are located in the `scripts` directory. After a script has successfully ran, results are always stored in a `results` folder. Exploration results are always stored as pickle files containing all information gathered during exploration for later evaluation (these files can easily grow to 10 GB). 
 
 To run a exploration that yields for example beneficial sparsity thresholds for a sparsity problem or bit-width combinations for a quantization problem, you can execute the following command:
 
@@ -66,34 +38,7 @@ To run a exploration that yields for example beneficial sparsity thresholds for 
 python scripts/explore.py WORKLOAD_FILE [--skip-baseline] [--verbose] [--progress]
 ```
 
-#### `ga_sweep.py`
-A simple script to test different configurations of the genetic algorithm in a batch.
-You can run it using:
-
-```sh
-python scripts/ga_sweep.py WORKLOAD_FILE [--verbose] 
-```
-
-#### `retrain.py`
-The retrain script automatically performs a retraining with the previously found quantization or sparsity thresholds to increase the model accuracy. 
-It selects a number of `top_elements` from the provided `RESULTS_FILE` and kicks off the training based on the parameters defined in the workload file.
-Retrained models are stored to `OUTPUT_DIR`.
-You can start it as follows: 
-
-```sh
-python scripts/retrain.py WORKLOAD_FILE RESULTS_FILE OUTPUT_DIR [--top_elements] [--progress] [--verbose] 
-```
-
-#### `evaluate_individual.py`
-This script performs an inference with the altered model using the entire validation dataset and not just a subset of it.
-It can be applied to validate the found solutions and get proper and reliable figures.
-It selects solutions similar to `retrain.py`. 
-Results are stored to a CSV file in the `results` directory.
-Check it out:
-
-```sh
-python scripts/retrain.py WORKLOAD_FILE RESULTS_FILE [--top_elements] [--progress] [--verbose] 
-```
+You can always call the given scripts in the scripts directory with the `--help` option to get all available command line options.
 
 
 ## Evaluation of results
