@@ -17,7 +17,6 @@ class CustomModel():
         super().__init__()
 
         self.base_model = base_model
-        self._bit_widths = {}
         self.device = device
 
         self.explorable_modules = []

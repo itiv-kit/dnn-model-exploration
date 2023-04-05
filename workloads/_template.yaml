@@ -72,6 +72,7 @@ workload:
       discrete_threshold_method: linear
       threshold_limit: 0.8
       block_size: [8,8]
+      collect_sparsity_details: False
 
   retraining: # retraining phase for QAT
     epochs: 4
