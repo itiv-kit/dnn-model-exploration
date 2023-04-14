@@ -18,12 +18,16 @@ from model_explorer.problems.quantization_problem import init_quant_model, updat
 
 def init_energy_aware_quant_model(model: nn.Module, device: torch.device,
                                   **kwargs: dict) -> QuantizedModel:
-    dram_file = kwargs.get('dram_analysis_file', None)
-    if not os.path.exists(dram_file):
-        raise FileNotFoundError('DRAM log file not found, please run the energy_analysis.py script first')
+    dram_file = kwargs.get('dram_analysis_file', "")
 
     qmodel = init_quant_model(model, device, **kwargs)
-    qmodel._build_energy_model(dram_file)
+
+    # Check when called from energy_analysis script
+    if 'skip_dram_init' not in kwargs:
+        if not os.path.exists(dram_file):
+            raise FileNotFoundError('DRAM log file not found, please run the energy_analysis.py script first')
+        qmodel._build_energy_model(dram_file)
+
     return qmodel
 
 

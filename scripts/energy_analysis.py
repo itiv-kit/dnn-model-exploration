@@ -55,6 +55,7 @@ def compute_memory_saving(workload: Workload, progress: bool = True):
 
     # Build model with custom modules
     kwargs: dict = workload['exploration']['extra_args']
+    kwargs['skip_dram_init'] = True  # Skip DRAM Initialization
     if 'calibration' in workload.yaml_data:
         kwargs['calibration_file'] = workload['calibration']['file']
     explorable_model = model_init_func(model, device, **kwargs)
@@ -69,7 +70,7 @@ def compute_memory_saving(workload: Workload, progress: bool = True):
         if isinstance(layer_info.module, QuantConv2d):
             timeloop_layers.append(layer_info)
 
-    print(f"working on {len(timeloop_layers)} layers with timeloop")
+    logger.info(f"Working on {len(timeloop_layers)} layers with timeloop")
 
     layer: LayerInfo
     results = {}

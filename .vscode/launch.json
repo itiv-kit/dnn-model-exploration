@@ -14,7 +14,8 @@
             "cwd": "${workspaceFolder}",
             "args": [
                 "workloads/resnet18.yaml",
-                "-v"
+                "-v",
+                "-s"
             ]
         },
         {
