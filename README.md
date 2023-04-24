@@ -17,7 +17,7 @@ python3.9 -m venv torch_exploration
 pip install -e .
 ```
 
-Second, checkout the submodules for YoloP and DeepLabV3
+Second, if you need them, checkout the submodules for YoloP and DeepLabV3
 ```sh
 git submodule update --init
 ```
@@ -28,6 +28,7 @@ Now you should be set for a model exploration.
 ## Running a DNN model exploration
 Our tool works entirely with workload description files, that contain all requried information. Just have a look at one of the sample yaml files in `./workloads`.
 Key component is the problem definition at the beginning, which determines whether an exploration for increased sparsity or quantization should be started. 
+Currently, three options are available: `sparsity_problem` for exploration of the impact of blockwise sparsity, `quantization_problem` for an exploration of mixed-precision inference and `energy_aware_quant_problem` for a mixed-precision execution with focus on DRAM memory access savings.
 Further down the file, you can adjust the parameters of the exploration algorithm and evaluation.
 
 The according scripts to explore, retrain or calibrate are located in the `scripts` directory. After a script has successfully ran, results are always stored in a `results` folder. Exploration results are always stored as pickle files containing all information gathered during exploration for later evaluation (these files can easily grow to 10 GB). 
