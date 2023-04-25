@@ -23,14 +23,14 @@ workload:
 
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
-      pop_size: 20
-      offsprings: 20
-      generations: 10
+      pop_size: 15
+      offsprings: 15
+      generations: 15
       mutation_eta: 10
       mutation_prob: 1.0
       crossover_eta: 5
       crossover_prob: 1.0
-    minimum_accuracy: 0.9
+    minimum_accuracy: 0.88
     datasets:
       exploration:  
         type: 'cityscapes_weather'
@@ -39,7 +39,7 @@ workload:
         sample_limit: 128 # number of validation dataset samples to test for each individual
         batch_size: 8
         randomize: True
-        split: val
+        split: both
         weather_condition: rain
         alpha: 0.03
         dropsize: 0.002
@@ -52,7 +52,7 @@ workload:
         sample_limit: null # number of validation dataset samples to test for each individual
         batch_size: 8
         randomize: True
-        split: val
+        split: both
         weather_condition: rain
         alpha: 0.03
         dropsize: 0.002
@@ -63,7 +63,7 @@ workload:
       input_shape: [1, 3, 2048, 1024]
     extra_args:
       # for quantization
-      num_bits_upper_limit: 14
+      num_bits_upper_limit: 16
       num_bits_lower_limit: 4
       bit_weighting_function: 'bits_weighted_per_layer'
       # for sparsity

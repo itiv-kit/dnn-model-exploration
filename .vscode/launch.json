@@ -19,7 +19,7 @@
             ]
         },
         {
-            "name": "Exploration Deeplab",
+            "name": "Exploration Deeplab Weather",
             "type": "python",
             "request": "launch",
             "program": "scripts/explore.py",
@@ -27,7 +27,7 @@
             "justMyCode": false,
             "cwd": "${workspaceFolder}",
             "args": [
-                "workloads/deeplabv3.yaml",
+                "workloads/deeplabv3_weather.yaml",
                 "-v"
             ]
         },

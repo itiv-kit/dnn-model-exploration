@@ -80,47 +80,50 @@ class CityscapesWithWeather(data.Dataset):
         self.mode = 'gtFine'
         self.target_type = target_type
 
-        self.targets_dir = os.path.join(self.root, self.mode, split)
         self.transform = transform
 
-        self.split = split
+        if split == 'both':
+            self.split = ['val', 'train']
+        else:
+            self.split = [split]
+
+        self.targets_dirs = [os.path.join(self.root, self.mode, s) for s in self.split]
+
         self.images = []
         self.targets = []
 
         if weather_condition is not None:
             self._select_weather_condition(weather_condition, weather_condition_kwparams)
-            self.images_dir = os.path.join(self.root, f'leftImg8bit_{self.wc_path_extra}', split)
+            self.images_dirs = [os.path.join(self.root, f'leftImg8bit_{self.wc_path_extra}', s) for s in self.split]
         else:
-            self.images_dir = os.path.join(self.root, 'leftImg8bit', split)
+            self.images_dirs = [os.path.join(self.root, 'leftImg8bit', s) for s in self.split]
 
-        if split not in ['train', 'test', 'val']:
-            raise ValueError('Invalid split for mode! Please use split="train", split="test"'
-                             ' or split="val"')
+        for image_dir, target_dir in zip(self.images_dirs, self.targets_dirs):
+            if not os.path.isdir(image_dir) or not os.path.isdir(target_dir):
+                raise RuntimeError('Dataset not found or incomplete. Please make sure all required folders for the'
+                                   ' specified "split" and "mode" are inside the "root" directory')
 
-        if not os.path.isdir(self.images_dir) or not os.path.isdir(self.targets_dir):
-            raise RuntimeError('Dataset not found or incomplete. Please make sure all required folders for the'
-                               ' specified "split" and "mode" are inside the "root" directory')
+        for image_dir, target_dir in zip(self.images_dirs, self.targets_dirs):
+            for city in os.listdir(image_dir):
+                img_dir = os.path.join(image_dir, city)
+                trg_dir = os.path.join(target_dir, city)
 
-        for city in os.listdir(self.images_dir):
-            img_dir = os.path.join(self.images_dir, city)
-            target_dir = os.path.join(self.targets_dir, city)
+                for file_name in os.listdir(img_dir):
+                    # check for weather condition data:
+                    if weather_condition is not None:
+                        file_ending = f"_{self.wc_file_extra}_"
+                        file_ending += "_".join([str(item) for pair in zip(self.wc_parameter_k, self.wc_parameter_v) for item in pair])
+                        file_ending += ".png"
+                    else:
+                        # no weather condition given
+                        file_ending = ".png"
 
-            for file_name in os.listdir(img_dir):
-                # check for weather condition data:
-                if weather_condition is not None:
-                    file_ending = f"_{self.wc_file_extra}_"
-                    file_ending += "_".join([str(item) for pair in zip(self.wc_parameter_k, self.wc_parameter_v) for item in pair])
-                    file_ending += ".png"
-                else:
-                    # no weather condition given
-                    file_ending = ".png"
+                    if file_name.endswith(file_ending):
+                        self.images.append(os.path.join(img_dir, file_name))
 
-                if file_name.endswith(file_ending):
-                    self.images.append(os.path.join(img_dir, file_name))
-
-                    target_name = '{}_{}'.format(file_name.split('_leftImg8bit')[0],
-                                                    self._get_target_suffix(self.mode, self.target_type))
-                    self.targets.append(os.path.join(target_dir, target_name))
+                        target_name = '{}_{}'.format(file_name.split('_leftImg8bit')[0],
+                                                     self._get_target_suffix(self.mode, self.target_type))
+                        self.targets.append(os.path.join(trg_dir, target_name))
 
 
     def _select_weather_condition(self, name: str, kwparams):

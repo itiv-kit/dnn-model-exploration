@@ -38,6 +38,8 @@ workload:
         sample_limit: 4096 # number of validation dataset samples to test for each individual
         batch_size: 128
         randomize: True
+        severity: 3
+        condition: fog
       baseline:
         type: imagenet_c
         kind: 'imagefolder'
@@ -45,6 +47,8 @@ workload:
         sample_limit: null
         batch_size: 512
         randomize: True
+        severity: 3
+        condition: fog
     extra_args:
       # for quantization
       num_bits_upper_limit: 14

@@ -20,7 +20,7 @@ def sweep_ga_parameters(workload):
     Args:
         workload (_type_): _description_
     """
-    skip_baseline = True
+    skip_baseline = False
 
     result_dir = 'results/exploration_sweep_{}'.format(datetime.now().strftime("%Y-%m-%d_%H-%M"))
     if not os.path.exists(result_dir):
@@ -32,6 +32,10 @@ def sweep_ga_parameters(workload):
             workload['exploration']['datasets']['exploration']['beta'] = combination[1]
             workload['exploration']['datasets']['exploration']['dropsize'] = combination[2]
             workload['exploration']['datasets']['exploration']['pattern'] = pattern
+            workload['exploration']['datasets']['baseline']['alpha'] = combination[0]
+            workload['exploration']['datasets']['baseline']['beta'] = combination[1]
+            workload['exploration']['datasets']['baseline']['dropsize'] = combination[2]
+            workload['exploration']['datasets']['baseline']['pattern'] = pattern
 
             logger.info("#"*80)
             logger.info("Running Sweep point with combi={}, pattern={}".format(combination, pattern))
@@ -40,12 +44,12 @@ def sweep_ga_parameters(workload):
             result = explore_model(workload, skip_baseline, progress=False)
 
             filename = os.path.join(result_dir, 'result_pattern_{}_comb_{}.pkl'.format(pattern, c_index))
-            save_result_pickle(result, overwrite_filename=filename)
+            # save_result_pickle(result, overwrite_filename=filename)
 
             logger.info("Done saved at {}".format(filename))
             logger.info("#"*80)
 
-            skip_baseline = True
+            # skip_baseline = True
 
 
 if __name__ == "__main__":
