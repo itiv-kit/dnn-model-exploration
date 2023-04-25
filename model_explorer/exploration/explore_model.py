@@ -77,38 +77,38 @@ def explore_model(workload: Workload,
     )
 
     termination = get_termination("n_gen", workload['exploration']['nsga']['generations'])
-    # termination = get_termination("moo")
+    termination = get_termination("moo")
 
-    # logger.info("Prepared Run, run infomation:")
-    # logger.info(f"\tComputer name: {socket.gethostname()}")
-    # logger.info(f"\tNSGA crossover eta: {workload['exploration']['nsga']['crossover_eta']} " +
-    #             f"prob: {workload['exploration']['nsga']['crossover_prob']}")
-    # logger.info(f"\tNSGA mutation eta: {workload['exploration']['nsga']['mutation_eta']} " +
-    #             f"prob: {workload['exploration']['nsga']['mutation_prob']}")
-    # logger.info(f"\tNSGA gens: {workload['exploration']['nsga']['generations']}")
-    # logger.info(f"\tNSGA pop size: {workload['exploration']['nsga']['pop_size']} " +
-    #             f"offsprings: {workload['exploration']['nsga']['offsprings']}")
+    logger.info("Prepared Run, run infomation:")
+    logger.info(f"\tComputer name: {socket.gethostname()}")
+    logger.info(f"\tNSGA crossover eta: {workload['exploration']['nsga']['crossover_eta']} " +
+                f"prob: {workload['exploration']['nsga']['crossover_prob']}")
+    logger.info(f"\tNSGA mutation eta: {workload['exploration']['nsga']['mutation_eta']} " +
+                f"prob: {workload['exploration']['nsga']['mutation_prob']}")
+    logger.info(f"\tNSGA gens: {workload['exploration']['nsga']['generations']}")
+    logger.info(f"\tNSGA pop size: {workload['exploration']['nsga']['pop_size']} " +
+                f"offsprings: {workload['exploration']['nsga']['offsprings']}")
 
-    # logger.info("Starting problem minimization.")
+    logger.info("Starting problem minimization.")
 
-    # res = minimize(
-    #     problem,
-    #     algorithm,
-    #     termination,
-    #     seed=1,
-    #     save_history=True
-    # )
+    res = minimize(
+        problem,
+        algorithm,
+        termination,
+        seed=1,
+        save_history=True
+    )
 
     logger.info("Finished problem minimization.")
 
-    # if res.F is None:
-    #     logger.warning("No solutions found for the given constraints.")
-    #     return
+    if res.F is None:
+        logger.warning("No solutions found for the given constraints.")
+        return
 
     # since we inverted our objective functions we have to invert the result back
-    # res.F = np.abs(res.F)
+    res.F = np.abs(res.F)
 
-    return None
+    return res
 
 
 

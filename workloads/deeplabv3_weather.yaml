@@ -30,7 +30,7 @@ workload:
       mutation_prob: 1.0
       crossover_eta: 5
       crossover_prob: 1.0
-    minimum_accuracy: 0.88
+    minimum_accuracy: 0.52
     datasets:
       exploration:  
         type: 'cityscapes_weather'
