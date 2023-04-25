@@ -6,6 +6,7 @@ from typing import Union
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.operators.repair.rounding import RoundingRepair
 from pymoo.operators.sampling.rnd import IntegerRandomSampling
+from model_explorer.problems.predictable_initalization import IntegerRandomSamplingPredictable
 from torch import nn
 
 from model_explorer.problems.custom_problem import CustomExplorationProblem
@@ -146,6 +147,6 @@ class LayerwiseEnergyQuantizationProblem(CustomExplorationProblem):
 # Expected parameters
 prepare_exploration_function = prepare_energy_quantization_problem
 repair_method = RoundingRepair()
-sampling_method = IntegerRandomSampling()
+sampling_method = IntegerRandomSamplingPredictable()
 init_function = init_energy_aware_quant_model
 update_params_function = update_quant_model_params
