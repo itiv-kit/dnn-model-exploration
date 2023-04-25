@@ -25,7 +25,7 @@ workload:
     nsga: # Setup the parameters for your nsga algorithm
       pop_size: 20
       offsprings: 20
-      generations: 20
+      generations: 10
       mutation_eta: 10
       mutation_prob: 1.0
       crossover_eta: 5
@@ -40,7 +40,10 @@ workload:
         batch_size: 8
         randomize: True
         split: val
-        weather_condition: fog
+        weather_condition: rain
+        alpha: 0.03
+        dropsize: 0.002
+        pattern: 1
         beta: 0.015
       baseline:
         type: 'cityscapes_weather'
@@ -50,7 +53,10 @@ workload:
         batch_size: 8
         randomize: True
         split: val
-        weather_condition: fog
+        weather_condition: rain
+        alpha: 0.03
+        dropsize: 0.002
+        pattern: 1
         beta: 0.015
     energy_evaluation:
       dram_analysis_file: 'results/dram_accesses_deeplabv3.csv'
