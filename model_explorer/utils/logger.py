@@ -11,7 +11,7 @@ LOG_DIR = "results"
 if 'SLURM_ARRAY_TASK_ID' in os.environ:
     LOG_FILE = f"exploration_run_slurmid_{os.environ['SLURM_ARRAY_TASK_ID']}.log"
 else:
-    LOG_FILE = "exploration_run.log"
+    LOG_FILE = "exploration_run_sweep_resnet.log"
 
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)

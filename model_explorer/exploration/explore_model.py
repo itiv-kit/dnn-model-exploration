@@ -1,5 +1,6 @@
 import socket
 import numpy as np
+import torch
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.operators.crossover.sbx import SBX
@@ -14,10 +15,12 @@ from model_explorer.utils.setup import build_dataloader_generators, setup_torch_
 from model_explorer.utils.workload import Workload
 
 
-
 def explore_model(workload: Workload,
                   skip_baseline: bool,
-                  progress: bool) -> pymoo.core.result.Result:
+                  progress: bool,
+                  accuracy_constraint_baseline: bool = False,
+                  accuracy_percentage_drop_allowance: float = 0.0  # FIXME: make list
+                  ) -> pymoo.core.result.Result:
     """Function to explore the influence of model parameter to the accuracy. It
     instanciates an NSGA algorithm to automatically explore different model
     parameter sets.
@@ -54,7 +57,16 @@ def explore_model(workload: Workload,
         kwargs['calibration_file'] = workload['calibration']['file']
     if 'energy_evaluation' in workload['exploration']:
         kwargs['dram_analysis_file'] = workload['exploration']['energy_evaluation']['dram_analysis_file']
-    min_accuracy = workload['exploration']['minimum_accuracy']
+
+    if accuracy_constraint_baseline and not skip_baseline:
+        assert accuracy_percentage_drop_allowance <= 1, "drop allowance is a percentage between 0.0 and 1.0"
+        if isinstance(baseline, torch.Tensor):
+            baseline = baseline.item() 
+        assert isinstance(baseline, float), f"For now baseline has to be float, but received {type(baseline)}"
+        min_accuracy = baseline - baseline * accuracy_percentage_drop_allowance
+    else:
+        min_accuracy = workload['exploration']['minimum_accuracy']
+
     problem = prepare_function(model, device, dataloaders['exploration'],
                                accuracy_function, min_accuracy, progress, **kwargs)
 
@@ -77,7 +89,7 @@ def explore_model(workload: Workload,
     )
 
     termination = get_termination("n_gen", workload['exploration']['nsga']['generations'])
-    termination = get_termination("moo")
+    # termination = get_termination("moo")
 
     logger.info("Prepared Run, run infomation:")
     logger.info(f"\tComputer name: {socket.gethostname()}")

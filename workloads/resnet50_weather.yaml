@@ -24,7 +24,7 @@ workload:
     nsga: # Setup the parameters for your nsga algorithm
       pop_size: 15
       offsprings: 15
-      generations: 15
+      generations: 20
       mutation_eta: 10
       mutation_prob: 1.0
       crossover_eta: 5
@@ -36,7 +36,7 @@ workload:
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet-c/weather'
         sample_limit: 4096 # number of validation dataset samples to test for each individual
-        batch_size: 128
+        batch_size: 256
         randomize: True
         severity: 3
         condition: fog
@@ -45,7 +45,7 @@ workload:
         kind: 'imagefolder'
         path: '/tools/datasets/imagenet-c/weather'
         sample_limit: null
-        batch_size: 512
+        batch_size: 256
         randomize: True
         severity: 3
         condition: fog
