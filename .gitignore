@@ -12,3 +12,4 @@ timeloop_eval/*
 !timeloop_eval/workload.yaml
 doodle_scripts/*
 calibrations/*
+timeloop-mapper.*

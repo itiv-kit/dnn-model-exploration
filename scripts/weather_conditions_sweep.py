@@ -27,6 +27,9 @@ def sweep_ga_parameters(workload):
     if workload['exploration']['datasets']['exploration']['type'] == 'cityscapes_weather':
         for c_index, combination in enumerate([[0.03, 0.015, 0.002], [0.02, 0.01, 0.005], [0.01, 0.005, 0.01]]):
             for pattern in list(range(1, 13, 1)):
+                if c_index != 2 and pattern != 12:
+                    continue
+
                 workload['exploration']['datasets']['exploration']['alpha'] = combination[0]
                 workload['exploration']['datasets']['exploration']['beta'] = combination[1]
                 workload['exploration']['datasets']['exploration']['dropsize'] = combination[2]

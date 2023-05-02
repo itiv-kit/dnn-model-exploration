@@ -10,7 +10,7 @@ workload:
 
   calibration:
     samples: null # null sets samples to all
-    file: './results/deeplabv3_quant_calib.pkl'
+    file: './results/deeplabv3_resnet101_quant_calib.pkl'
     datasets:
       calibrate:
         type: 'cityscapes'

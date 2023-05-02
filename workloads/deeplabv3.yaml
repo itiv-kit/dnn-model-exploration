@@ -10,14 +10,14 @@ workload:
 
   calibration:
     samples: null # null sets samples to all
-    file: './results/deeplabv3_quant_calib.pkl'
+    file: './results/deeplabv3_resnet101_quant_calib.pkl'
     datasets:
       calibrate:
         type: 'cityscapes'
         kind: null
         path: '/tools/datasets/cityscapes'
         sample_limit: 128  # number of validation dataset samples to test for each individual
-        batch_size: 8
+        batch_size: 2
         randomize: True
         split: val
 
