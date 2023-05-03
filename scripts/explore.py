@@ -57,7 +57,7 @@ if __name__ == "__main__":
         if job_id in extra_slurm_args:
             workload.merge(extra_slurm_args[job_id])
 
-    results = explore_model(workload, opt.skip_baseline, opt.progress)
+    results = explore_model(workload, opt.skip_baseline, opt.progress, accuracy_constraint_baseline=True, accuracy_percentage_drop_allowance=0.05)
 
     save_result_pickle(results, workload['problem']['problem_function'],
                        workload['model']['type'], workload['exploration']['datasets']['exploration']['type'])
