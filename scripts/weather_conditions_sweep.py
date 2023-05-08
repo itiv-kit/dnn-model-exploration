@@ -25,32 +25,38 @@ def sweep_ga_parameters(workload):
         os.makedirs(result_dir)
 
     if workload['exploration']['datasets']['exploration']['type'] == 'cityscapes_weather':
-        for c_index, combination in enumerate([[0.03, 0.015, 0.002], [0.02, 0.01, 0.005], [0.01, 0.005, 0.01]]):
-            for pattern in list(range(1, 13, 1)):
-                workload['exploration']['datasets']['exploration']['alpha'] = combination[0]
-                workload['exploration']['datasets']['exploration']['beta'] = combination[1]
-                workload['exploration']['datasets']['exploration']['dropsize'] = combination[2]
-                workload['exploration']['datasets']['exploration']['pattern'] = pattern
-                workload['exploration']['datasets']['baseline']['alpha'] = combination[0]
-                workload['exploration']['datasets']['baseline']['beta'] = combination[1]
-                workload['exploration']['datasets']['baseline']['dropsize'] = combination[2]
-                workload['exploration']['datasets']['baseline']['pattern'] = pattern
+        # for c_index, combination in enumerate([[0.03, 0.015, 0.002], [0.02, 0.01, 0.005], [0.01, 0.005, 0.01]]):
+        for c_index, combination in enumerate([0.005, 0.01, 0.02]):
+            # for pattern in list(range(1, 13, 1)):
+            # if c_index != 1:
+            #     continue
+            # workload['exploration']['datasets']['exploration']['alpha'] = combination[0]
+            # workload['exploration']['datasets']['exploration']['beta'] = combination[1]
+            # workload['exploration']['datasets']['exploration']['dropsize'] = combination[2]
+            # workload['exploration']['datasets']['exploration']['pattern'] = pattern
+            # workload['exploration']['datasets']['baseline']['alpha'] = combination[0]
+            # workload['exploration']['datasets']['baseline']['beta'] = combination[1]
+            # workload['exploration']['datasets']['baseline']['dropsize'] = combination[2]
+            # workload['exploration']['datasets']['baseline']['pattern'] = pattern
+            workload['exploration']['datasets']['exploration']['beta'] = combination
+            workload['exploration']['datasets']['baseline']['beta'] = combination
 
-                logger.info("#"*80)
-                logger.info("Running Sweep point with combi={}, pattern={}".format(combination, pattern))
-                logger.info("#"*80)
+            logger.info("#"*80)
+            logger.info("Running Sweep point with combi={}".format(combination))
+            logger.info("#"*80)
 
-                result = explore_model(workload, False, progress=False,
-                                    accuracy_percentage_drop_allowance=0.05, accuracy_constraint_baseline=True)
+            result = explore_model(workload, False, progress=False,
+                                   accuracy_percentage_drop_allowance=0.05, accuracy_constraint_baseline=True)
 
-                filename = os.path.join(result_dir, 'result_pattern_{}_comb_{}.pkl'.format(pattern, c_index))
-                save_result_pickle(result, overwrite_filename=filename)
+            filename = os.path.join(result_dir, 'result_pattern_comb_{}.pkl'.format(c_index))
+            save_result_pickle(result, overwrite_filename=filename)
 
-                logger.info("Done saved at {}".format(filename))
-                logger.info("#"*80)
+            logger.info("Done saved at {}".format(filename))
+            logger.info("#"*80)
 
-    if workload['exploration']['datasets']['exploration']['type'] == 'imagenet_c':
-        for c_index, condition in enumerate(['brightness', 'fog', 'frost', 'snow']):
+    if workload['exploration']['datasets']['exploration']['type'] in ['imagenet_c', 'bdd100k_corrupted']:
+        # for c_index, condition in enumerate(['brightness', 'fog', 'frost', 'snow']):
+        for c_index, condition in enumerate(['brightness']): # 0 = fog
             for severity in list(range(1, 6, 1)):
                 workload['exploration']['datasets']['exploration']['condition'] = condition
                 workload['exploration']['datasets']['exploration']['severity'] = severity
@@ -65,7 +71,7 @@ def sweep_ga_parameters(workload):
                                        accuracy_percentage_drop_allowance=0.03,
                                        accuracy_constraint_baseline=True)
 
-                filename = os.path.join(result_dir, 'result_cond_{}_s_{}.pkl'.format(c_index, severity))
+                filename = os.path.join(result_dir, 'result_cond_{}_s_{}.pkl'.format(c_index + 1, severity))
                 save_result_pickle(result, overwrite_filename=filename)
 
                 logger.info("Done saved at {}".format(filename))

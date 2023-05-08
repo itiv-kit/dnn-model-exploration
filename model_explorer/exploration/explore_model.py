@@ -61,7 +61,7 @@ def explore_model(workload: Workload,
     if accuracy_constraint_baseline and not skip_baseline:
         assert accuracy_percentage_drop_allowance <= 1, "drop allowance is a percentage between 0.0 and 1.0"
         if isinstance(baseline, torch.Tensor):
-            baseline = baseline.item() 
+            baseline = baseline.item()
         assert isinstance(baseline, float), f"For now baseline has to be float, but received {type(baseline)}"
         min_accuracy = baseline - baseline * accuracy_percentage_drop_allowance
     else:

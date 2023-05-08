@@ -46,7 +46,8 @@ def compute_yolop_combined_metric(base_model, dataloader_generator) -> list:
     logger.debug(f"         ll line acc: {ll_segmentation_results[0]:.4f}, ll iou: {ll_segmentation_results[1]:.4f}, ll miou: {ll_segmentation_results[2]:.4f}")
     logger.debug(f"              det mp: {detection_results[0]:.4f},     mr: {detection_results[1]:.4f},   map50: {detection_results[2]:.4f}, map: {detection_results[3]:.4f}")
 
-    return [ll_segmentation_results[0], da_segmentation_results[2], detection_results[2]]
+    # return [ll_segmentation_results[0], da_segmentation_results[2], detection_results[2]]
+    return da_segmentation_results[2]  # /ll_segmentation_results[0]
 
 
 accuracy_function = compute_yolop_combined_metric

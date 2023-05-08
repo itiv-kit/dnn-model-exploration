@@ -76,6 +76,14 @@ def compute_memory_saving(workload: Workload, progress: bool = True):
     results = {}
     total_inference_energy = 0.0
 
+    # Setup Paths
+    config_file = os.path.abspath(os.path.join(os.path.dirname(__file__), '../timeloop_eval/workload.yaml'))
+    timeloop_base_wd = os.path.abspath(os.path.dirname(config_file))
+
+    if os.path.exists(os.path.join(timeloop_base_wd, 'layers')):
+        logger.info("reuslts dir already exists, I am going to remove it")
+        os.removedirs(os.path.join(timeloop_base_wd, 'layers'))
+
     for i, layer in enumerate(tqdm(timeloop_layers, ascii=True, disable=not progress)):
         # Gather information about layer dimension
         w = layer.input_size[2]
@@ -89,10 +97,6 @@ def compute_memory_saving(workload: Workload, progress: bool = True):
 
         q = int((w - s + 2 * w_pad) / w_stride) + 1
         p = int((h - r + 2 * h_pad) / h_stride) + 1
-
-        # Setup Paths
-        config_file = os.path.abspath(os.path.join(os.path.dirname(__file__), '../timeloop_eval/workload.yaml'))
-        timeloop_base_wd = os.path.abspath(os.path.dirname(config_file))
 
         timeloop_wd = os.path.join(timeloop_base_wd, f'layers/{i}')
         if not os.path.exists(timeloop_wd):
