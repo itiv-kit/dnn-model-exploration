@@ -18,6 +18,5 @@ setup(
     ],
     version='1.0',
     description="A tool to support automatic exploration on how DNN models react to quantization and artificially introduced sparsity",
-    # url="https://github.com/itiv-kit/dnn-model-exploration",
     packages=find_packages(),
 )
