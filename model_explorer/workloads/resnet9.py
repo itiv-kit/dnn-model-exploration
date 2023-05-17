@@ -191,7 +191,6 @@ def save_parameters(model, optimizer, train_accuracies, test_accuracies, path):
     """
     torch.save(
         {
-            'epoch': epoch,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'train_accuracies': train_accuracies,
