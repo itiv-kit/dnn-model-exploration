@@ -181,7 +181,7 @@ class ResNet9(nn.Module):
 
     def forward(self, x):
         out = self.conv(x)
-        out = out.view(-1, out.shape[1] * out.shape[2] * out.shape[3])
+        out = out.reshape(-1, out.shape[1] * out.shape[2] * out.shape[3])
         out = self.fc(out)
         return out
 
@@ -314,6 +314,13 @@ def resnet9_init():
     model.load_state_dict(checkpoint['model_state_dict'])
 
     return model
+
+
+if __name__ == "__main__":
+    state_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                              "param_checkpoints", "./resnet9_state_dict.pt")
+    model = ResNet9()
+    train(model, epochs=30, batch_size=128, state_file=state_file)
 
 
 model = resnet9_init()
