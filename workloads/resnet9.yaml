@@ -34,13 +34,13 @@ workload:
         type: cifar10
         kind: ''
         path: ''
-        sample_limit: 64 # number of validation dataset samples to test for each individual
+        sample_limit: 8196 # number of validation dataset samples to test for each individual
         batch_size: 16
       baseline:
         type: cifar10
         kind: ''
         path: ''
-        sample_limit: 64
+        sample_limit: null
         batch_size: 16
     extra_args:
       # for quantization
