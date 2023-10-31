@@ -81,7 +81,7 @@ class DataLoaderGenerator:
                 dataset = Subset(dataset, indices=list(range(self.limit)))
 
         self.dataloader = DataLoader(dataset=dataset,
-                                     num_workers=4,
+                                     num_workers=32,
                                      batch_size=self.batch_size,
                                      collate_fn=self.collate_fn,
                                      pin_memory=torch.cuda.is_available(),

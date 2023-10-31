@@ -7,7 +7,7 @@ from model_explorer.accuracy_functions.detection_accuracy import compute_detecti
 # This is referenced in this issue:
 # https://github.com/pytorch/hub/issues/243
 
-CONFLIC_MODULES = ["models", "data", "utils"]
+CONFLICT_MODULES = ["models", "data", "utils"]
 
 
 def _remove_modules(module_names: list) -> dict:
@@ -28,12 +28,12 @@ def _add_modules(modules: dict) -> None:
         sys.modules[module_name] = module
 
 
-restore_modules = _remove_modules(CONFLIC_MODULES)
+restore_modules = _remove_modules(CONFLICT_MODULES)
 
 # Simply load yolov5s from trochhub, only minor changes have to be added ...
 model = torch.hub.load("ultralytics/yolov5", "yolov5s", verbose=False)
 
 accuracy_function = compute_detection_accuracy
 
-_remove_modules(CONFLIC_MODULES)
+_remove_modules(CONFLICT_MODULES)
 _add_modules(restore_modules)

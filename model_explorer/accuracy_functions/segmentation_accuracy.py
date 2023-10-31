@@ -65,7 +65,7 @@ def compute_sematic_segmentation_accuracy(base_model, dataloader_generator, prog
     dataset_size = len(dataloader_generator)
     dataloader = dataloader_generator.get_dataloader()
 
-    progress_bar = tqdm.tqdm(total=dataset_size, ascii=True, desc=title, position=0, disable=not progress)
+    progress_bar = tqdm.tqdm(total=dataset_size, desc=title, position=0, disable=not progress)
 
     n_classes = kwargs.get('n_classes')
     crop_range = kwargs.get('crop_range', None)

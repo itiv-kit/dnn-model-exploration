@@ -1,6 +1,6 @@
 workload:
   problem:
-    problem_function: quantization_problem
+    problem_function: sparsity_problem
 
   model:
     type: resnet9
@@ -21,8 +21,8 @@ workload:
 
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
-      pop_size: 20
-      offsprings: 20
+      pop_size: 5
+      offsprings: 5
       generations: 25
       mutation_eta: 20
       mutation_prob: 0.9
@@ -31,17 +31,17 @@ workload:
     minimum_accuracy: 0.65 # accuracy constraint
     datasets:
       exploration:
-        type: imagenet
-        kind: 'imagefolder'
-        path: '/tools/datasets/imagenet/val_images'
-        sample_limit: 8196 # number of validation dataset samples to test for each individual
-        batch_size: 512
+        type: cifar10
+        kind: ''
+        path: ''
+        sample_limit: 64 # number of validation dataset samples to test for each individual
+        batch_size: 16
       baseline:
-        type: imagenet
-        kind: 'imagefolder'
-        path: '/tools/datasets/imagenet/val_images'
-        sample_limit: null
-        batch_size: 512
+        type: cifar10
+        kind: ''
+        path: ''
+        sample_limit: 64
+        batch_size: 16
     extra_args:
       # for quantization
       num_bits_upper_limit: 16
@@ -51,6 +51,7 @@ workload:
       discrete_threshold_steps: 100
       discrete_threshold_method: linear
       threshold_limit: 0.1
+      block_size: [8,8]
 
   retraining:
     epochs: 2

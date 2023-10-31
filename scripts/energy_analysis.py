@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import sys
 import argparse
+import shutil
 import subprocess
 import yaml
 import logging
@@ -75,6 +76,7 @@ def compute_memory_saving(workload: Workload, progress: bool = True):
     layer: LayerInfo
     results = {}
     total_inference_energy = 0.0
+    total_dram_energy = 0.0
 
     # Setup Paths
     config_file = os.path.abspath(os.path.join(os.path.dirname(__file__), '../timeloop_eval/workload.yaml'))
@@ -82,9 +84,11 @@ def compute_memory_saving(workload: Workload, progress: bool = True):
 
     if os.path.exists(os.path.join(timeloop_base_wd, 'layers')):
         logger.info("reuslts dir already exists, I am going to remove it")
-        os.removedirs(os.path.join(timeloop_base_wd, 'layers'))
+        shutil.rmtree(os.path.join(timeloop_base_wd, 'layers'))
+        
+    logger.info("Starting evaluation")
 
-    for i, layer in enumerate(tqdm(timeloop_layers, ascii=True, disable=not progress)):
+    for i, layer in enumerate(tqdm(timeloop_layers, disable=not progress)):
         # Gather information about layer dimension
         w = layer.input_size[2]
         h = layer.input_size[3]
@@ -166,6 +170,7 @@ def compute_memory_saving(workload: Workload, progress: bool = True):
                           'total_dram_energy': timeloop_result['energy_breakdown_pJ']['DRAM']['energy'],
                           'bitwidth': TIMELOOP_BITS}
             total_inference_energy += timeloop_result['energy_pJ']
+            total_dram_energy += timeloop_result['energy_breakdown_pJ']['DRAM']['energy']
 
     # Save results as CSV to the target file
     df = pd.DataFrame.from_dict(results, orient='index')
@@ -173,6 +178,7 @@ def compute_memory_saving(workload: Workload, progress: bool = True):
 
     # Finally print total energy ...
     print(f"Total Energy per Inference: {total_inference_energy/1_000_000_000:.4f}mJ")
+    print(f"Total DRAM Energy per Inference: {total_dram_energy/1_000_000_000:.4f}mJ")
 
 
 if __name__ == "__main__":

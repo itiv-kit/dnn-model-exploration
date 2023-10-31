@@ -23,7 +23,7 @@ class LoopedElementwiseEvaluationWithIndex(LoopedElementwiseEvaluation):
     """
     def __call__(self, f, X):
         algorithm: NSGA2 = f.kwargs.get('algorithm')
-        progress_bar = tqdm(total=len(X), position=1, ascii=True, desc="Generation {}".format(algorithm.n_iter))
+        progress_bar = tqdm(total=len(X), position=1, desc="Generation {}".format(algorithm.n_iter))
         results = []
         for i, x in enumerate(X):
             results.append(f(i, x))

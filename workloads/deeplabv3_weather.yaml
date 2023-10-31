@@ -10,7 +10,7 @@ workload:
 
   calibration:
     samples: null # null sets samples to all
-    file: './results/deeplabv3_quant_calib.pkl'
+    file: './calibrations/deeplabv3_quant_calib.pkl'
     datasets:
       calibrate:
         type: 'cityscapes'
@@ -31,6 +31,7 @@ workload:
       crossover_eta: 5
       crossover_prob: 1.0
     minimum_accuracy: 0.52
+    # allowable_accuracy_drop: 0.03  # Alternative
     datasets:
       exploration:  
         type: 'cityscapes_weather'

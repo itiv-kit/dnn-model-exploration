@@ -23,8 +23,10 @@ def sweep_ga_parameters(workload):
     if not os.path.exists(result_dir):
         os.makedirs(result_dir)
 
-    for mutation_eta in [10, 30, 50, 100]:
-        for crossover_eta in [15, 30, 45]:
+    for mutation_eta in [5, 15, 25]:
+        for crossover_eta in [10, 30, 50]:
+            if mutation_eta == 5 and crossover_eta == 10:
+                continue
             workload['exploration']['nsga']['mutation_eta'] = mutation_eta
             workload['exploration']['nsga']['crossover_eta'] = crossover_eta
 

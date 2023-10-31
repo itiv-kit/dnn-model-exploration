@@ -1,6 +1,5 @@
 import socket
 import numpy as np
-import torch
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.operators.crossover.sbx import SBX
@@ -13,14 +12,13 @@ from model_explorer.utils.logger import logger
 from model_explorer.utils.setup import build_dataloader_generators, setup_torch_device, \
         setup_workload, get_prepare_exploration_function
 from model_explorer.utils.workload import Workload
+from model_explorer.problems.sampling_methods import FloatRandomSamplingWithDefinedIndividual
+
 
 
 def explore_model(workload: Workload,
                   skip_baseline: bool,
-                  progress: bool,
-                  accuracy_constraint_baseline: bool = False,
-                  accuracy_percentage_drop_allowance: float = 0.0  # FIXME: make list
-                  ) -> pymoo.core.result.Result:
+                  progress: bool) -> pymoo.core.result.Result:
     """Function to explore the influence of model parameter to the accuracy. It
     instanciates an NSGA algorithm to automatically explore different model
     parameter sets.
@@ -36,13 +34,13 @@ def explore_model(workload: Workload,
     """
     dataloaders = build_dataloader_generators(workload['exploration']['datasets'])
     model, accuracy_function = setup_workload(workload['model'])
-    device = setup_torch_device()
+    device = setup_torch_device(workload['problem'].get('gpu_id', -1))
 
     if not skip_baseline:
         # collect model basline information
         baseline_dataloader = dataloaders['baseline']
         logger.info("Collecting baseline...")
-        baseline = accuracy_function(model, baseline_dataloader, title="Baseline Generation")
+        baseline = accuracy_function(model, baseline_dataloader, title="Baseline Generation", progress=progress)
         if isinstance(baseline, list):
             acc_str = ", ".join([f"{x:.3f}" for x in baseline])
             logger.info(f"Done. Baseline accuracy: {acc_str}")
@@ -51,6 +49,11 @@ def explore_model(workload: Workload,
 
     prepare_function, repair_method, sampling_method = \
         get_prepare_exploration_function(workload['problem']['problem_function'])
+    if workload['problem']['problem_function'] == 'sparsity_problem':  # predefined steps for now only for sparsity problem
+        if 'predefined_parameters' in workload['exploration']:
+            sampling_method = FloatRandomSamplingWithDefinedIndividual(
+                predefined=workload['exploration']['predefined_parameters'])
+
     kwargs: dict = workload['exploration']['extra_args']
 
     if 'calibration' in workload.yaml_data:
@@ -58,14 +61,16 @@ def explore_model(workload: Workload,
     if 'energy_evaluation' in workload['exploration']:
         kwargs['dram_analysis_file'] = workload['exploration']['energy_evaluation']['dram_analysis_file']
 
-    if accuracy_constraint_baseline and not skip_baseline:
-        assert accuracy_percentage_drop_allowance <= 1, "drop allowance is a percentage between 0.0 and 1.0"
+    if 'allowable_accuracy_drop' in workload['exploration']:
+        assert workload['exploration']['allowable_accuracy_drop'] <= 1, "drop allowance is a percentage between 0.0 and 1.0"
         if isinstance(baseline, torch.Tensor):
             baseline = baseline.item()
         assert isinstance(baseline, float), f"For now baseline has to be float, but received {type(baseline)}"
-        min_accuracy = baseline - baseline * accuracy_percentage_drop_allowance
-    else:
+        min_accuracy = baseline - baseline * workload['exploration']['allowable_accuracy_drop']
+    elif 'minimum_accuracy' in workload['exploration']:
         min_accuracy = workload['exploration']['minimum_accuracy']
+    else:
+        raise ValueError("You have to provide either a minimum_accuracy or an allowable_accuracy_drop")
 
     problem = prepare_function(model, device, dataloaders['exploration'],
                                accuracy_function, min_accuracy, progress, **kwargs)
@@ -120,7 +125,15 @@ def explore_model(workload: Workload,
     # since we inverted our objective functions we have to invert the result back
     res.F = np.abs(res.F)
 
+    # delete base model from exploration to make pickling more efficient
+    for h in res.history:
+        h.problem.model.base_model = None
+        h.problem.dataloader_generator = None
+    res.problem.model.base_model = None
+    res.problem.dataloader_generator = None
+    # Add workload
+    setattr(res, "workload", workload)
+    setattr(res, "min_accuracy", min_accuracy)
+
     return res
-
-
 

@@ -175,8 +175,7 @@ class QuantizedModel(CustomModel):
         # Run the dataset ...
         for data, *_ in tqdm(dataloader,
                              desc="Calibrating",
-                             disable=not progress,
-                             ascii=True):
+                             disable=not progress):
             # no need for actual accuracy function ...
             self.base_model(data.to(self.device))
 

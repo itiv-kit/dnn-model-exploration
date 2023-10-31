@@ -15,13 +15,15 @@ def random(problem, n_samples=1):
 
 
 class FloatRandomSamplingPredictable(Sampling):
-
+    """Same as Pymoo's Random sampling method but with a fixed np.random.seed of 0
+    """
     def _do(self, problem, n_samples, **kwargs):
         return random(problem, n_samples=n_samples)
 
 
 class IntegerRandomSamplingPredictable(FloatRandomSamplingPredictable):
-
+    """Same as Pymoo's Random sampling method but with a fixed np.random.seed of 0
+    """
     def _do(self, problem, n_samples, **kwargs):
         X = super()._do(problem, n_samples, **kwargs)
         return np.around(X).astype(int)

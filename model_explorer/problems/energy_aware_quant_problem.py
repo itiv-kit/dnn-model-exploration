@@ -6,7 +6,6 @@ from typing import Union
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.operators.repair.rounding import RoundingRepair
 from pymoo.operators.sampling.rnd import IntegerRandomSampling
-from model_explorer.problems.predictable_initalization import IntegerRandomSamplingPredictable
 from torch import nn
 
 from model_explorer.problems.custom_problem import CustomExplorationProblem
@@ -136,17 +135,17 @@ class LayerwiseEnergyQuantizationProblem(CustomExplorationProblem):
             g1_accuracy_constraint = [(constr - acc_result)
                                       for (constr, acc_result) in zip(self.min_accuracy, accuracy_result)]
             acc_str = ", ".join([f"{x:.4f}" for x in accuracy_result])
-            logger.debug(f"\t Evaluated, acc: {acc_str}, DRAM energy: {f1_dram_energy_objective:,.1f}mJ, Bits: {f2_bits_objective}")
+            logger.debug(f"\t Evaluated, acc: {acc_str}, DRAM energy: {f1_dram_energy_objective:,.1f}uJ, Bits: {f2_bits_objective}")
             out["G"] = g1_accuracy_constraint
         elif isinstance(self.min_accuracy, float):
             g1_accuracy_constraint = self.min_accuracy - accuracy_result
-            logger.debug(f"\t Evaluated, acc: {accuracy_result:.4f}, DRAM Energy: {f1_dram_energy_objective:,.1f}mJ, Bits: {f2_bits_objective}")
+            logger.debug(f"\t Evaluated, acc: {accuracy_result:.4f}, DRAM Energy: {f1_dram_energy_objective:,.1f}uJ, Bits: {f2_bits_objective}")
             out["G"] = [g1_accuracy_constraint]
 
 
 # Expected parameters
 prepare_exploration_function = prepare_energy_quantization_problem
 repair_method = RoundingRepair()
-sampling_method = IntegerRandomSamplingPredictable()
+sampling_method = IntegerRandomSampling()
 init_function = init_energy_aware_quant_model
 update_params_function = update_quant_model_params

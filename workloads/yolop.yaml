@@ -1,8 +1,8 @@
 workload:
   problem:
     # problem_function: sparsity_problem
-    problem_function: quantization_problem
-    # problem_function: energy_aware_quant_problem
+    # problem_function: quantization_problem
+    problem_function: energy_aware_quant_problem
 
   model:
     type: yolop
@@ -27,9 +27,9 @@ workload:
 
   exploration:
     nsga: # Setup the parameters for your nsga algorithm
-      pop_size: 10
-      offsprings: 10
-      generations: 20
+      pop_size: 12
+      offsprings: 12
+      generations: 25
       mutation_eta: 10
       mutation_prob: 1.0
       crossover_eta: 5

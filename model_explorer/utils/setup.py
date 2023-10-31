@@ -25,9 +25,12 @@ def setup_workload(model_settings: dict) -> tuple:
 
     # handle models as plugins inside `/models` and load them dynamically
     # this requires `model` to be defined in the model module
-    model = importlib.import_module(
+    model_lib = importlib.import_module(
         f"{MODEL_FOLDER}.{model_settings['type']}", package=__package__
-    ).model
+    )
+    importlib.reload(model_lib)
+
+    model = model_lib.model
 
     accuracy_function = importlib.import_module(
         f"{MODEL_FOLDER}.{model_settings['type']}", package=__package__
@@ -137,12 +140,15 @@ def build_dataloader_generators(settings_dict: dict) -> dict:
     return ret_dict
 
 
-def setup_torch_device() -> torch.device:
+def setup_torch_device(gpu_num: int = -1) -> torch.device:
     """Helper to setup torch device, checks if gpu is available
 
     Returns:
         torch.device: available best device choice
     """
     device_str = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    if device_str == 'cuda' and gpu_num != -1:
+        torch.cuda.set_device(gpu_num)
 
     return torch.device(device_str)

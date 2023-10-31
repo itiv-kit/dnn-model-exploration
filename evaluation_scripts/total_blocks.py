@@ -51,6 +51,7 @@ class DummyConv2d(nn.Conv2d):
 
         # apply sparsity filter or any other custom transformation
         inp_transformed = self.transform_transposed_unfolded_input(inp_transp)
+        inp_transformed = inp_transformed.to('cuda')
 
         out_unf = inp_transformed.matmul(self.kernel.view(self.kernel.size(0), -1).t()).transpose(1, 2)
 
@@ -104,11 +105,13 @@ class DummyConv2d(nn.Conv2d):
 
 def compute_total_blocks(workload):
     model, _ = setup_workload(workload['model'])
+    model = model.to('cuda')
     altered_modules = []
+    block_size = workload['exploration']['extra_args']['block_size']
 
     for name, module in model.named_modules():
         if isinstance(module, nn.Conv2d):
-            sparse_conv = DummyConv2d(module, [8, 8])
+            sparse_conv = DummyConv2d(module, block_size)
             altered_modules.append(sparse_conv)
 
             # Replace actual conv2d with sparse_conv2d
@@ -118,7 +121,8 @@ def compute_total_blocks(workload):
             module_parent = functools.reduce(getattr, [model] + module_path)
             setattr(module_parent, module_name, sparse_conv)
 
-    testinput = torch.randn( (1, 3, 224, 224) )
+    testinput = torch.randn( (1, 3, 640, 480) )
+    testinput = testinput.to('cuda')
     _ = model(testinput)
 
     total_blocks = 0

@@ -12,14 +12,14 @@ def compute_already_present_blocks(workload):
         workload['reevaluation']['datasets'])
     reevaluate_dataloader = dataloaders['reevaluate']
     model, accuracy_function = setup_workload(workload['model'])
-    device = setup_torch_device()
+    device = setup_torch_device(workload['problem'].get('gpu_id', -1))
 
     model_init_func = get_model_init_function(workload['problem']['problem_function'])
     model_update_func = get_model_update_function(workload['problem']['problem_function'])
     kwargs: dict = workload['exploration']['extra_args']
     if 'calibration' in workload.yaml_data:
         kwargs['calibration_file'] = workload['calibration']['file']
-    explorable_model = model_init_func(model, device, False, **kwargs)
+    explorable_model = model_init_func(model, device, **kwargs)
 
     thresholds = [0] * len(explorable_model.explorable_module_names)
     model_update_func(explorable_model, thresholds)

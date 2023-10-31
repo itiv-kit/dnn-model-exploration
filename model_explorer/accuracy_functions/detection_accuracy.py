@@ -33,8 +33,7 @@ def ap_per_class(tp, conf, pred_cls, target_cls, eps=1e-16):
 
     # Create Precision-Recall curve and compute AP for each class
     px, _ = np.linspace(0, 1, 1000), []  # for plotting
-    ap, p, r = np.zeros((nc, tp.shape[1])), np.zeros((nc, 1000)), np.zeros(
-        (nc, 1000))
+    ap, p, r = np.zeros((nc, tp.shape[1])), np.zeros((nc, 1000)), np.zeros((nc, 1000))
     for ci, c in enumerate(unique_classes):
         i = pred_cls == c
         n_l = nt[ci]  # number of labels
@@ -48,13 +47,11 @@ def ap_per_class(tp, conf, pred_cls, target_cls, eps=1e-16):
 
         # Recall
         recall = tpc / (n_l + eps)  # recall curve
-        r[ci] = np.interp(-px, -conf[i], recall[:, 0],
-                          left=0)  # negative x, xp because xp decreases
+        r[ci] = np.interp(-px, -conf[i], recall[:, 0], left=0)  # negative x, xp because xp decreases
 
         # Precision
         precision = tpc / (tpc + fpc)  # precision curve
-        p[ci] = np.interp(-px, -conf[i], precision[:, 0],
-                          left=1)  # p at pr_score
+        p[ci] = np.interp(-px, -conf[i], precision[:, 0], left=1)  # p at pr_score
 
         # AP from recall-precision curve
         for j in range(tp.shape[1]):
@@ -73,8 +70,7 @@ def ap_per_class(tp, conf, pred_cls, target_cls, eps=1e-16):
 
 def smooth(y, f=0.05):
     # Box filter of fraction f
-    nf = round(
-        len(y) * f * 2) // 2 + 1  # number of filter elements (must be odd)
+    nf = round(len(y) * f * 2) // 2 + 1  # number of filter elements (must be odd)
     p = np.ones(nf // 2)  # ones padding
     yp = np.concatenate((p * y[0], y, p * y[-1]), 0)  # y padded
     return np.convolve(yp, np.ones(nf) / nf, mode="valid")  # y-smoothed
@@ -102,8 +98,7 @@ def compute_ap(recall, precision):
         x = np.linspace(0, 1, 101)  # 101-point interp (COCO)
         ap = np.trapz(np.interp(x, mrec, mpre), x)  # integrate
     else:  # 'continuous'
-        i = np.where(
-            mrec[1:] != mrec[:-1])[0]  # points where x axis (recall) changes
+        i = np.where(mrec[1:] != mrec[:-1])[0]  # points where x axis (recall) changes
         ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])  # area under curve
 
     return ap, mpre, mrec
@@ -154,30 +149,23 @@ def process_batch(detections, labels, iouv):
     Returns:
         correct (Array[N, 10]), for 10 IoU levels
     """
-    correct = torch.zeros(detections.shape[0],
-                          iouv.shape[0],
-                          dtype=torch.bool,
-                          device=iouv.device)
+    correct = np.zeros((detections.shape[0], iouv.shape[0])).astype(bool)
     iou = box_iou(labels[:, 1:], detections[:, :4])
     correct_class = labels[:, 0:1] == detections[:, 5]
 
-    for i, iouv_i in enumerate(iouv):
-        x = torch.where((iou >= iouv_i)
-                        & correct_class)  # IoU > threshold and classes match
+    for i in range(len(iouv)):
+        x = torch.where((iou >= iouv[i]) & correct_class)  # IoU > threshold and classes match
 
         if x[0].shape[0]:
-            matches = (torch.cat((torch.stack(x, 1), iou[x[0], x[1]][:, None]),
-                                 1).cpu().numpy())  # [label, detect, iou]
+            matches = (torch.cat((torch.stack(x, 1), iou[x[0], x[1]][:, None]), 1).cpu().numpy())  # [label, detect, iou]
             if x[0].shape[0] > 1:
                 matches = matches[matches[:, 2].argsort()[::-1]]
-                matches = matches[np.unique(matches[:, 1],
-                                            return_index=True)[1]]
+                matches = matches[np.unique(matches[:, 1], return_index=True)[1]]
                 # matches = matches[matches[:, 2].argsort()[::-1]]
-                matches = matches[np.unique(matches[:, 0],
-                                            return_index=True)[1]]
+                matches = matches[np.unique(matches[:, 0], return_index=True)[1]]
             correct[matches[:, 1].astype(int), i] = True
 
-    return correct
+    return torch.tensor(correct, dtype=torch.bool, device=iouv.device)
 
 
 def non_max_suppression(
@@ -189,33 +177,34 @@ def non_max_suppression(
         multi_label=False,
         labels=(),
         max_det=300,
+        nm=0,  # number of masks
 ):
     """Non-Maximum Suppression (NMS) on inference results to reject overlapping bounding boxes
     Returns:
          list of detections, on (n,6) tensor per image [xyxy, conf, cls]
     """
 
+    # Checks
+    assert (0 <= conf_thres <= 1), f"Invalid Confidence threshold {conf_thres}, valid values are between 0.0 and 1.0"
+    assert (0 <= iou_thres <= 1), f"Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0"
+    if isinstance(prediction, (list, tuple)):  # YOLOv5 model in validation model, output = (inference_out, loss_out)
+        prediction = prediction[0]  # select only inference output
+
     bs = prediction.shape[0]  # batch size
     nc = prediction.shape[2] - 5  # number of classes
     xc = prediction[..., 4] > conf_thres  # candidates
-
-    # Checks
-    assert (
-        0 <= conf_thres <= 1
-    ), f"Invalid Confidence threshold {conf_thres}, valid values are between 0.0 and 1.0"
-    assert (0 <= iou_thres <= 1
-            ), f"Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0"
 
     # Settings
     # min_wh = 2  # (pixels) minimum box width and height
     max_wh = 7680  # (pixels) maximum box width and height
     max_nms = 30000  # maximum number of boxes into torchvision.ops.nms()
-    time_limit = 0.1 + 0.03 * bs  # seconds to quit after
+    time_limit = 0.5 + 0.05 * bs  # seconds to quit after
     redundant = True  # require redundant detections
     multi_label &= nc > 1  # multiple labels per box (adds 0.5ms/img)
     merge = False  # use merge-NMS
 
     t = time.time()
+    mi = 5 + nc  # mask start index
     output = [torch.zeros((0, 6), device=prediction.device)] * bs
     for xi, x in enumerate(prediction):  # image index, image inference
         # Apply constraints
@@ -225,7 +214,7 @@ def non_max_suppression(
         # Cat apriori labels if autolabelling
         if labels and len(labels[xi]):
             lb = labels[xi]
-            v = torch.zeros((len(lb), nc + 5), device=x.device)
+            v = torch.zeros((len(lb), nc + nm + 5), device=x.device)
             v[:, :4] = lb[:, 1:5]  # box
             v[:, 4] = 1.0  # conf
             v[range(len(lb)), lb[:, 0].long() + 5] = 1.0  # cls
@@ -238,17 +227,17 @@ def non_max_suppression(
         # Compute conf
         x[:, 5:] *= x[:, 4:5]  # conf = obj_conf * cls_conf
 
-        # Box (center x, center y, width, height) to (x1, y1, x2, y2)
-        box = xywh2xyxy(x[:, :4])
+        # Box/Mask
+        box = xywh2xyxy(x[:, :4])  # center_x, center_y, width, height) to (x1, y1, x2, y2)
+        mask = x[:, mi:]  # zero columns if no masks
 
         # Detections matrix nx6 (xyxy, conf, cls)
         if multi_label:
-            i, j = (x[:, 5:] > conf_thres).nonzero(as_tuple=False).T
-            x = torch.cat((box[i], x[i, j + 5, None], j[:, None].float()), 1)
+            i, j = (x[:, 5:mi] > conf_thres).nonzero(as_tuple=False).T
+            x = torch.cat((box[i], x[i, 5 + j, None], j[:, None].float(), mask[i]), 1)
         else:  # best class only
-            conf, j = x[:, 5:].max(1, keepdim=True)
-            x = torch.cat((box, conf, j.float()),
-                          1)[conf.view(-1) > conf_thres]
+            conf, j = x[:, 5:mi].max(1, keepdim=True)
+            x = torch.cat((box, conf, j.float(), mask), 1)[conf.view(-1) > conf_thres]
 
         # Filter by class
         if classes is not None:
@@ -262,87 +251,57 @@ def non_max_suppression(
         n = x.shape[0]  # number of boxes
         if not n:  # no boxes
             continue
-        elif n > max_nms:  # excess boxes
-            x = x[x[:, 4].argsort(
-                descending=True)[:max_nms]]  # sort by confidence
+        x = x[x[:, 4].argsort(descending=True)[:max_nms]]  # sort by confidence and remove excess boxes
 
         # Batched NMS
         c = x[:, 5:6] * (0 if agnostic else max_wh)  # classes
-        boxes, scores = x[:, :4] + c, x[:,
-                                        4]  # boxes (offset by class), scores
+        boxes, scores = x[:, :4] + c, x[:, 4]  # boxes (offset by class), scores
         i = torchvision.ops.nms(boxes, scores, iou_thres)  # NMS
-        if i.shape[0] > max_det:  # limit detections
-            i = i[:max_det]
-        if merge and (1 < n <
-                      3e3):  # Merge NMS (boxes merged using weighted mean)
+        i = i[:max_det]  # limit detections
+        if merge and (1 < n < 3E3):  # Merge NMS (boxes merged using weighted mean)
             # update boxes as boxes(i,4) = weights(i,n) * boxes(n,4)
             iou = box_iou(boxes[i], boxes) > iou_thres  # iou matrix
             weights = iou * scores[None]  # box weights
-            x[i, :4] = torch.mm(weights, x[:, :4]).float() / weights.sum(
-                1, keepdim=True)  # merged boxes
+            x[i, :4] = torch.mm(weights, x[:, :4]).float() / weights.sum(1, keepdim=True)  # merged boxes
             if redundant:
                 i = i[iou.sum(1) > 1]  # require redundancy
 
         output[xi] = x[i]
+        
         if (time.time() - t) > time_limit:
+            logging.warning(f'WARNING ⚠️ NMS time limit {time_limit:.3f}s exceeded')
             break  # time limit exceeded
 
     return output
 
 
-def convert_to_xywh(boxes):
-    xmin, ymin, xmax, ymax = boxes.unbind(1)
-    return torch.stack((xmin, ymin, xmax - xmin, ymax - ymin), dim=1)
-
-
-def prepare_for_coco_detection(predictions):
-    coco_results = []
-    for original_id, prediction in predictions.items():
-        if len(prediction) == 0:
-            continue
-
-        boxes = prediction["boxes"]
-        boxes = convert_to_xywh(boxes).tolist()
-        scores = prediction["scores"].tolist()
-        labels = prediction["labels"].tolist()
-
-        coco_results.extend([{
-            "image_id": original_id,
-            "category_id": labels[k],
-            "bbox": box,
-            "score": scores[k],
-        } for k, box in enumerate(boxes)])
-    return coco_results
-
-
-def clip_coords(boxes, shape):
-    # Clip bounding xyxy bounding boxes to image shape (height, width)
+def clip_boxes(boxes, shape):
+    # Clip boxes (xyxy) to image shape (height, width)
     if isinstance(boxes, torch.Tensor):  # faster individually
-        boxes[:, 0].clamp_(0, shape[1])  # x1
-        boxes[:, 1].clamp_(0, shape[0])  # y1
-        boxes[:, 2].clamp_(0, shape[1])  # x2
-        boxes[:, 3].clamp_(0, shape[0])  # y2
+        boxes[..., 0].clamp_(0, shape[1])  # x1
+        boxes[..., 1].clamp_(0, shape[0])  # y1
+        boxes[..., 2].clamp_(0, shape[1])  # x2
+        boxes[..., 3].clamp_(0, shape[0])  # y2
     else:  # np.array (faster grouped)
-        boxes[:, [0, 2]] = boxes[:, [0, 2]].clip(0, shape[1])  # x1, x2
-        boxes[:, [1, 3]] = boxes[:, [1, 3]].clip(0, shape[0])  # y1, y2
+        boxes[..., [0, 2]] = boxes[..., [0, 2]].clip(0, shape[1])  # x1, x2
+        boxes[..., [1, 3]] = boxes[..., [1, 3]].clip(0, shape[0])  # y1, y2
 
 
-def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None):
-    # Rescale coords (xyxy) from img1_shape to img0_shape
+def scale_boxes(img1_shape, boxes, img0_shape, ratio_pad=None):
+    # Rescale boxes (xyxy) from img1_shape to img0_shape
     if ratio_pad is None:  # calculate from img0_shape
-        gain = min(img1_shape[0] / img0_shape[0],
-                   img1_shape[1] / img0_shape[1])  # gain  = old / new
-        pad = (img1_shape[1] - img0_shape[1] * gain) / 2, (
-            img1_shape[0] - img0_shape[0] * gain) / 2  # wh padding
+        gain = min(img1_shape[0] / img0_shape[0], img1_shape[1] / img0_shape[1])  # gain  = old / new
+        pad = (img1_shape[1] - img0_shape[1] * gain) / 2, (img1_shape[0] - img0_shape[0] * gain) / 2  # wh padding
     else:
         gain = ratio_pad[0][0]
         pad = ratio_pad[1]
 
-    coords[:, [0, 2]] -= pad[0]  # x padding
-    coords[:, [1, 3]] -= pad[1]  # y padding
-    coords[:, :4] /= gain
-    clip_coords(coords, img0_shape)
-    return coords
+    boxes[..., [0, 2]] -= pad[0]  # x padding
+    boxes[..., [1, 3]] -= pad[1]  # y padding
+    boxes[..., :4] /= gain
+    clip_boxes(boxes, img0_shape)
+    return boxes
+
 
 
 def compute_detection_accuracy(base_model,
@@ -365,7 +324,7 @@ def compute_detection_accuracy(base_model,
     dataset_size = len(dataloader_generator)
     dataloader = dataloader_generator.get_dataloader()
 
-    progress_bar = tqdm.tqdm(total=dataset_size, ascii=True, ncols=80, desc=title, disable=not progress)
+    progress_bar = tqdm.tqdm(total=dataset_size, desc=title, disable=not progress)
 
     model = base_model
     model.to(device)
@@ -373,96 +332,86 @@ def compute_detection_accuracy(base_model,
 
     # value taken from here: https://github.com/ultralytics/yolov5/blob/5774a1514de193c74ecc5203281da8de3c13f9af/data/coco.yaml
     N_CLASSES = 80  # TODO get number of classes from dataset yaml
+    MAX_DETECT = 300  # Maximum detections per image
 
     # conf and iou_thres taken from mAP settings: https://github.com/ultralytics/yolov5#pretrained-checkpoints
-    conf_thres, iou_thres = 0.001, 0.65  # separate values for NMS
+    conf_thres, iou_thres = 0.001, 0.6  # separate values for NMS
 
-    iouv = torch.linspace(0.5, 0.95, 10,
-                          device=device)  # iou vector for mAP@0.5:0.95
+    iouv = torch.linspace(0.5, 0.95, 10, device=device)  # iou vector for mAP@0.5:0.95
     niou = iouv.numel()
 
     stats = []
 
-    with torch.inference_mode():
-        for batch_i, (im, targets, paths, shapes) in enumerate(dataloader):
+    for batch_i, (im, targets, paths, shapes) in enumerate(dataloader):
 
-            im = im.to(device, non_blocking=True)
-            targets = targets.to(device)
+        im = im.to(device, non_blocking=True)
+        targets = targets.to(device)
 
-            im = im.float()
-            im /= 255  # 0 - 255 to 0.0 - 1.0
-            nb, _, height, width = im.shape  # batch size, channels, height, width
+        im = im.float()
+        im /= 255  # 0 - 255 to 0.0 - 1.0
+        nb, _, height, width = im.shape  # batch size, channels, height, width
 
-            out = model(im)
+        preds = model(im, augment=False)
 
-            # Non max suppression to remove overlapping boxes (as done in yoloV5 val.py)
-            targets[:, 2:] *= torch.tensor((width, height, width, height),
-                                           device=device)  # to pixels
-            lb = []
-            out = non_max_suppression(out,
-                                      conf_thres,
-                                      iou_thres,
-                                      labels=lb,
-                                      multi_label=True)
+        # Non max suppression to remove overlapping boxes (as done in yoloV5 val.py)
+        targets[:, 2:] *= torch.tensor((width, height, width, height), device=device)  # to pixels
+        lb = []
+        preds = non_max_suppression(preds,
+                                    conf_thres,
+                                    iou_thres,
+                                    labels=lb,
+                                    multi_label=False,
+                                    agnostic=False,
+                                    max_det=MAX_DETECT)
 
-            for si, pred in enumerate(out):
+        for si, pred in enumerate(preds):
+            labels = targets[targets[:, 0] == si, 1:]
+            nl, npr = (
+                labels.shape[0],
+                pred.shape[0],
+            )  # number of labels, predictions
+            correct = torch.zeros(npr, niou, dtype=torch.bool, device=device)  # init
+            shape = shapes[si][0]
 
-                labels = targets[targets[:, 0] == si, 1:]
-                nl, npr = (
-                    labels.shape[0],
-                    pred.shape[0],
-                )  # number of labels, predictions
-                correct = torch.zeros(npr,
-                                      niou,
-                                      dtype=torch.bool,
-                                      device=device)  # init
+            if npr == 0:
+                if nl:  # no predictions but labels were provided
+                    stats.append((correct, *torch.zeros(
+                        (3, 0), device=device)))
+                continue
 
-                shape = shapes[si][0]
+            # Predictions
+            predn = pred.clone()
+            scale_boxes(im[si].shape[1:], predn[:, :4], shape, shapes[si][1])  # native-space pred
 
-                if npr == 0:
-                    if nl:  # no predictions but labels were provided
-                        stats.append((correct, *torch.zeros(
-                            (3, 0), device=device)))
-                    continue
+            # Evaluate
+            if nl:
+                tbox = xywh2xyxy(labels[:, 1:5])  # target boxes
+                scale_boxes(im[si].shape[1:], tbox, shape, shapes[si][1])  # native-space labels
+                labelsn = torch.cat((labels[:, 0:1], tbox), 1)  # native-space labels
+                correct = process_batch(predn, labelsn, iouv)
 
-                # Predictions
-                predn = pred.clone()
-                scale_coords(im[si].shape[1:], predn[:, :4], shape,
-                             shapes[si][1])  # native-space pred
+            stats.append((correct, pred[:, 4], pred[:, 5], labels[:, 0]))
 
-                # Evaluate
-                if nl:
-                    tbox = xywh2xyxy(labels[:, 1:5])  # target boxes
-                    scale_coords(im[si].shape[1:], tbox, shape,
-                                 shapes[si][1])  # native-space labels
-                    labelsn = torch.cat((labels[:, 0:1], tbox),
-                                        1)  # native-space labels
-                    correct = process_batch(predn, labelsn, iouv)
-                    # confusion_matrix.process_batch(predn, labelsn)
-
-                # pred[:, 5] (pcls)     := predicted probability distribution of all classes
-                # labels[:, 0] (tcls)   := probability distribution of the ground truth
-                # pred[:, 4] (conf)     := confidence
-                stats.append((correct, pred[:, 4], pred[:, 5], labels[:, 0]))
-
-            progress_bar.update(nb)
+        progress_bar.update(nb)
 
     # Compute metrics
     stats = [torch.cat(x, 0).cpu().numpy() for x in zip(*stats)]  # to numpy
 
-    tp, fp, p, r, f1, ap, ap_class = ap_per_class(*stats)
-    ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
-    mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
-    nt = np.bincount(stats[3].astype(int),
-                     minlength=N_CLASSES)  # number of targets per class
+    if len(stats) and stats[0].any():
+        tp, fp, p, r, f1, ap, ap_class = ap_per_class(*stats)
+        ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
+        mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
+    else:
+        # hot fix when no predictions were found ...
+        ap50, ap, mp, mr, map50, map = 0., 0., 0., 0., 0., 0.
 
-    pf = "%20s" * 6  # print format
-    logging.info(pf % ("samples", "n tpc", "mP", "mR", "mAP50", "mAP"))
+    nt = np.bincount(stats[3].astype(int), minlength=N_CLASSES)  # number of targets per class
 
-    pf = "%11i" * 2 + "%11.3g" * 4  # print format
-    logging.info(pf % (0, nt.sum(), mp, mr, map50, map))
-    logging.info("\n")
+    pf = '%22s' + '%11i' + '%11.3g' * 4  # print format
+    logging.info(pf % ('all', nt.sum(), mp, mr, map50, map))
+    if nt.sum() == 0:
+        logging.info(f'No elements found in image at all, accuracy will result in 0')
 
-    return map  # confusion_matrix.global_acc()
+    return map
 
 
